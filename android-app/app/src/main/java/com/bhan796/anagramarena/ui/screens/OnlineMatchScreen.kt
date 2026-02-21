@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -271,9 +273,60 @@ fun OnlineMatchScreen(
                     },
                     style = MaterialTheme.typography.headlineSmall
                 )
-                match.roundResults.forEach { result ->
-                    Text("R${result.roundNumber} ${result.type.name.lowercase()} -> ${result.awardedScores}")
+
+                val playersById = match.players.associateBy { it.playerId }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    match.roundResults.forEach { result ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
+                                .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                                .padding(12.dp)
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    "R${result.roundNumber} ${result.type.name.lowercase()}",
+                                    style = MaterialTheme.typography.headlineSmall
+                                )
+
+                                if (result.type == RoundType.LETTERS) {
+                                    match.players.forEach { player ->
+                                        val submission = result.submissions?.get(player.playerId)
+                                        val submittedWord = submission?.word?.takeIf { it.isNotBlank() } ?: "-"
+                                        val points = result.awardedScores[player.playerId] ?: 0
+                                        RoundPlayerRow(
+                                            name = playersById[player.playerId]?.displayName ?: "Player",
+                                            word = submittedWord,
+                                            points = points
+                                        )
+                                    }
+                                } else {
+                                    WordTiles(
+                                        label = "Answer",
+                                        word = result.answer ?: "-",
+                                        accentColor = ColorGold
+                                    )
+                                    match.players.forEach { player ->
+                                        val points = result.awardedScores[player.playerId] ?: 0
+                                        val wasSolver = result.firstCorrectPlayerId == player.playerId
+                                        RoundPlayerRow(
+                                            name = playersById[player.playerId]?.displayName ?: "Player",
+                                            word = if (wasSolver) result.answer ?: "-" else "-",
+                                            points = points
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+
                 ArcadeButton(
                     text = "BACK HOME",
                     onClick = onBackToHome,
@@ -360,4 +413,39 @@ private fun RisingWordTile(letter: String, index: Int) {
         index = index,
         modifier = Modifier.graphicsLayer { translationY = offsetY }
     )
+}
+
+@Composable
+private fun RoundPlayerRow(name: String, word: String, points: Int) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(name, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+            Text("$points pts", style = MaterialTheme.typography.labelMedium, color = ColorCyan)
+        }
+        WordTiles(label = null, word = word, accentColor = ColorCyan)
+    }
+}
+
+@Composable
+private fun WordTiles(label: String?, word: String, accentColor: androidx.compose.ui.graphics.Color) {
+    val cleaned = word.uppercase().filter { it in 'A'..'Z' }.take(9)
+    val letters = if (cleaned.isEmpty()) "-" else cleaned
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (!label.isNullOrBlank()) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = ColorDimText)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            letters.forEachIndexed { idx, ch ->
+                LetterTile(
+                    letter = ch.toString(),
+                    revealed = true,
+                    index = idx,
+                    accentColor = accentColor
+                )
+            }
+        }
+    }
 }
