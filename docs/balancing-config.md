@@ -30,6 +30,11 @@ Primary files:
 - Server dictionary: `server/data/dictionary_common_10k.txt`
 - Android dictionary: `android-app/app/src/main/assets/data/dictionary_common_10k.txt`
 - iOS dictionary: `ios-app/AnagramArena/Resources/Data/dictionary_common_10k.txt`
+- Web dictionary: `web-app/public/data/dictionary_common_10k.txt`
+
+Current baseline source:
+
+- `dwyl/english-words` (`words_alpha.txt`) for broad English coverage.
 
 Format:
 

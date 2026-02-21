@@ -151,7 +151,7 @@ export const LettersPracticeScreen = ({ timerEnabled, dictionary, dictionaryErro
             ))}
           </div>
           {timerEnabled ? <TimerBar secondsRemaining={secondsRemaining} totalSeconds={TOTAL_SECONDS} /> : null}
-          <TapLetterComposer letters={letters} value={wordInput} onValueChange={setWordInput} />
+          <TapLetterComposer letters={letters} value={wordInput} onValueChange={setWordInput} onSubmit={submit} />
           <ArcadeButton text="Submit Word" onClick={submit} />
         </>
       ) : null}

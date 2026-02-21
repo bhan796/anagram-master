@@ -159,6 +159,7 @@ export const OnlineMatchScreen = ({
                 value={state.wordInput}
                 onValueChange={onWordChange}
                 disabled={state.hasSubmittedWord}
+                onSubmit={onSubmitWord}
               />
               <ArcadeButton text={state.hasSubmittedWord ? "Submitted" : "Submit Word"} onClick={onSubmitWord} disabled={state.hasSubmittedWord} />
             </>
@@ -184,6 +185,7 @@ export const OnlineMatchScreen = ({
                 letters={(match.scrambled ?? "").toUpperCase().split("")}
                 value={state.conundrumGuessInput.toUpperCase()}
                 onValueChange={onConundrumGuessChange}
+                onSubmit={onSubmitConundrumGuess}
               />
               <ArcadeButton text="Submit Guess" onClick={onSubmitConundrumGuess} />
               <div className="text-dim">Multiple guesses allowed. Respect rate limit.</div>

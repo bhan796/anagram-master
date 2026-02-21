@@ -77,7 +77,12 @@ export const ConundrumPracticeScreen = ({ timerEnabled, conundrums, conundrumErr
           </div>
 
           {timerEnabled ? <TimerBar secondsRemaining={secondsRemaining} totalSeconds={TOTAL_SECONDS} /> : null}
-          <TapLetterComposer letters={current.scrambled.toUpperCase().split("")} value={guess.toUpperCase()} onValueChange={setGuess} />
+          <TapLetterComposer
+            letters={current.scrambled.toUpperCase().split("")}
+            value={guess.toUpperCase()}
+            onValueChange={setGuess}
+            onSubmit={submit}
+          />
           <ArcadeButton text="Submit Guess" onClick={submit} />
         </>
       ) : null}
