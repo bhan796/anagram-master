@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { OnlineUiState } from "../types/online";
-import { ArcadeBackButton, ArcadeButton, ArcadeScaffold, NeonTitle } from "../components/ArcadeComponents";
+import { ArcadeBackButton, ArcadeButton, ArcadeScaffold, NeonTitle, RankBadge } from "../components/ArcadeComponents";
 
 interface MatchmakingScreenProps {
   state: OnlineUiState;
@@ -68,10 +68,16 @@ export const MatchmakingScreen = ({
       <ArcadeBackButton onClick={onBack} />
       <NeonTitle text="Search for opponents..." />
 
-      <div className="text-dim">Guest Alias</div>
-      <div className="card" style={{ borderColor: "rgba(0,245,255,.55)", padding: "12px 14px" }}>
+      <div className="card" style={{ borderColor: "rgba(0,245,255,.55)", padding: "12px 14px", display: "grid", gap: 8 }}>
+        <div className="text-dim">Username</div>
         <div className="headline" style={{ fontSize: "clamp(10px, 1.2vw, 12px)" }}>
-          {state.displayName ?? "Assigned automatically"}
+          {state.displayName ?? "Guest"}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <RankBadge tier={state.playerRankTier} />
+          <span className="label" style={{ color: "var(--green)" }}>
+            {state.playerRating} ELO
+          </span>
         </div>
       </div>
 

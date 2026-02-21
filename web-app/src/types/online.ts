@@ -11,6 +11,8 @@ export type RoundType = "letters" | "conundrum" | "UNKNOWN";
 export interface SessionIdentifyPayload {
   playerId: string;
   displayName: string;
+  rating?: number;
+  rankTier?: string;
   serverNowMs: number;
 }
 
@@ -83,6 +85,8 @@ export interface OnlineUiState {
   connectionState: "disconnected" | "connecting" | "connected" | "reconnecting" | "failed";
   playerId: string | null;
   displayName: string | null;
+  playerRating: number;
+  playerRankTier: string;
   queueState: string;
   queueSize: number;
   queueMode: "casual" | "ranked";
@@ -106,6 +110,8 @@ export const initialOnlineUiState: OnlineUiState = {
   connectionState: "disconnected",
   playerId: null,
   displayName: null,
+  playerRating: 1000,
+  playerRankTier: "silver",
   queueState: "idle",
   queueSize: 0,
   queueMode: "casual",

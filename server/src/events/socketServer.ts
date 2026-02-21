@@ -5,6 +5,7 @@ import { loadEnv } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { loadConundrums, loadDictionarySet } from "../game/data.js";
 import { MatchService } from "../game/matchService.js";
+import { ratingToTier } from "../game/ranking.js";
 import type { MatchMode } from "../game/types.js";
 import type { MatchHistoryStore } from "../store/matchHistoryStore.js";
 import type { PresenceStore } from "../store/presenceStore.js";
@@ -65,10 +66,13 @@ export const createSocketServer = (
       const player = service.connectPlayer(socket.id, payload.playerId, payload.displayName);
       playerId = player.playerId;
       presenceStore.markOnline(player.playerId);
+      matchHistoryStore.touchPlayer(player);
 
       socket.emit(SocketEvents.sessionIdentify, {
         playerId: player.playerId,
         displayName: player.displayName,
+        rating: player.rating,
+        rankTier: ratingToTier(player.rating),
         serverNowMs: Date.now()
       });
 

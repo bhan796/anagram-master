@@ -129,6 +129,8 @@ const reduceOnlineState = (
     connectionError: connectionError ?? previous.connectionError,
     playerId: resolvedPlayerId,
     displayName: session?.displayName ?? previous.displayName,
+    playerRating: session?.rating ?? previous.playerRating,
+    playerRankTier: session?.rankTier ?? previous.playerRankTier,
     queueState,
     queueSize: matchmaking?.queueSize ?? previous.queueSize,
     queueMode: matchmaking?.mode ?? previous.queueMode,

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { Router } from "express";
 import { toActionError } from "./events/contracts.js";
+import { ratingToTier } from "./game/ranking.js";
 import type { MatchService } from "./game/matchService.js";
 import type { PresenceStore } from "./store/presenceStore.js";
 import type { MatchHistoryStore } from "./store/matchHistoryStore.js";
@@ -30,9 +31,10 @@ export const createApiRouter = (
   router.get("/profiles/:playerId/stats", (req: Request, res: Response) => {
     const stats = matchHistoryStore.getPlayerStats(req.params.playerId);
     if (!stats) {
+      const runtimePlayer = matchService.getPlayer(req.params.playerId);
       res.json({
         playerId: req.params.playerId,
-        displayName: "Guest",
+        displayName: runtimePlayer?.displayName ?? "Guest",
         matchesPlayed: 0,
         wins: 0,
         losses: 0,
@@ -40,13 +42,13 @@ export const createApiRouter = (
         totalScore: 0,
         averageScore: 0,
         recentMatchIds: [],
-        rating: 1000,
-        peakRating: 1000,
-        rankTier: "silver",
-        rankedGames: 0,
-        rankedWins: 0,
-        rankedLosses: 0,
-        rankedDraws: 0
+        rating: runtimePlayer?.rating ?? 1000,
+        peakRating: runtimePlayer?.peakRating ?? 1000,
+        rankTier: ratingToTier(runtimePlayer?.rating ?? 1000),
+        rankedGames: runtimePlayer?.rankedGames ?? 0,
+        rankedWins: runtimePlayer?.rankedWins ?? 0,
+        rankedLosses: runtimePlayer?.rankedLosses ?? 0,
+        rankedDraws: runtimePlayer?.rankedDraws ?? 0
       });
       return;
     }
@@ -63,6 +65,8 @@ export const createApiRouter = (
       res.status(status).json(payload);
       return;
     }
+
+    matchHistoryStore.updateDisplayName(req.params.playerId, result.displayName ?? nextDisplayName);
 
     res.json({
       playerId: req.params.playerId,

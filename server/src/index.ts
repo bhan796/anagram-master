@@ -17,6 +17,7 @@ const app = express();
 const matchHistoryStore = new MatchHistoryStore();
 const presenceStore = new PresenceStore();
 const isAllowedOrigin = createOriginChecker(env.CLIENT_ORIGIN);
+await matchHistoryStore.initialize();
 
 app.use(
   cors({
