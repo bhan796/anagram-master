@@ -9,10 +9,13 @@ import { SocketEvents, toActionError } from "./contracts.js";
 
 export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: MatchHistoryStore): Server => {
   const env = loadEnv();
+  const allowedOrigins = env.CLIENT_ORIGIN.split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
 
   const io = new Server(httpServer, {
     cors: {
-      origin: env.CLIENT_ORIGIN,
+      origin: allowedOrigins.length <= 1 ? (allowedOrigins[0] ?? env.CLIENT_ORIGIN) : allowedOrigins,
       methods: ["GET", "POST"]
     }
   });
