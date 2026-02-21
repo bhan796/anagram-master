@@ -14,7 +14,14 @@ const PLAYER_ID_KEY = "anagram.playerId";
 const DISPLAY_NAME_KEY = "anagram.displayName";
 const MATCH_ID_KEY = "anagram.matchId";
 
-const connectionUrl = (import.meta.env.VITE_SERVER_URL as string | undefined)?.trim() || "http://localhost:4000";
+const normalizeBackendUrl = (raw: string | undefined): string => {
+  const candidate = (raw ?? "").trim();
+  if (!candidate) return "http://localhost:4000";
+  if (/^https?:\/\//i.test(candidate)) return candidate.replace(/\/+$/, "");
+  return `https://${candidate.replace(/\/+$/, "")}`;
+};
+
+const connectionUrl = normalizeBackendUrl(import.meta.env.VITE_SERVER_URL as string | undefined);
 
 const isActiveMatch = (match: MatchStatePayload | null | undefined): boolean =>
   Boolean(match && match.phase !== "finished");

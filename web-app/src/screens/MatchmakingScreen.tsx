@@ -43,6 +43,7 @@ export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, o
     !searchStarted &&
     !state.isInMatchmaking &&
     (state.connectionState === "connected" || state.connectionState === "connecting");
+  const showRetry = state.connectionState === "failed" || state.connectionState === "disconnected";
 
   return (
     <ArcadeScaffold>
@@ -79,7 +80,7 @@ export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, o
         />
       ) : null}
 
-      {state.connectionState === "failed" ? <ArcadeButton text="Retry Connection" onClick={onRetryConnection} /> : null}
+      {showRetry ? <ArcadeButton text="Retry Connection" onClick={onRetryConnection} /> : null}
 
       {state.localValidationMessage ? <div className="text-dim" style={{ color: "var(--red)" }}>{state.localValidationMessage}</div> : null}
     </ArcadeScaffold>

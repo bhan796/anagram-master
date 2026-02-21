@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bhan796.anagramarena.ui.theme.*
 
 // -- Glowing neon text title -------------------------------------------------
@@ -174,7 +175,10 @@ fun LetterTile(
     ) {
         Text(
             text = letter.uppercase(),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = ssp(12.sp),
+                lineHeight = ssp(14.sp)
+            ),
             color = if (letter != "_") accentColor else ColorDimText.copy(alpha = 0.4f),
             textAlign = TextAlign.Center
         )

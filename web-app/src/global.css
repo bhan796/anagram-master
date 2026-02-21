@@ -135,9 +135,10 @@ input {
   border: 1.5px solid var(--cyan);
   background: var(--surface-variant);
   color: var(--cyan);
-  font-size: var(--text-body);
+  font-size: clamp(12px, 1.55vw, 16px);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  line-height: 1;
 }
 
 .letter-tile.empty {
