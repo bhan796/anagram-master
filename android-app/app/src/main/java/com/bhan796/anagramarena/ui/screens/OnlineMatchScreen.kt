@@ -1,7 +1,10 @@
 package com.bhan796.anagramarena.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +17,14 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bhan796.anagramarena.network.SocketConnectionState
@@ -133,15 +143,46 @@ fun OnlineMatchScreen(
             }
 
             MatchPhase.LETTERS_SOLVING -> {
+                val selectableLetters = match.letters.mapNotNull { it.firstOrNull() }
+                val selectedIndices = remember(match.roundNumber, match.phase) { mutableStateListOf<Int>() }
+
                 Text("Build your longest valid word", style = MaterialTheme.typography.headlineSmall)
-                LetterSlots(match.letters)
-                TapLetterComposer(
-                    letters = match.letters.mapNotNull { it.firstOrNull() },
-                    value = state.wordInput,
-                    onValueChange = onWordChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.hasSubmittedWord
+                WordTargetRow(letters = selectedIndices.map { selectableLetters[it] })
+                SelectableLetterSlots(
+                    letters = match.letters,
+                    selectedIndices = selectedIndices.toSet(),
+                    enabled = !state.hasSubmittedWord,
+                    onLetterTapped = { index ->
+                        if (!selectedIndices.contains(index)) {
+                            selectedIndices.add(index)
+                            onWordChange(selectedIndices.joinToString(separator = "") { selectableLetters[it].toString() })
+                        }
+                    }
                 )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ArcadeButton(
+                        text = "UNDO",
+                        onClick = {
+                            if (selectedIndices.isNotEmpty()) {
+                                selectedIndices.removeAt(selectedIndices.lastIndex)
+                                onWordChange(selectedIndices.joinToString(separator = "") { selectableLetters[it].toString() })
+                            }
+                        },
+                        enabled = !state.hasSubmittedWord && selectedIndices.isNotEmpty(),
+                        modifier = Modifier.weight(1f)
+                    )
+                    ArcadeButton(
+                        text = "CLEAR",
+                        onClick = {
+                            selectedIndices.clear()
+                            onWordChange("")
+                        },
+                        enabled = !state.hasSubmittedWord && selectedIndices.isNotEmpty(),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
                 ArcadeButton(
                     text = if (state.hasSubmittedWord) "SUBMITTED" else "SUBMIT WORD",
                     onClick = onSubmitWord,
@@ -255,4 +296,68 @@ private fun LetterSlots(letters: List<String>) {
             LetterTile(letter = letter, revealed = index < letters.size, index = index)
         }
     }
+}
+
+@Composable
+private fun SelectableLetterSlots(
+    letters: List<String>,
+    selectedIndices: Set<Int>,
+    enabled: Boolean,
+    onLetterTapped: (Int) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        repeat(9) { index ->
+            val letter = if (index < letters.size) letters[index] else "_"
+            val selectable = enabled && index < letters.size && letter != "_" && !selectedIndices.contains(index)
+            Box(
+                modifier = Modifier.clickable(enabled = selectable) { onLetterTapped(index) }
+            ) {
+                LetterTile(
+                    letter = letter,
+                    revealed = index < letters.size,
+                    index = index,
+                    accentColor = if (selectedIndices.contains(index)) ColorDimText else ColorCyan
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WordTargetRow(letters: List<Char>) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
+            .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+            .padding(10.dp)
+    ) {
+        if (letters.isEmpty()) {
+            Text("Tap big letters to build your word", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                letters.forEachIndexed { index, ch ->
+                    RisingWordTile(letter = ch.toString(), index = index)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RisingWordTile(letter: String, index: Int) {
+    var dropped by remember(index) { mutableStateOf(false) }
+    val offsetY by animateFloatAsState(
+        targetValue = if (dropped) 0f else 20f,
+        animationSpec = tween(durationMillis = 180),
+        label = "wordTileRise_$index"
+    )
+    LaunchedEffect(index) { dropped = true }
+
+    LetterTile(
+        letter = letter,
+        revealed = true,
+        index = index,
+        modifier = Modifier.graphicsLayer { translationY = offsetY }
+    )
 }
