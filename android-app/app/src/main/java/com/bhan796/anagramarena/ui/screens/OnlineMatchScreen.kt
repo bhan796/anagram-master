@@ -119,7 +119,10 @@ fun OnlineMatchScreen(
 
         NeonTitle("ROUND ${match.roundNumber}")
         NeonTitle(match.phase.name.replace('_', ' '))
-        TimerBar(secondsRemaining = state.secondsRemaining, totalSeconds = 30)
+        TimerBar(
+            secondsRemaining = state.secondsRemaining,
+            totalSeconds = if (match.phase == MatchPhase.AWAITING_LETTERS_PICK) 10 else 30
+        )
         Text(state.statusMessage, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
 
         val me = state.myPlayer

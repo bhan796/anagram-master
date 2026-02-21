@@ -113,6 +113,7 @@ export interface MatchServiceOptions {
   now: () => number;
   setTimer: (callback: () => void, delayMs: number) => unknown;
   clearTimer: (timer: unknown) => void;
+  pickDurationMs: number;
   solveDurationMs: number;
   resultDurationMs: number;
   conundrumGuessCooldownMs: number;

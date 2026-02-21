@@ -29,6 +29,7 @@ const defaultOptions: Omit<MatchServiceOptions, "onMatchUpdated" | "onQueueUpdat
   now: () => Date.now(),
   setTimer: (callback, delayMs) => setTimeout(callback, delayMs),
   clearTimer: (timer) => clearTimeout(timer as NodeJS.Timeout),
+  pickDurationMs: 10_000,
   solveDurationMs: 30_000,
   resultDurationMs: 5_000,
   conundrumGuessCooldownMs: 750,
@@ -408,6 +409,7 @@ export class MatchService {
     };
 
     this.matches.set(matchId, match);
+    this.startLettersPickPhase(match);
     return match;
   }
 
@@ -434,6 +436,47 @@ export class MatchService {
     });
 
     this.options.logEvent("Letters solving phase started", { matchId: match.matchId, phaseEndsAtMs: match.phaseEndsAtMs });
+  }
+
+  private startLettersPickPhase(match: MatchState): void {
+    if (match.liveRound.type !== "letters") return;
+
+    match.phase = "awaiting_letters_pick";
+    match.phaseEndsAtMs = this.options.now() + this.options.pickDurationMs;
+    match.updatedAtMs = this.options.now();
+
+    this.schedulePhaseTimer(match.matchId, this.options.pickDurationMs, () => {
+      const current = this.matches.get(match.matchId);
+      if (!current || current.phase !== "awaiting_letters_pick" || current.liveRound.type !== "letters") return;
+
+      this.autoCompleteLettersPick(current);
+      this.startLettersSolving(current);
+      this.options.onMatchUpdated(current.matchId);
+    });
+
+    this.options.logEvent("Letters pick phase started", { matchId: match.matchId, phaseEndsAtMs: match.phaseEndsAtMs });
+  }
+
+  private autoCompleteLettersPick(match: MatchState): void {
+    if (match.liveRound.type !== "letters") return;
+
+    while (match.liveRound.letters.length < 9) {
+      const vowels = match.liveRound.letters.filter((letter) => "AEIOU".includes(letter)).length;
+      const consonants = match.liveRound.letters.length - vowels;
+      const allowed = Array.from(allowedPickKinds(match.liveRound.picks.length, vowels, consonants, 9));
+      const pickKind = allowed[Math.floor(Math.random() * allowed.length)] as PickKind | undefined;
+      if (!pickKind) break;
+
+      const letter = drawWeightedLetter(pickKind, Math.random);
+      match.liveRound.picks.push(pickKind);
+      match.liveRound.letters.push(letter);
+    }
+
+    match.updatedAtMs = this.options.now();
+    this.options.logEvent("Letters auto-completed after pick timeout", {
+      matchId: match.matchId,
+      letters: match.liveRound.letters.join("")
+    });
   }
 
   private startConundrumSolving(match: MatchState, round: ConundrumRoundState): void {
@@ -572,8 +615,6 @@ export class MatchService {
     const nextPlan = match.rounds[match.roundIndex];
 
     if (nextPlan.type === "letters") {
-      match.phase = "awaiting_letters_pick";
-      match.phaseEndsAtMs = null;
       match.liveRound = {
         type: "letters",
         roundNumber: nextPlan.roundNumber,
@@ -582,8 +623,12 @@ export class MatchService {
         letters: [],
         submissions: {}
       };
-      match.updatedAtMs = this.options.now();
-      this.options.logEvent("Advanced to letters round", { matchId: match.matchId, roundNumber: nextPlan.roundNumber });
+      this.startLettersPickPhase(match);
+      this.options.logEvent("Advanced to letters round", {
+        matchId: match.matchId,
+        roundNumber: nextPlan.roundNumber,
+        phaseEndsAtMs: match.phaseEndsAtMs
+      });
       return;
     }
 
