@@ -178,26 +178,20 @@ describe("MatchService", () => {
     expect(after?.scores[p2]).toBe(0);
   });
 
-  it("restores match state for reconnecting player", () => {
+  it("forfeits match on disconnect and awards win to the remaining player", () => {
     const scheduler = new FakeScheduler();
     const service = makeService(scheduler);
-    const { p1, matchId } = startMatch(service);
+    const { p1, p2, matchId } = startMatch(service);
 
     service.disconnectSocket("socket-1");
-
-    const reconnected = service.connectPlayer("socket-1b", p1, "One");
-    expect(reconnected.playerId).toBe(p1);
-
-    const resume = service.resumeMatch(p1, matchId);
-    expect(resume.ok).toBe(true);
 
     const match = service.getMatch(matchId);
     expect(match).toBeTruthy();
     if (!match) return;
-
-    const snapshot = service.serializeForPlayer(match, p1);
-    expect(snapshot.matchId).toBe(matchId);
-    expect(snapshot.players.length).toBe(2);
+    expect(match.phase).toBe("finished");
+    expect(match.winnerPlayerId).toBe(p2);
+    expect(service.getMatchByPlayer(p1)).toBeUndefined();
+    expect(service.getMatchByPlayer(p2)).toBeUndefined();
   });
 
   it("prevents a player from joining queue while already in an active match", () => {

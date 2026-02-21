@@ -116,6 +116,10 @@ class SocketIoMultiplayerClient : MultiplayerSocketClient {
         }
     }
 
+    override fun forfeitMatch() {
+        emit(SocketEventNames.MATCH_FORFEIT)
+    }
+
     override fun pickLetter(kind: String) {
         emit(SocketEventNames.ROUND_PICK_LETTER) {
             put("kind", kind)

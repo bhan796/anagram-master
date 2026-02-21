@@ -112,7 +112,10 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                     onConundrumGuessChange = onlineMatchViewModel::updateConundrumGuessInput,
                     onSubmitConundrumGuess = onlineMatchViewModel::submitConundrumGuess,
                     onDismissError = onlineMatchViewModel::clearError,
-                    onBack = { navController.popBackStack() },
+                    onBack = {
+                        onlineMatchViewModel.leaveActiveMatch()
+                        navController.popBackStack(Routes.HOME, false)
+                    },
                     onBackToHome = {
                         navController.popBackStack(Routes.HOME, false)
                     }

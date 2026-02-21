@@ -134,6 +134,11 @@ class OnlineMatchViewModel(
         _state.value = _state.value.copy(lastError = null, localValidationMessage = null)
     }
 
+    fun leaveActiveMatch() {
+        repository.forfeitActiveMatch()
+        _state.value = _state.value.copy(lastError = null, localValidationMessage = null)
+    }
+
     private fun startTicker() {
         tickerJob?.cancel()
         tickerJob = viewModelScope.launch {

@@ -29,6 +29,7 @@ interface MultiplayerSocketClient {
     fun joinQueue()
     fun leaveQueue()
     fun resumeMatch(matchId: String)
+    fun forfeitMatch()
     fun pickLetter(kind: String)
     fun submitWord(word: String)
     fun submitConundrumGuess(guess: String)

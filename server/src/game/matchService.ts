@@ -90,11 +90,10 @@ export class MatchService {
         player.connected = false;
         player.socketId = null;
         this.leaveQueue(player.playerId);
-        this.options.logEvent("Player disconnected", { playerId: player.playerId, socketId });
-
         if (player.matchId) {
-          this.options.onMatchUpdated(player.matchId);
+          this.forfeitMatch(player.playerId, "disconnect");
         }
+        this.options.logEvent("Player disconnected", { playerId: player.playerId, socketId });
 
         break;
       }
@@ -143,6 +142,38 @@ export class MatchService {
     const match = this.matches.get(matchId);
     if (!match) return { ok: false, code: "MATCH_NOT_FOUND" };
     if (!match.players.includes(playerId)) return { ok: false, code: "NOT_MATCH_PARTICIPANT" };
+    return { ok: true };
+  }
+
+  forfeitMatch(playerId: string, reason: "disconnect" | "manual_leave" = "manual_leave"): { ok: boolean; code?: string } {
+    const match = this.getMatchByPlayer(playerId);
+    if (!match) return { ok: false, code: "NOT_IN_ACTIVE_MATCH" };
+    if (match.phase === "finished") return { ok: false, code: "INVALID_PHASE" };
+
+    this.clearPhaseTimer(match.matchId);
+    const winnerPlayerId = match.players.find((id) => id !== playerId) ?? null;
+
+    match.phase = "finished";
+    match.phaseEndsAtMs = null;
+    match.winnerPlayerId = winnerPlayerId;
+    match.updatedAtMs = this.options.now();
+
+    for (const id of match.players) {
+      const player = this.players.get(id);
+      if (player) {
+        player.matchId = null;
+      }
+    }
+
+    this.options.logEvent("Match forfeited", {
+      matchId: match.matchId,
+      forfeitedBy: playerId,
+      winnerPlayerId,
+      reason
+    });
+
+    this.options.onMatchUpdated(match.matchId);
+    this.options.onMatchFinished(this.buildFinishedMatchRecord(match));
     return { ok: true };
   }
 

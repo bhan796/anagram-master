@@ -85,6 +85,7 @@ object SocketEventNames {
     const val QUEUE_JOIN = "queue:join"
     const val QUEUE_LEAVE = "queue:leave"
     const val MATCH_RESUME = "match:resume"
+    const val MATCH_FORFEIT = "match:forfeit"
     const val ROUND_PICK_LETTER = "round:pick_letter"
     const val ROUND_SUBMIT_WORD = "round:submit_word"
     const val ROUND_SUBMIT_CONUNDRUM_GUESS = "round:submit_conundrum_guess"

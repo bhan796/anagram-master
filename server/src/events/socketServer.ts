@@ -126,6 +126,18 @@ export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: Ma
       }
     });
 
+    socket.on(SocketEvents.matchForfeit, () => {
+      if (!playerId) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.matchForfeit, "UNKNOWN_PLAYER"));
+        return;
+      }
+
+      const result = service.forfeitMatch(playerId, "manual_leave");
+      if (!result.ok && result.code) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.matchForfeit, result.code));
+      }
+    });
+
     socket.on(SocketEvents.roundPickLetter, (payload: { kind: "vowel" | "consonant" }) => {
       if (!playerId) {
         socket.emit(SocketEvents.actionError, toActionError(SocketEvents.roundPickLetter, "UNKNOWN_PLAYER"));

@@ -7,6 +7,7 @@ import com.bhan796.anagramarena.online.MatchFoundPayload
 import com.bhan796.anagramarena.online.MatchStatePayload
 import com.bhan796.anagramarena.online.MatchmakingStatusPayload
 import com.bhan796.anagramarena.online.SessionIdentifyPayload
+import com.bhan796.anagramarena.online.SocketEventNames
 import com.bhan796.anagramarena.storage.SessionStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -76,7 +77,14 @@ class OnlineMatchRepository(
         }
 
         socketClient.actionErrorListener = { payload ->
-            _actionError.value = payload
+            if (payload.action == SocketEventNames.MATCH_RESUME && payload.code == "MATCH_NOT_FOUND") {
+                sessionStore.matchId = null
+                _matchState.value = null
+                _matchmaking.value = MatchmakingStatusPayload(queueSize = 0, state = "idle")
+                _actionError.value = null
+            } else {
+                _actionError.value = payload
+            }
         }
     }
 
@@ -105,6 +113,15 @@ class OnlineMatchRepository(
     fun resume() {
         val matchId = sessionStore.matchId ?: return
         socketClient.resumeMatch(matchId)
+    }
+
+    fun forfeitActiveMatch() {
+        if (_matchState.value == null) return
+        socketClient.forfeitMatch()
+        sessionStore.matchId = null
+        _matchState.value = null
+        _matchmaking.value = MatchmakingStatusPayload(queueSize = 0, state = "idle")
+        _actionError.value = null
     }
 
     fun pickVowel() {
