@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
@@ -64,39 +65,49 @@ fun OnlineMatchScreen(
 ) {
     val match = state.matchState
     var showLeaveDialog by remember { mutableStateOf(false) }
+    val isFinished = match?.phase == MatchPhase.FINISHED
 
     ArcadeScaffold(contentPadding = contentPadding) {
-        ArcadeButton(
-            text = "LEAVE GAME",
-            onClick = { showLeaveDialog = true },
-            accentColor = ColorGold,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Text(
-            "If you leave now, you will forfeit the match.",
-            style = MaterialTheme.typography.bodySmall,
-            color = ColorRed
-        )
-
-        if (showLeaveDialog) {
-            AlertDialog(
-                onDismissRequest = { showLeaveDialog = false },
-                title = { Text("Leave game?") },
-                text = { Text("Leaving an active match counts as a forfeit and awards your opponent the win.") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showLeaveDialog = false
-                        onBack()
-                    }) {
-                        Text("Forfeit & Leave", color = ColorRed)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showLeaveDialog = false }) {
-                        Text("Stay")
-                    }
-                }
+        if (isFinished) {
+            ArcadeButton(
+                text = "BACK HOME",
+                onClick = onBackToHome,
+                accentColor = ColorGold,
+                modifier = Modifier.fillMaxWidth()
             )
+        } else {
+            ArcadeButton(
+                text = "LEAVE GAME",
+                onClick = { showLeaveDialog = true },
+                accentColor = ColorGold,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                "If you leave now, you will forfeit the match.",
+                style = MaterialTheme.typography.bodySmall,
+                color = ColorRed
+            )
+
+            if (showLeaveDialog) {
+                AlertDialog(
+                    onDismissRequest = { showLeaveDialog = false },
+                    title = { Text("Leave game?") },
+                    text = { Text("Leaving an active match counts as a forfeit and awards your opponent the win.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showLeaveDialog = false
+                            onBack()
+                        }) {
+                            Text("Forfeit & Leave", color = ColorRed)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLeaveDialog = false }) {
+                            Text("Stay")
+                        }
+                    }
+                )
+            }
         }
 
         if (match == null) {
@@ -450,19 +461,27 @@ private fun SelectableLetterSlots(
 
 @Composable
 private fun WordTargetRow(letters: List<Char>) {
+    val maxLetters = 9
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 58.dp)
             .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
             .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
             .padding(10.dp)
     ) {
-        if (letters.isEmpty()) {
-            Text("Tap big letters to build your word", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
-        } else {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (letters.isEmpty()) {
+                Text("Tap big letters to build your word", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                letters.forEachIndexed { index, ch ->
-                    RisingWordTile(letter = ch.toString(), index = index)
+                repeat(maxLetters) { index ->
+                    val ch = letters.getOrNull(index)
+                    if (ch != null) {
+                        RisingWordTile(letter = ch.toString(), index = index)
+                    } else {
+                        LetterTile(letter = "_", revealed = true, index = index, accentColor = ColorDimText)
+                    }
                 }
             }
         }
