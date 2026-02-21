@@ -4,10 +4,13 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,12 +19,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.bhan796.anagramarena.network.SocketConnectionState
 import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.NeonTitle
+import com.bhan796.anagramarena.ui.theme.ColorCyan
+import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
+import com.bhan796.anagramarena.ui.theme.sdp
 
 @Composable
 fun MatchmakingScreen(
@@ -69,14 +76,16 @@ fun MatchmakingScreen(
         ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
         NeonTitle("Search for opponents...")
 
-        OutlinedTextField(
-            value = onlineState.displayName.orEmpty(),
-            onValueChange = { },
-            readOnly = true,
-            label = { Text("Display Name") },
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = MaterialTheme.typography.bodyMedium
-        )
+        Text("Guest Alias")
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                .border(sdp(1.dp), ColorCyan.copy(alpha = 0.55f), RoundedCornerShape(sdp(6.dp)))
+                .padding(horizontal = sdp(14.dp), vertical = sdp(12.dp))
+        ) {
+            Text(onlineState.displayName.orEmpty())
+        }
 
         ArcadeButton(
             text = primaryButtonText,

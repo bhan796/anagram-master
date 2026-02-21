@@ -49,15 +49,12 @@ export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, o
       <ArcadeBackButton onClick={onBack} />
       <NeonTitle text="Search for opponents..." />
 
-      <label className="text-dim" htmlFor="display-name">
-        Display Name
-      </label>
-      <input
-        id="display-name"
-        className="input"
-        value={state.displayName ?? "Assigned automatically"}
-        readOnly
-      />
+      <div className="text-dim">Guest Alias</div>
+      <div className="card" style={{ borderColor: "rgba(0,245,255,.55)", padding: "12px 14px" }}>
+        <div className="headline" style={{ fontSize: "clamp(10px, 1.2vw, 12px)" }}>
+          {state.displayName ?? "Assigned automatically"}
+        </div>
+      </div>
 
       <ArcadeButton
         text={buttonText}
