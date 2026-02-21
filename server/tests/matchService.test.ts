@@ -318,7 +318,7 @@ describe("MatchService", () => {
     expect((afterP1?.rankedGames ?? 0) + (afterP2?.rankedGames ?? 0)).toBe(2);
   });
 
-  it("auto-fills remaining letters after 10s pick timer and starts solving phase", () => {
+  it("auto-fills remaining letters after 20s pick timer and starts solving phase", () => {
     const scheduler = new FakeScheduler();
     const service = makeService(scheduler);
     const { p1 } = startMatch(service);
@@ -329,7 +329,7 @@ describe("MatchService", () => {
     if (!before || before.liveRound.type !== "letters") return;
     expect(before.liveRound.letters.length).toBe(0);
 
-    scheduler.advanceBy(10_100);
+    scheduler.advanceBy(20_100);
 
     const after = service.getMatchByPlayer(p1);
     expect(after?.phase).toBe("letters_solving");

@@ -13,4 +13,7 @@ class ProfileRepository(private val apiService: ProfileApiService) {
     suspend fun loadLeaderboard(limit: Int = 20): Result<List<LeaderboardEntry>> = apiService.fetchLeaderboard(limit)
 
     suspend fun loadPlayersOnline(): Result<Int> = apiService.fetchPlayersOnline()
+
+    suspend fun updateDisplayName(playerId: String, displayName: String): Result<String> =
+        apiService.updateDisplayName(playerId, displayName)
 }

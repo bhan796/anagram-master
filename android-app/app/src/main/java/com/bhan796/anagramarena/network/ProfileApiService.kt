@@ -107,6 +107,13 @@ class ProfileApiService(private val baseUrl: String) {
         }
     }
 
+    suspend fun updateDisplayName(playerId: String, displayName: String): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val response = postJson("/api/profiles/$playerId/display-name", JSONObject().put("displayName", displayName))
+            response.getString("displayName")
+        }
+    }
+
     private fun org.json.JSONArray.toHistoryPlayers(): List<HistoryPlayerScore> {
         return (0 until length()).map { index ->
             val p = getJSONObject(index)
@@ -116,5 +123,29 @@ class ProfileApiService(private val baseUrl: String) {
                 score = p.getInt("score")
             )
         }
+    }
+
+    private fun postJson(path: String, payload: JSONObject): JSONObject {
+        val url = URL(baseUrl.trimEnd('/') + path)
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            connectTimeout = 10000
+            readTimeout = 10000
+            doOutput = true
+            setRequestProperty("Content-Type", "application/json")
+        }
+
+        connection.outputStream.bufferedWriter().use { writer ->
+            writer.write(payload.toString())
+        }
+
+        val stream = if (connection.responseCode in 200..299) connection.inputStream else connection.errorStream
+        val body = stream.bufferedReader().use { it.readText() }
+        if (connection.responseCode !in 200..299) {
+            val message = runCatching { JSONObject(body).optString("message") }.getOrDefault("")
+            throw IllegalStateException(if (message.isNotBlank()) message else "HTTP ${connection.responseCode}: $body")
+        }
+
+        return JSONObject(body)
     }
 }

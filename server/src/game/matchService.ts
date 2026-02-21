@@ -32,7 +32,7 @@ const defaultOptions: Omit<MatchServiceOptions, "onMatchUpdated" | "onQueueUpdat
   now: () => Date.now(),
   setTimer: (callback, delayMs) => setTimeout(callback, delayMs),
   clearTimer: (timer) => clearTimeout(timer as NodeJS.Timeout),
-  pickDurationMs: 10_000,
+  pickDurationMs: 20_000,
   solveDurationMs: 30_000,
   resultDurationMs: 5_000,
   conundrumGuessCooldownMs: 750,
@@ -98,6 +98,28 @@ export class MatchService {
 
     this.options.logEvent("Player connected", { playerId, socketId, connectedAtMs: now });
     return player;
+  }
+
+  updateDisplayName(playerId: string, nextDisplayName: string): { ok: boolean; code?: string; displayName?: string } {
+    const player = this.players.get(playerId);
+    if (!player) return { ok: false, code: "UNKNOWN_PLAYER" };
+
+    const normalized = nextDisplayName.trim();
+    if (!normalized) return { ok: false, code: "INVALID_DISPLAY_NAME" };
+    if (normalized.length < 3 || normalized.length > 20) return { ok: false, code: "INVALID_DISPLAY_NAME" };
+    if (!/^[A-Za-z0-9_ ]+$/.test(normalized)) return { ok: false, code: "INVALID_DISPLAY_NAME" };
+
+    const lower = normalized.toLowerCase();
+    for (const other of this.players.values()) {
+      if (other.playerId === playerId) continue;
+      if (other.displayName.trim().toLowerCase() === lower) {
+        return { ok: false, code: "DISPLAY_NAME_TAKEN" };
+      }
+    }
+
+    player.displayName = normalized;
+    this.options.logEvent("Display name updated", { playerId, displayName: normalized });
+    return { ok: true, displayName: normalized };
   }
 
   disconnectSocket(socketId: string): void {

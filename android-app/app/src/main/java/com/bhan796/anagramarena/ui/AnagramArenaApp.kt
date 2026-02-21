@@ -12,7 +12,9 @@ import com.bhan796.anagramarena.data.AppDependencies
 import com.bhan796.anagramarena.ui.screens.ConundrumPracticeScreen
 import com.bhan796.anagramarena.ui.screens.HomeScreen
 import com.bhan796.anagramarena.ui.screens.LettersPracticeScreen
+import com.bhan796.anagramarena.ui.screens.HowToPlayScreen
 import com.bhan796.anagramarena.ui.screens.MatchmakingScreen
+import com.bhan796.anagramarena.ui.screens.MatchFoundScreen
 import com.bhan796.anagramarena.ui.screens.OnlineMatchScreen
 import com.bhan796.anagramarena.ui.screens.PracticeMenuScreen
 import com.bhan796.anagramarena.ui.screens.ProfileScreen
@@ -28,7 +30,9 @@ private object Routes {
     const val LETTERS = "practice_letters"
     const val CONUNDRUM = "practice_conundrum"
     const val ONLINE_MATCHMAKING = "online_matchmaking"
+    const val ONLINE_MATCH_FOUND = "online_match_found"
     const val ONLINE_MATCH = "online_match"
+    const val HOW_TO_PLAY = "how_to_play"
     const val PROFILE = "profile"
     const val SETTINGS = "settings"
 }
@@ -60,8 +64,16 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                     playersOnline = homeStatus.playersOnline,
                     onPlayOnline = { navController.navigate(Routes.ONLINE_MATCHMAKING) },
                     onPracticeMode = { navController.navigate(Routes.PRACTICE) },
+                    onHowToPlay = { navController.navigate(Routes.HOW_TO_PLAY) },
                     onProfile = { navController.navigate(Routes.PROFILE) },
                     onSettings = { navController.navigate(Routes.SETTINGS) }
+                )
+            }
+
+            composable(Routes.HOW_TO_PLAY) {
+                HowToPlayScreen(
+                    contentPadding = innerPadding,
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -104,7 +116,15 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                     onJoinQueue = onlineMatchViewModel::startQueue,
                     onCancelQueue = onlineMatchViewModel::cancelQueue,
                     onRetryConnection = onlineMatchViewModel::retryConnect,
-                    onMatchReady = { navController.navigate(Routes.ONLINE_MATCH) }
+                    onMatchReady = { navController.navigate(Routes.ONLINE_MATCH_FOUND) }
+                )
+            }
+
+            composable(Routes.ONLINE_MATCH_FOUND) {
+                MatchFoundScreen(
+                    contentPadding = innerPadding,
+                    state = onlineState,
+                    onDone = { navController.navigate(Routes.ONLINE_MATCH) }
                 )
             }
 

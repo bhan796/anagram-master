@@ -141,7 +141,7 @@ export const OnlineMatchScreen = ({
         <>
           <NeonTitle text={`Round ${match.roundNumber}`} />
           <NeonTitle text={phaseLabel(match.phase)} />
-          <TimerBar secondsRemaining={state.secondsRemaining} totalSeconds={match.phase === "awaiting_letters_pick" ? 10 : 30} />
+          <TimerBar secondsRemaining={state.secondsRemaining} totalSeconds={match.phase === "awaiting_letters_pick" ? 20 : 30} />
           <div className="text-dim">{state.statusMessage}</div>
 
           {state.myPlayer && state.opponentPlayer ? (

@@ -31,10 +31,9 @@ app.use(
 );
 app.use(express.json());
 
-app.use("/api", createApiRouter(matchHistoryStore, presenceStore));
-
 const httpServer = createServer(app);
-createSocketServer(httpServer, matchHistoryStore, presenceStore);
+const socketRuntime = createSocketServer(httpServer, matchHistoryStore, presenceStore);
+app.use("/api", createApiRouter(matchHistoryStore, presenceStore, socketRuntime.matchService));
 
 httpServer.listen(env.PORT, () => {
   logger.info({ port: env.PORT }, "Server started");

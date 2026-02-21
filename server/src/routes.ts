@@ -1,9 +1,15 @@
 import type { Request, Response } from "express";
 import { Router } from "express";
+import { toActionError } from "./events/contracts.js";
+import type { MatchService } from "./game/matchService.js";
 import type { PresenceStore } from "./store/presenceStore.js";
 import type { MatchHistoryStore } from "./store/matchHistoryStore.js";
 
-export const createApiRouter = (matchHistoryStore: MatchHistoryStore, presenceStore: PresenceStore): Router => {
+export const createApiRouter = (
+  matchHistoryStore: MatchHistoryStore,
+  presenceStore: PresenceStore,
+  matchService: MatchService
+): Router => {
   const router = Router();
 
   router.get("/health", (_req: Request, res: Response) => {
@@ -46,6 +52,22 @@ export const createApiRouter = (matchHistoryStore: MatchHistoryStore, presenceSt
     }
 
     res.json(stats);
+  });
+
+  router.post("/profiles/:playerId/display-name", (req: Request, res: Response) => {
+    const nextDisplayName = String(req.body?.displayName ?? "");
+    const result = matchService.updateDisplayName(req.params.playerId, nextDisplayName);
+    if (!result.ok) {
+      const payload = toActionError("profile:update_display_name", result.code ?? "ACTION_FAILED");
+      const status = payload.code === "DISPLAY_NAME_TAKEN" ? 409 : payload.code === "UNKNOWN_PLAYER" ? 404 : 400;
+      res.status(status).json(payload);
+      return;
+    }
+
+    res.json({
+      playerId: req.params.playerId,
+      displayName: result.displayName
+    });
   });
 
   router.get("/profiles/:playerId/matches", (req: Request, res: Response) => {

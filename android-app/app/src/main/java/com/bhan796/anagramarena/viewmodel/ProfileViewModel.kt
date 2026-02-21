@@ -20,6 +20,8 @@ data class ProfileUiState(
     val stats: PlayerStats? = null,
     val history: MatchHistoryResponse? = null,
     val leaderboard: List<LeaderboardEntry> = emptyList(),
+    val isSavingDisplayName: Boolean = false,
+    val displayNameUpdateError: String? = null,
     val errorMessage: String? = null
 )
 
@@ -53,9 +55,30 @@ class ProfileViewModel(
                     stats = statsResult.getOrNull(),
                     history = historyResult.getOrNull(),
                     leaderboard = leaderboardResult.getOrDefault(emptyList()),
-                    errorMessage = error
+                    errorMessage = error,
+                    displayNameUpdateError = null
                 )
             }
+        }
+    }
+
+    fun updateDisplayName(nextDisplayName: String) {
+        val playerId = sessionStore.playerId ?: return
+        _state.update { it.copy(isSavingDisplayName = true, displayNameUpdateError = null) }
+
+        viewModelScope.launch {
+            val result = repository.updateDisplayName(playerId, nextDisplayName)
+            if (result.isSuccess) {
+                refresh()
+            } else {
+                _state.update {
+                    it.copy(
+                        isSavingDisplayName = false,
+                        displayNameUpdateError = result.exceptionOrNull()?.message ?: "Unable to update username."
+                    )
+                }
+            }
+            _state.update { it.copy(isSavingDisplayName = false) }
         }
     }
 

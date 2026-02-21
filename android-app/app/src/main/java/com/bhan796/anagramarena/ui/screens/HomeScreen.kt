@@ -20,6 +20,7 @@ fun HomeScreen(
     playersOnline: Int,
     onPlayOnline: () -> Unit,
     onPracticeMode: () -> Unit,
+    onHowToPlay: () -> Unit,
     onProfile: () -> Unit,
     onSettings: () -> Unit
 ) {
@@ -38,7 +39,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(32.dp))
 
-        val delays = listOf(200, 300, 450, 600)
+        val delays = listOf(200, 300, 400, 500, 600)
         val buttonVisible = delays.map { delay ->
             var v by remember { mutableStateOf(false) }
             LaunchedEffect(Unit) { kotlinx.coroutines.delay(delay.toLong()); v = true }
@@ -52,9 +53,12 @@ fun HomeScreen(
             ArcadeButton("PRACTICE MODE", onClick = onPracticeMode)
         }
         AnimatedVisibility(buttonVisible[2], enter = fadeIn(tween(400)) + expandVertically()) {
-            ArcadeButton("PROFILE / STATS", onClick = onProfile, accentColor = ColorGold)
+            ArcadeButton("HOW TO PLAY", onClick = onHowToPlay)
         }
         AnimatedVisibility(buttonVisible[3], enter = fadeIn(tween(400)) + expandVertically()) {
+            ArcadeButton("PROFILE / STATS", onClick = onProfile, accentColor = ColorGold)
+        }
+        AnimatedVisibility(buttonVisible[4], enter = fadeIn(tween(400)) + expandVertically()) {
             ArcadeButton("SETTINGS", onClick = onSettings, accentColor = ColorMagenta)
         }
         androidx.compose.foundation.layout.Row(

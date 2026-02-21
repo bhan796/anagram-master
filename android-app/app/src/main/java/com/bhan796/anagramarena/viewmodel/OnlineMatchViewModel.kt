@@ -148,7 +148,19 @@ class OnlineMatchViewModel(
                 val matchState = current.matchState
                 if (matchState != null && matchState.phase != MatchPhase.FINISHED) {
                     val remaining = OnlineMatchReducer.computeRemainingSeconds(matchState, nowProvider(), clockOffsetMs)
-                    _state.value = current.copy(secondsRemaining = remaining)
+                    var nextState = current.copy(secondsRemaining = remaining)
+                    if (
+                        matchState.phase == MatchPhase.LETTERS_SOLVING &&
+                        remaining <= 0 &&
+                        !current.hasSubmittedWord
+                    ) {
+                        repository.submitWord(current.wordInput)
+                        nextState = nextState.copy(
+                            hasSubmittedWord = true,
+                            localValidationMessage = null
+                        )
+                    }
+                    _state.value = nextState
                 }
             }
         }

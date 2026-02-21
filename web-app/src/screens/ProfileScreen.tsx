@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ArcadeBackButton, ArcadeScaffold, NeonDivider, NeonTitle } from "../components/ArcadeComponents";
 
 interface StatsSummary {
@@ -40,9 +40,13 @@ interface ProfileScreenProps {
   history: HistoryItem[];
   onBack: () => void;
   onRetry: () => void;
+  onUpdateDisplayName: (value: string) => Promise<void>;
 }
 
-export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetry }: ProfileScreenProps) => {
+export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetry, onUpdateDisplayName }: ProfileScreenProps) => {
+  const [nameDraft, setNameDraft] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [savingName, setSavingName] = useState(false);
   const statRows = useMemo(
     () =>
       stats
@@ -65,6 +69,46 @@ export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetr
     <ArcadeScaffold>
       <ArcadeBackButton onClick={onBack} />
       <NeonTitle text={stats?.displayName ?? "Profile"} />
+
+      <div className="card" style={{ display: "grid", gap: 10 }}>
+        <div className="text-dim">Change Username</div>
+        <input
+          value={nameDraft}
+          onChange={(event) => setNameDraft(event.target.value)}
+          placeholder={stats?.displayName ?? "Enter username"}
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            background: "var(--surface-variant)",
+            border: "1px solid rgba(0,245,255,.5)",
+            color: "var(--white)",
+            borderRadius: 6,
+            padding: "10px 12px",
+            fontFamily: "var(--font-pixel)",
+            fontSize: "var(--text-label)"
+          }}
+        />
+        <button
+          type="button"
+          className="arcade-button"
+          disabled={savingName || !nameDraft.trim()}
+          onClick={async () => {
+            try {
+              setSavingName(true);
+              setNameError(null);
+              await onUpdateDisplayName(nameDraft.trim());
+              setNameDraft("");
+            } catch (err) {
+              setNameError(err instanceof Error ? err.message : "Could not update username.");
+            } finally {
+              setSavingName(false);
+            }
+          }}
+        >
+          {savingName ? "Saving..." : "Save Username"}
+        </button>
+        {nameError ? <div className="text-dim" style={{ color: "var(--red)" }}>{nameError}</div> : null}
+      </div>
 
       {error ? (
         <div className="card warning" style={{ display: "grid", gap: 10 }}>

@@ -34,7 +34,9 @@ export const ErrorMessages: Record<string, string> = {
   LATE_SUBMISSION: "Round submission window has ended.",
   DUPLICATE_SUBMISSION: "Letters round already has a submission from this player.",
   RATE_LIMITED: "Too many guesses. Wait briefly before trying again.",
-  ALREADY_SOLVED: "Conundrum round has already been solved."
+  ALREADY_SOLVED: "Conundrum round has already been solved.",
+  DISPLAY_NAME_TAKEN: "That display name is already in use.",
+  INVALID_DISPLAY_NAME: "Display name must be 3-20 characters and use letters, numbers, spaces, or underscores."
 };
 
 export const toActionError = (action: string, code: string): ActionErrorPayload => ({

@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -62,6 +65,25 @@ fun ProfileScreen(
         }
 
         val stats = state.stats
+        val nameDraftState = remember(stats?.displayName) { mutableStateOf("") }
+        OutlinedTextField(
+            value = nameDraftState.value,
+            onValueChange = { nameDraftState.value = it },
+            label = { Text("Change Username") },
+            placeholder = { Text(stats?.displayName ?: "Enter username") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        ArcadeButton(
+            text = if (state.isSavingDisplayName) "SAVING..." else "SAVE USERNAME",
+            onClick = { viewModel.updateDisplayName(nameDraftState.value.trim()) },
+            enabled = !state.isSavingDisplayName && nameDraftState.value.trim().isNotEmpty(),
+            modifier = Modifier.fillMaxWidth()
+        )
+        val displayNameUpdateError = state.displayNameUpdateError
+        if (!displayNameUpdateError.isNullOrBlank()) {
+            Text(displayNameUpdateError, style = MaterialTheme.typography.bodySmall, color = com.bhan796.anagramarena.ui.theme.ColorRed)
+        }
+
         if (stats != null) {
             StatRow("Matches Played", stats.matchesPlayed.toString())
             NeonDivider()

@@ -14,7 +14,7 @@ export const createSocketServer = (
   httpServer: HttpServer,
   matchHistoryStore: MatchHistoryStore,
   presenceStore: PresenceStore
-): Server => {
+): { io: Server; matchService: MatchService } => {
   const env = loadEnv();
   const isAllowedOrigin = createOriginChecker(env.CLIENT_ORIGIN);
 
@@ -199,5 +199,5 @@ export const createSocketServer = (
     });
   });
 
-  return io;
+  return { io, matchService: service };
 };

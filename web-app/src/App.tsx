@@ -7,6 +7,8 @@ import { MatchmakingScreen } from "./screens/MatchmakingScreen";
 import { OnlineMatchScreen } from "./screens/OnlineMatchScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
+import { HowToPlayScreen } from "./screens/HowToPlayScreen";
+import { MatchFoundScreen } from "./screens/MatchFoundScreen";
 import { loadConundrums, loadDictionary } from "./logic/loaders";
 import { useOnlineMatch } from "./hooks/useOnlineMatch";
 
@@ -18,9 +20,11 @@ type Route =
   | "practice_letters"
   | "practice_conundrum"
   | "online_matchmaking"
+  | "online_match_found"
   | "online_match"
   | "profile"
-  | "settings";
+  | "settings"
+  | "how_to_play";
 
 interface SettingsState {
   timerEnabled: boolean;
@@ -168,6 +172,29 @@ export const App = () => {
     [online.state.playerId]
   );
 
+  const updateDisplayName = useMemo(
+    () => async (displayName: string) => {
+      if (!online.state.playerId) {
+        throw new Error("Play online once to create a player profile.");
+      }
+
+      const response = await fetch(`${apiBaseUrl}/api/profiles/${online.state.playerId}/display-name`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName })
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message ?? "Unable to update username.");
+      }
+
+      online.actions.refreshSession();
+      await loadProfile();
+    },
+    [online.actions, online.state.playerId, loadProfile]
+  );
+
   useEffect(() => {
     let cancelled = false;
     const pullPresence = async () => {
@@ -226,9 +253,14 @@ export const App = () => {
         onPracticeMode={() => setRoute("practice")}
         onProfile={() => setRoute("profile")}
         onSettings={() => setRoute("settings")}
+        onHowToPlay={() => setRoute("how_to_play")}
         playersOnline={playersOnline}
       />
     );
+  }
+
+  if (route === "how_to_play") {
+    return <HowToPlayScreen onBack={() => setRoute("home")} />;
   }
 
   if (route === "practice") {
@@ -274,9 +306,13 @@ export const App = () => {
         onJoinQueue={online.actions.startQueue}
         onCancelQueue={online.actions.cancelQueue}
         onRetryConnection={online.actions.retryConnect}
-        onMatchReady={() => setRoute("online_match")}
+        onMatchReady={() => setRoute("online_match_found")}
       />
     );
+  }
+
+  if (route === "online_match_found") {
+    return <MatchFoundScreen state={online.state} onDone={() => setRoute("online_match")} />;
   }
 
   if (route === "online_match") {
@@ -308,6 +344,7 @@ export const App = () => {
         history={history}
         onBack={() => setRoute("home")}
         onRetry={() => void loadProfile()}
+        onUpdateDisplayName={updateDisplayName}
       />
     );
   }

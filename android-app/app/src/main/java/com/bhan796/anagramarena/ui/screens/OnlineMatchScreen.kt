@@ -123,7 +123,7 @@ fun OnlineMatchScreen(
         NeonTitle(match.phase.name.replace('_', ' '))
         TimerBar(
             secondsRemaining = state.secondsRemaining,
-            totalSeconds = if (match.phase == MatchPhase.AWAITING_LETTERS_PICK) 10 else 30
+            totalSeconds = if (match.phase == MatchPhase.AWAITING_LETTERS_PICK) 20 else 30
         )
         Text(state.statusMessage, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
 
@@ -295,7 +295,7 @@ fun OnlineMatchScreen(
                             .padding(sdp(12.dp))
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(sdp(8.dp))) {
-                            Text("Round ${result.roundNumber} • ${result.type.name.lowercase()}", style = MaterialTheme.typography.headlineSmall)
+                            Text("Round ${result.roundNumber} - ${result.type.name.lowercase()}", style = MaterialTheme.typography.headlineSmall)
                             if (result.type == RoundType.LETTERS) {
                                 WordTiles(
                                     label = "Letters",

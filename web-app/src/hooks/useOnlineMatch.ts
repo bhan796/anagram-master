@@ -250,6 +250,15 @@ export const useOnlineMatch = () => {
     return () => window.clearInterval(timer);
   }, [clockOffsetMs]);
 
+  useEffect(() => {
+    if (!state.matchState || state.matchState.phase !== "letters_solving") return;
+    if (state.hasSubmittedWord) return;
+    if (state.secondsRemaining > 0) return;
+
+    socketRef.current?.emit(SocketEventNames.ROUND_SUBMIT_WORD, { word: state.wordInput ?? "" });
+    setState((previous) => ({ ...previous, hasSubmittedWord: true, localValidationMessage: null }));
+  }, [state.matchState, state.hasSubmittedWord, state.secondsRemaining, state.wordInput]);
+
   const clearError = useCallback(() => {
     setState((previous) => ({ ...previous, lastError: null, localValidationMessage: null }));
   }, []);
@@ -280,6 +289,14 @@ export const useOnlineMatch = () => {
   const retryConnect = useCallback(() => {
     socketRef.current?.connect();
   }, []);
+
+  const refreshSession = useCallback(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+    const identifyPayload: Record<string, string> = {};
+    if (state.playerId) identifyPayload.playerId = state.playerId;
+    socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
+  }, [state.playerId]);
 
   const pickVowel = useCallback(() => {
     socketRef.current?.emit(SocketEventNames.ROUND_PICK_LETTER, { kind: "vowel" });
@@ -354,6 +371,7 @@ export const useOnlineMatch = () => {
         startQueue,
         cancelQueue,
         retryConnect,
+        refreshSession,
         pickVowel,
         pickConsonant,
         setWordInput,
@@ -370,6 +388,7 @@ export const useOnlineMatch = () => {
       startQueue,
       cancelQueue,
       retryConnect,
+      refreshSession,
       pickVowel,
       pickConsonant,
       setWordInput,
