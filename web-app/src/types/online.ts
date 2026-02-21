@@ -1,12 +1,12 @@
 export type MatchPhase =
-  | "AWAITING_LETTERS_PICK"
-  | "LETTERS_SOLVING"
-  | "CONUNDRUM_SOLVING"
-  | "ROUND_RESULT"
-  | "FINISHED"
+  | "awaiting_letters_pick"
+  | "letters_solving"
+  | "conundrum_solving"
+  | "round_result"
+  | "finished"
   | "UNKNOWN";
 
-export type RoundType = "LETTERS" | "CONUNDRUM" | "UNKNOWN";
+export type RoundType = "letters" | "conundrum" | "UNKNOWN";
 
 export interface SessionIdentifyPayload {
   playerId: string;

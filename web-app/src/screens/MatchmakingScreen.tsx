@@ -15,30 +15,31 @@ export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, o
   const [displayName, setDisplayName] = useState(state.displayName ?? "");
   const [searchStarted, setSearchStarted] = useState(false);
   const [dots, setDots] = useState(1);
+  const hasActiveMatch = Boolean(state.matchState && state.matchState.phase !== "finished");
 
   useEffect(() => {
-    if (!searchStarted || !state.isInMatchmaking || state.matchState) return;
+    if (!searchStarted || !state.isInMatchmaking || hasActiveMatch) return;
     const timer = window.setInterval(() => setDots((value) => (value % 3) + 1), 350);
     return () => window.clearInterval(timer);
-  }, [searchStarted, state.isInMatchmaking, state.matchState]);
+  }, [searchStarted, state.isInMatchmaking, hasActiveMatch]);
 
   useEffect(() => {
-    if (searchStarted && state.matchState) {
+    if (searchStarted && hasActiveMatch) {
       const timer = window.setTimeout(() => {
         onMatchReady();
         setSearchStarted(false);
       }, 900);
       return () => window.clearTimeout(timer);
     }
-  }, [searchStarted, state.matchState, onMatchReady]);
+  }, [searchStarted, hasActiveMatch, onMatchReady]);
 
-  const hasExistingMatch = Boolean(state.matchState);
+  const hasExistingMatch = hasActiveMatch;
   const buttonText = useMemo(() => {
-    if (searchStarted && state.matchState) return "Match Found!";
+    if (searchStarted && hasActiveMatch) return "Match Found!";
     if (searchStarted && state.isInMatchmaking) return `Searching${".".repeat(dots)}`;
     if (hasExistingMatch) return "Already in Match";
     return "Find Opponent";
-  }, [searchStarted, state.matchState, state.isInMatchmaking, dots, hasExistingMatch]);
+  }, [searchStarted, hasActiveMatch, state.isInMatchmaking, dots, hasExistingMatch]);
 
   const primaryEnabled =
     !searchStarted &&
@@ -71,7 +72,7 @@ export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, o
         disabled={!primaryEnabled}
       />
 
-      {searchStarted && state.isInMatchmaking && !state.matchState ? (
+      {searchStarted && state.isInMatchmaking && !hasActiveMatch ? (
         <ArcadeButton
           text="Cancel Search"
           onClick={() => {

@@ -75,7 +75,7 @@ export const OnlineMatchScreen = ({
   onBackToHome
 }: OnlineMatchScreenProps) => {
   const match = state.matchState;
-  const isFinished = match?.phase === "FINISHED";
+  const isFinished = match?.phase === "finished";
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export const OnlineMatchScreen = ({
   }, [isFinished]);
 
   const winnerLabel = useMemo(() => {
-    if (!match || match.phase !== "FINISHED") return "";
+    if (!match || match.phase !== "finished") return "";
     if (!match.winnerPlayerId) return "Draw";
     return match.winnerPlayerId === state.playerId ? "You Win" : "You Lose";
   }, [match, state.playerId]);
@@ -112,7 +112,7 @@ export const OnlineMatchScreen = ({
         <>
           <NeonTitle text={`Round ${match.roundNumber}`} />
           <NeonTitle text={phaseLabel(match.phase)} />
-          <TimerBar secondsRemaining={state.secondsRemaining} totalSeconds={match.phase === "AWAITING_LETTERS_PICK" ? 10 : 30} />
+          <TimerBar secondsRemaining={state.secondsRemaining} totalSeconds={match.phase === "awaiting_letters_pick" ? 10 : 30} />
           <div className="text-dim">{state.statusMessage}</div>
 
           {state.myPlayer && state.opponentPlayer ? (
@@ -135,7 +135,7 @@ export const OnlineMatchScreen = ({
             </div>
           ) : null}
 
-          {match.phase === "AWAITING_LETTERS_PICK" ? (
+          {match.phase === "awaiting_letters_pick" ? (
             <>
               <div className="headline">{state.isMyTurnToPick ? "Your turn to pick" : "Opponent is picking"}</div>
               <LetterSlots letters={match.letters} />
@@ -150,7 +150,7 @@ export const OnlineMatchScreen = ({
             </>
           ) : null}
 
-          {match.phase === "LETTERS_SOLVING" ? (
+          {match.phase === "letters_solving" ? (
             <>
               <div className="headline">Build your longest valid word</div>
               <LetterSlots letters={match.letters} />
@@ -164,7 +164,7 @@ export const OnlineMatchScreen = ({
             </>
           ) : null}
 
-          {match.phase === "CONUNDRUM_SOLVING" ? (
+          {match.phase === "conundrum_solving" ? (
             <>
               <NeonTitle text="Conundrum" />
               <div className="card" style={{ textAlign: "center", borderColor: "rgba(0,245,255,.45)" }}>
@@ -190,12 +190,12 @@ export const OnlineMatchScreen = ({
             </>
           ) : null}
 
-          {match.phase === "ROUND_RESULT" ? (
+          {match.phase === "round_result" ? (
             <>
               <NeonTitle text="Round Result" />
               {match.roundResults.at(-1) ? (
                 <div className="card" style={{ display: "grid", gap: 12 }}>
-                  {match.roundResults.at(-1)?.type === "LETTERS" ? (
+                  {match.roundResults.at(-1)?.type === "letters" ? (
                     <>
                       <WordTiles label="Letters" word={match.roundResults.at(-1)?.letters?.join("") ?? ""} accent="var(--gold)" />
                       {match.players.map((player) => {
@@ -240,7 +240,7 @@ export const OnlineMatchScreen = ({
             </>
           ) : null}
 
-          {match.phase === "FINISHED" ? (
+          {match.phase === "finished" ? (
             <>
               <NeonTitle text="Final Result" />
               <div className="headline">{winnerLabel}</div>
@@ -250,14 +250,14 @@ export const OnlineMatchScreen = ({
                     <div className="headline" style={{ fontSize: "clamp(12px,1.5vw,14px)" }}>
                       Round {round.roundNumber} {round.type.toLowerCase()}
                     </div>
-                    {round.type === "LETTERS" ? (
+                    {round.type === "letters" ? (
                       <WordTiles label="Letters" word={round.letters?.join("") ?? ""} accent="var(--gold)" />
                     ) : (
                       <WordTiles label="Answer" word={round.answer ?? ""} accent="var(--gold)" />
                     )}
                     {match.players.map((player) => {
                       const word =
-                        round.type === "LETTERS"
+                        round.type === "letters"
                           ? (round.submissions?.[player.playerId]?.word ?? "-")
                           : round.firstCorrectPlayerId === player.playerId
                             ? (round.answer ?? "-")

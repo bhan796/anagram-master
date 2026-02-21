@@ -16,6 +16,9 @@ const MATCH_ID_KEY = "anagram.matchId";
 
 const connectionUrl = (import.meta.env.VITE_SERVER_URL as string | undefined)?.trim() || "http://localhost:4000";
 
+const isActiveMatch = (match: MatchStatePayload | null | undefined): boolean =>
+  Boolean(match && match.phase !== "finished");
+
 const computeRemainingSeconds = (match: MatchStatePayload | null, offsetMs: number): number => {
   if (!match?.phaseEndsAtMs) return 0;
   const now = Date.now() + offsetMs;
@@ -56,15 +59,15 @@ const reduceOnlineState = (
     if (!updatedMatch) return previous.statusMessage;
 
     switch (updatedMatch.phase) {
-      case "AWAITING_LETTERS_PICK":
+      case "awaiting_letters_pick":
         return "Letter picking in progress";
-      case "LETTERS_SOLVING":
+      case "letters_solving":
         return "Submit your best word before time expires";
-      case "CONUNDRUM_SOLVING":
+      case "conundrum_solving":
         return "Solve the conundrum";
-      case "ROUND_RESULT":
+      case "round_result":
         return "Round result";
-      case "FINISHED":
+      case "finished":
         return "Match finished";
       default:
         return "";
@@ -84,7 +87,7 @@ const reduceOnlineState = (
     matchId: updatedMatch?.matchId ?? previous.matchId,
     myPlayer: me,
     opponentPlayer: opponent,
-    isMyTurnToPick: updatedMatch?.phase === "AWAITING_LETTERS_PICK" && updatedMatch.pickerPlayerId === resolvedPlayerId,
+    isMyTurnToPick: updatedMatch?.phase === "awaiting_letters_pick" && updatedMatch.pickerPlayerId === resolvedPlayerId,
     secondsRemaining: computeRemainingSeconds(updatedMatch, clockOffsetMs),
     statusMessage,
     lastError: updatedMatch ? null : actionError ?? previous.lastError
@@ -161,7 +164,7 @@ export const useOnlineMatch = () => {
     socket.on(SocketEventNames.MATCH_STATE, (payload: MatchStatePayload) => {
       const offset = payload.serverNowMs - Date.now();
       setClockOffsetMs((previous) => Math.round(previous * 0.7 + offset * 0.3));
-      if (payload.phase === "FINISHED") {
+      if (payload.phase === "finished") {
         localStorage.removeItem(MATCH_ID_KEY);
       } else {
         localStorage.setItem(MATCH_ID_KEY, payload.matchId);
@@ -213,7 +216,7 @@ export const useOnlineMatch = () => {
   const startQueue = useCallback((displayName?: string) => {
     const socket = socketRef.current;
     if (!socket) return;
-    if (state.matchState) {
+    if (isActiveMatch(state.matchState)) {
       setState((previous) => ({ ...previous, localValidationMessage: "You are already in an active match." }));
       return;
     }
@@ -264,6 +267,21 @@ export const useOnlineMatch = () => {
 
   const forfeitMatch = useCallback(() => {
     socketRef.current?.emit(SocketEventNames.MATCH_FORFEIT);
+    localStorage.removeItem(MATCH_ID_KEY);
+    setState((previous) => ({
+      ...previous,
+      matchId: null,
+      matchState: null,
+      myPlayer: null,
+      opponentPlayer: null,
+      isMyTurnToPick: false,
+      secondsRemaining: 0,
+      hasSubmittedWord: false,
+      wordInput: "",
+      conundrumGuessInput: "",
+      localValidationMessage: null,
+      lastError: null
+    }));
   }, []);
 
   const value = useMemo(
