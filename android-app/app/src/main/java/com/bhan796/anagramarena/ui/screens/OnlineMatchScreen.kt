@@ -409,12 +409,6 @@ fun OnlineMatchScreen(
                         }
                     }
                 }
-
-                ArcadeButton(
-                    text = "BACK HOME",
-                    onClick = onBackToHome,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
 
             MatchPhase.UNKNOWN -> {
