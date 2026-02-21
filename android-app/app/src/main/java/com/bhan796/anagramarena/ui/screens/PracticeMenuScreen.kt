@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.NeonDivider
@@ -25,10 +26,12 @@ fun PracticeMenuScreen(
     contentPadding: PaddingValues,
     timerEnabled: Boolean,
     onTimerToggle: (Boolean) -> Unit,
+    onBack: () -> Unit,
     onPracticeLetters: () -> Unit,
     onPracticeConundrum: () -> Unit
 ) {
     ArcadeScaffold(contentPadding = contentPadding) {
+        ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
         NeonTitle("PRACTICE")
 
         ArcadeButton(

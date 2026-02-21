@@ -10,24 +10,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bhan796.anagram.core.model.LetterKind
 import com.bhan796.anagram.core.model.WordValidationFailure
 import com.bhan796.anagram.core.validation.DictionaryProvider
+import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.LetterTile
 import com.bhan796.anagramarena.ui.components.NeonTitle
+import com.bhan796.anagramarena.ui.components.TapLetterComposer
 import com.bhan796.anagramarena.ui.components.TimerBar
 import com.bhan796.anagramarena.ui.theme.ColorCyan
 import com.bhan796.anagramarena.ui.theme.ColorDimText
@@ -40,7 +39,8 @@ fun LettersPracticeScreen(
     contentPadding: PaddingValues,
     timerEnabled: Boolean,
     dictionaryProvider: DictionaryProvider,
-    dictionaryLoaded: Boolean
+    dictionaryLoaded: Boolean,
+    onBack: () -> Unit
 ) {
     val vm: LettersPracticeViewModel = viewModel(
         key = "letters-$timerEnabled",
@@ -50,6 +50,8 @@ fun LettersPracticeScreen(
     val allowedKinds = vm.allowedKinds
 
     ArcadeScaffold(contentPadding = contentPadding) {
+        ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
+
         if (!dictionaryLoaded) {
             Text(
                 "Dictionary data failed to load. Validation may mark all words invalid.",
@@ -91,11 +93,11 @@ fun LettersPracticeScreen(
                 TimerBar(secondsRemaining = state.secondsRemaining, totalSeconds = 30)
                 LetterSlots(letters = state.letters)
 
-                OutlinedTextField(
+                TapLetterComposer(
+                    letters = state.letters,
                     value = state.submittedWord,
                     onValueChange = vm::updateSubmittedWord,
-                    label = { Text("Enter your word") },
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
+                    enabled = state.canSubmit,
                     modifier = Modifier.fillMaxWidth()
                 )
 

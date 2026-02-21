@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import com.bhan796.anagramarena.network.SocketConnectionState
 import com.bhan796.anagramarena.online.OnlineUiState
+import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.NeonTitle
@@ -39,6 +40,7 @@ import com.bhan796.anagramarena.ui.theme.ColorDimText
 fun MatchmakingScreen(
     contentPadding: PaddingValues,
     onlineState: OnlineUiState,
+    onBack: () -> Unit,
     onJoinQueue: (String?) -> Unit,
     onCancelQueue: () -> Unit,
     onRetryConnection: () -> Unit
@@ -46,6 +48,7 @@ fun MatchmakingScreen(
     var displayName by remember { mutableStateOf(onlineState.displayName.orEmpty()) }
 
     ArcadeScaffold(contentPadding = contentPadding) {
+        ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
         NeonTitle("SEARCHING...")
 
         OutlinedTextField(

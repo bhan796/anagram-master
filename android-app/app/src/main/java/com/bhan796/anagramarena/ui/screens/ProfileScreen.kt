@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.NeonDivider
@@ -33,6 +34,7 @@ import com.bhan796.anagramarena.viewmodel.ProfileViewModel
 @Composable
 fun ProfileScreen(
     contentPadding: PaddingValues,
+    onBack: () -> Unit,
     viewModel: ProfileViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -42,6 +44,7 @@ fun ProfileScreen(
     }
 
     ArcadeScaffold(contentPadding = contentPadding) {
+        ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
         NeonTitle(state.stats?.displayName ?: "PLAYER")
 
         if (state.isLoading) {

@@ -10,25 +10,24 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bhan796.anagramarena.network.SocketConnectionState
 import com.bhan796.anagramarena.online.MatchPhase
 import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.online.RoundType
+import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.LetterTile
 import com.bhan796.anagramarena.ui.components.NeonTitle
 import com.bhan796.anagramarena.ui.components.ScoreBadge
+import com.bhan796.anagramarena.ui.components.TapLetterComposer
 import com.bhan796.anagramarena.ui.components.TimerBar
 import com.bhan796.anagramarena.ui.theme.ColorCyan
 import com.bhan796.anagramarena.ui.theme.ColorDimText
@@ -47,11 +46,14 @@ fun OnlineMatchScreen(
     onConundrumGuessChange: (String) -> Unit,
     onSubmitConundrumGuess: () -> Unit,
     onDismissError: () -> Unit,
+    onBack: () -> Unit,
     onBackToHome: () -> Unit
 ) {
     val match = state.matchState
 
     ArcadeScaffold(contentPadding = contentPadding) {
+        ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
+
         if (match == null) {
             NeonTitle("MATCH")
             Text("Waiting for match state...", style = MaterialTheme.typography.bodyMedium)
@@ -133,11 +135,10 @@ fun OnlineMatchScreen(
             MatchPhase.LETTERS_SOLVING -> {
                 Text("Build your longest valid word", style = MaterialTheme.typography.headlineSmall)
                 LetterSlots(match.letters)
-                OutlinedTextField(
+                TapLetterComposer(
+                    letters = match.letters.mapNotNull { it.firstOrNull() },
                     value = state.wordInput,
                     onValueChange = onWordChange,
-                    label = { Text("Word") },
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !state.hasSubmittedWord
                 )
@@ -174,11 +175,11 @@ fun OnlineMatchScreen(
                         letterSpacing = 8.sp
                     )
                 }
-                OutlinedTextField(
+                TapLetterComposer(
+                    letters = match.scrambled?.toList().orEmpty(),
                     value = state.conundrumGuessInput,
                     onValueChange = onConundrumGuessChange,
-                    label = { Text("Guess") },
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
+                    enabled = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 ArcadeButton(

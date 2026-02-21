@@ -87,6 +87,19 @@ fun ArcadeButton(
     }
 }
 
+@Composable
+fun ArcadeBackButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ArcadeButton(
+        text = "<  BACK",
+        onClick = onClick,
+        accentColor = ColorGold,
+        modifier = modifier
+    )
+}
+
 // -- Letter tile (Tetris-block inspired) -------------------------------------
 @Composable
 fun LetterTile(

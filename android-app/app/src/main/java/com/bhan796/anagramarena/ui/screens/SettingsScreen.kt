@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.NeonDivider
 import com.bhan796.anagramarena.ui.components.NeonTitle
@@ -24,11 +25,13 @@ import com.bhan796.anagramarena.viewmodel.PracticeSettingsState
 fun SettingsScreen(
     contentPadding: PaddingValues,
     state: PracticeSettingsState,
+    onBack: () -> Unit,
     onTimerToggle: (Boolean) -> Unit,
     onSoundToggle: (Boolean) -> Unit,
     onVibrationToggle: (Boolean) -> Unit
 ) {
     ArcadeScaffold(contentPadding = contentPadding) {
+        ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
         NeonTitle("SETTINGS")
 
         SettingToggle("Practice Timer", state.timerEnabled, onTimerToggle)

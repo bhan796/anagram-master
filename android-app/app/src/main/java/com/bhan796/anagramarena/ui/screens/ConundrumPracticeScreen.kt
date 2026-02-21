@@ -9,22 +9,21 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bhan796.anagramarena.data.ConundrumProvider
+import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.NeonTitle
+import com.bhan796.anagramarena.ui.components.TapLetterComposer
 import com.bhan796.anagramarena.ui.components.TimerBar
 import com.bhan796.anagramarena.ui.theme.ColorCyan
 import com.bhan796.anagramarena.ui.theme.ColorGold
@@ -36,7 +35,8 @@ import com.bhan796.anagramarena.viewmodel.ConundrumPracticeViewModel
 fun ConundrumPracticeScreen(
     contentPadding: PaddingValues,
     timerEnabled: Boolean,
-    provider: ConundrumProvider
+    provider: ConundrumProvider,
+    onBack: () -> Unit
 ) {
     val vm: ConundrumPracticeViewModel = viewModel(
         key = "conundrum-$timerEnabled",
@@ -45,6 +45,7 @@ fun ConundrumPracticeScreen(
     val state by vm.state.collectAsState()
 
     ArcadeScaffold(contentPadding = contentPadding) {
+        ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
         when (state.phase) {
             ConundrumPracticePhase.READY -> {
                 NeonTitle("CONUNDRUM")
@@ -71,11 +72,11 @@ fun ConundrumPracticeScreen(
                     )
                 }
 
-                OutlinedTextField(
+                TapLetterComposer(
+                    letters = state.conundrum?.scrambled?.toList().orEmpty(),
                     value = state.guess,
                     onValueChange = vm::updateGuess,
-                    label = { Text("Your guess") },
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
+                    enabled = state.canSubmit,
                     modifier = Modifier.fillMaxWidth()
                 )
 

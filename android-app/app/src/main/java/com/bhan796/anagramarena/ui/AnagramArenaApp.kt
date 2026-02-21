@@ -65,6 +65,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                     contentPadding = innerPadding,
                     timerEnabled = settings.timerEnabled,
                     onTimerToggle = settingsViewModel::setTimerEnabled,
+                    onBack = { navController.popBackStack() },
                     onPracticeLetters = { navController.navigate(Routes.LETTERS) },
                     onPracticeConundrum = { navController.navigate(Routes.CONUNDRUM) }
                 )
@@ -75,7 +76,8 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                     contentPadding = innerPadding,
                     timerEnabled = settings.timerEnabled,
                     dictionaryProvider = dependencies.dictionaryProvider,
-                    dictionaryLoaded = dependencies.dictionaryProvider.isLoaded()
+                    dictionaryLoaded = dependencies.dictionaryProvider.isLoaded(),
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -83,7 +85,8 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                 ConundrumPracticeScreen(
                     contentPadding = innerPadding,
                     timerEnabled = settings.timerEnabled,
-                    provider = dependencies.conundrumProvider
+                    provider = dependencies.conundrumProvider,
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -97,6 +100,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                 MatchmakingScreen(
                     contentPadding = innerPadding,
                     onlineState = onlineState,
+                    onBack = { navController.popBackStack() },
                     onJoinQueue = onlineMatchViewModel::startQueue,
                     onCancelQueue = onlineMatchViewModel::cancelQueue,
                     onRetryConnection = onlineMatchViewModel::retryConnect
@@ -114,6 +118,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                     onConundrumGuessChange = onlineMatchViewModel::updateConundrumGuessInput,
                     onSubmitConundrumGuess = onlineMatchViewModel::submitConundrumGuess,
                     onDismissError = onlineMatchViewModel::clearError,
+                    onBack = { navController.popBackStack() },
                     onBackToHome = {
                         navController.popBackStack(Routes.HOME, false)
                     }
@@ -123,6 +128,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
             composable(Routes.PROFILE) {
                 ProfileScreen(
                     contentPadding = innerPadding,
+                    onBack = { navController.popBackStack() },
                     viewModel = profileViewModel
                 )
             }
@@ -131,6 +137,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                 SettingsScreen(
                     contentPadding = innerPadding,
                     state = settings,
+                    onBack = { navController.popBackStack() },
                     onTimerToggle = settingsViewModel::setTimerEnabled,
                     onSoundToggle = settingsViewModel::setSoundEnabled,
                     onVibrationToggle = settingsViewModel::setVibrationEnabled
