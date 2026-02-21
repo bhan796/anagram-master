@@ -4,8 +4,12 @@ import android.content.Context
 import com.bhan796.anagramarena.BuildConfig
 import com.bhan796.anagram.core.model.Conundrum
 import com.bhan796.anagram.core.validation.DictionaryProvider
+import com.bhan796.anagramarena.network.ProfileApiService
 import com.bhan796.anagramarena.network.SocketIoMultiplayerClient
+import com.bhan796.anagramarena.repository.AndroidLogTelemetryLogger
 import com.bhan796.anagramarena.repository.OnlineMatchRepository
+import com.bhan796.anagramarena.repository.ProfileRepository
+import com.bhan796.anagramarena.storage.AppSettingsStore
 import com.bhan796.anagramarena.storage.SessionStore
 import java.io.BufferedReader
 import kotlin.random.Random
@@ -61,13 +65,19 @@ private data class ConundrumDto(
 data class AppDependencies(
     val dictionaryProvider: AssetDictionaryProvider,
     val conundrumProvider: ConundrumProvider,
-    val onlineMatchRepository: OnlineMatchRepository
+    val onlineMatchRepository: OnlineMatchRepository,
+    val profileRepository: ProfileRepository,
+    val sessionStore: SessionStore,
+    val settingsStore: AppSettingsStore
 ) {
     companion object {
         fun from(context: Context): AppDependencies {
             val appContext = context.applicationContext
             val sessionStore = SessionStore(appContext)
+            val settingsStore = AppSettingsStore(appContext)
             val socketClient = SocketIoMultiplayerClient()
+            val telemetryLogger = AndroidLogTelemetryLogger()
+            val profileApiService = ProfileApiService(BuildConfig.BACKEND_BASE_URL)
 
             return AppDependencies(
                 dictionaryProvider = AssetDictionaryProvider(appContext),
@@ -75,8 +85,12 @@ data class AppDependencies(
                 onlineMatchRepository = OnlineMatchRepository(
                     socketClient = socketClient,
                     sessionStore = sessionStore,
-                    backendUrl = BuildConfig.BACKEND_BASE_URL
-                )
+                    backendUrl = BuildConfig.BACKEND_BASE_URL,
+                    telemetry = telemetryLogger
+                ),
+                profileRepository = ProfileRepository(profileApiService),
+                sessionStore = sessionStore,
+                settingsStore = settingsStore
             )
         }
     }

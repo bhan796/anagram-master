@@ -19,7 +19,8 @@ data class OnlineUiState(
     val conundrumGuessInput: String = "",
     val hasSubmittedWord: Boolean = false,
     val lastError: ActionErrorPayload? = null,
-    val statusMessage: String = ""
+    val statusMessage: String = "",
+    val localValidationMessage: String? = null
 )
 
 object OnlineMatchReducer {
@@ -41,10 +42,13 @@ object OnlineMatchReducer {
         val inQueue = (matchmaking?.state ?: previous.queueState) == "searching"
 
         val message = when {
+            connection is SocketConnectionState.Reconnecting -> "Reconnecting..."
+            connection is SocketConnectionState.Disconnected && updatedMatch != null -> "Disconnected. Trying to recover match..."
+            connection is SocketConnectionState.Failed -> "Connection failed. Retry to continue."
             actionError != null -> actionError.message
             updatedMatch == null && inQueue -> "Finding opponent..."
             updatedMatch?.phase == MatchPhase.AWAITING_LETTERS_PICK -> "Letter picking in progress"
-            updatedMatch?.phase == MatchPhase.LETTERS_SOLVING -> "Submit your best word"
+            updatedMatch?.phase == MatchPhase.LETTERS_SOLVING -> "Submit your best word before time expires"
             updatedMatch?.phase == MatchPhase.CONUNDRUM_SOLVING -> "Solve the conundrum"
             updatedMatch?.phase == MatchPhase.ROUND_RESULT -> "Round result"
             updatedMatch?.phase == MatchPhase.FINISHED -> "Match finished"

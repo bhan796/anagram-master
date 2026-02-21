@@ -1,72 +1,61 @@
-# Anagram Master (iOS + Backend)
+# Anagram Master
 
-Production-oriented MVP scaffold for a real-time head-to-head anagram game.
+Production-oriented MVP for a real-time head-to-head anagram game.
 
-## Repository Layout
+## Repo Layout
 
-- `ios-app/` SwiftUI iOS client scaffold (iOS-first)
-- `android-app/` Kotlin + Compose Android client scaffold
-- `server/` Node.js + TypeScript + Socket.IO backend scaffold
-- `shared/` shared docs/specs/data placeholders
-- `docs/` architecture, API, setup, and rollout docs
+- `android-app/` Kotlin + Compose client (offline + online MVP)
+- `ios-app/` SwiftUI client scaffold (offline practice complete)
+- `server/` authoritative Node.js + TypeScript backend
+- `shared/` shared datasets/specs
+- `docs/` architecture, API, setup, deployment, testing
 
-## Current Status
+## Current Phase Status
 
-- Phase 0 complete: bootstrap, structure, tooling, and docs skeleton
-- Phase 1 complete: shared core game logic + offline iOS practice mode
-- Phase A0+A1 complete: Android scaffold + offline practice mode parity
-- Phase A2 complete: real-time backend authoritative multiplayer foundation (Android-first docs)
-- Phase A3 complete: Android realtime multiplayer integration (queue, live sync, reconnect/resume)
+- Phase 0/1 complete: core game logic + offline practice
+- Phase A2 complete: backend realtime foundation
+- Phase A3 complete: Android online multiplayer integration
+- Phase A4 complete: Android polish + stats/history API + deployment/readiness docs
 
-## Technology Decisions (MVP)
-
-- iOS client: SwiftUI + MVVM style separation
-- Backend: Node.js + TypeScript + Socket.IO
-- Data stores (target): Postgres + Redis
-- iOS minimum deployment target: **iOS 17.0**
-
-## Quick Start
+## Fresh Machine Quick Start
 
 ### Backend
 
-1. Install Node.js 20+ and npm 10+
-2. Install dependencies:
-   - `npm install`
-3. Copy env file:
-   - `Copy-Item server/.env.example server/.env`
-4. Start dev server:
-   - `npm run server:dev`
+1. Install Node.js 20+
+2. `npm install`
+3. `Copy-Item server/.env.example server/.env`
+4. `npm run server:dev`
+5. Verify `http://localhost:4000/api/health`
 
-### iOS App (on macOS)
+### Android
 
-This workspace includes an XcodeGen spec to create the Xcode project.
+1. Install Android Studio + SDK 35 + Build Tools 34
+2. Open `android-app`
+3. Run tests:
+   - `cd android-app`
+   - `gradlew.bat :app:testDebugUnitTest :core:test`
+4. Build debug APK:
+   - `gradlew.bat :app:assembleDebug`
 
-1. Install Xcode 15+
-2. Install XcodeGen (`brew install xcodegen`)
-3. From `ios-app/AnagramArena`, run:
-   - `xcodegen generate`
-4. Open `AnagramArena.xcodeproj` and run on an iPhone simulator
+### Android Backend Endpoint
 
-### Android App
+- Default: `https://anagram-server-production.up.railway.app`
+- Override per build:
+  - `gradlew.bat :app:assembleDebug -PbackendBaseUrl=http://10.0.2.2:4000`
 
-1. Open `android-app` in Android Studio
-2. Allow Gradle sync to complete
-3. Install required SDK components if prompted
-4. Run `app` on emulator/device
+## Key Docs
 
-## Commands
+- Socket contract: `docs/api/websocket-contract.md`
+- Android integration notes: `docs/api/android-integration.md`
+- Deployment guide: `docs/deployment-backend-android.md`
+- Balancing guide: `docs/balancing-config.md`
+- Manual setup checklist: `docs/manual-setup.md`
+- QA checklist: `docs/testing/android-qa-checklist.md`
+- Release checklist: `docs/testing/android-release-checklist.md`
 
-- `npm run server:dev`
-- `npm run server:build`
-- `npm run server:test`
-- `npm run server:lint`
-- `npm run server:format`
-- `cd android-app && ./gradlew :core:test`
-- `cd android-app && ./gradlew :app:assembleDebug`
+## Known Limitations / Next Improvements
 
-## Notes
-
-- Practice mode works fully offline with bundled dictionary/conundrum data.
-- Android and iOS both support offline practice mode in current state.
-- Multiplayer backend now runs authoritative queue/match/timer/score logic for local online testing.
-- See `docs/manual-setup.md` for external account/service setup steps.
+- Guest identity only (no production auth yet)
+- Match history persistence currently file-based MVP path
+- No private rooms/ranked mode yet
+- iOS online parity still pending

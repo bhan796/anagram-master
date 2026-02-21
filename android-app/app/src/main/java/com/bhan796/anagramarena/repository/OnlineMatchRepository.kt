@@ -15,7 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 class OnlineMatchRepository(
     private val socketClient: MultiplayerSocketClient,
     private val sessionStore: SessionStore,
-    private val backendUrl: String
+    private val backendUrl: String,
+    private val telemetry: TelemetryLogger = NoOpTelemetryLogger()
 ) {
     private val _connectionState = MutableStateFlow<SocketConnectionState>(SocketConnectionState.Disconnected)
     private val _session = MutableStateFlow<SessionIdentifyPayload?>(null)
@@ -34,6 +35,7 @@ class OnlineMatchRepository(
     init {
         socketClient.connectionStateListener = { state ->
             _connectionState.value = state
+            telemetry.log("socket_connection_state", mapOf("state" to state::class.simpleName.orEmpty()))
             if (state is SocketConnectionState.Connected) {
                 identify()
             }
@@ -41,6 +43,7 @@ class OnlineMatchRepository(
 
         socketClient.sessionIdentifyListener = { payload ->
             _session.value = payload
+            telemetry.log("session_identified", mapOf("playerId" to payload.playerId))
             sessionStore.playerId = payload.playerId
             sessionStore.displayName = payload.displayName
 
@@ -56,11 +59,13 @@ class OnlineMatchRepository(
 
         socketClient.matchFoundListener = { payload ->
             _matchFound.value = payload
+            telemetry.log("match_found", mapOf("matchId" to payload.matchId))
             sessionStore.matchId = payload.matchId
         }
 
         socketClient.matchStateListener = { payload ->
             _matchState.value = payload
+            telemetry.log("match_state", mapOf("phase" to payload.phase.name, "round" to payload.roundNumber.toString()))
             sessionStore.matchId = payload.matchId
 
             if (payload.phase.name == "FINISHED") {

@@ -61,4 +61,35 @@ class OnlineMatchReducerTest {
         assertTrue(reduced.isMyTurnToPick)
         assertEquals("Letter picking in progress", reduced.statusMessage)
     }
+
+    @Test
+    fun reduce_showsReconnectMessageWhenDisconnectedDuringMatch() {
+        val state = MatchStatePayload(
+            matchId = "m1",
+            phase = MatchPhase.LETTERS_SOLVING,
+            phaseEndsAtMs = 10_000,
+            serverNowMs = 9_000,
+            roundNumber = 1,
+            roundType = RoundType.LETTERS,
+            players = emptyList(),
+            pickerPlayerId = null,
+            letters = emptyList(),
+            scrambled = null,
+            roundResults = emptyList(),
+            winnerPlayerId = null
+        )
+
+        val reduced = OnlineMatchReducer.reduce(
+            previous = OnlineUiState(),
+            connection = SocketConnectionState.Disconnected,
+            session = SessionIdentifyPayload("p1", "Me", 9_000),
+            matchmaking = MatchmakingStatusPayload(0, "idle"),
+            matchState = state,
+            actionError = null,
+            nowMs = 9_000,
+            serverClockOffsetMs = 0
+        )
+
+        assertEquals("Disconnected. Trying to recover match...", reduced.statusMessage)
+    }
 }

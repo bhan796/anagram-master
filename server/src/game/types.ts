@@ -119,6 +119,7 @@ export interface MatchServiceOptions {
   logEvent: (message: string, details?: Record<string, unknown>) => void;
   onMatchUpdated: (matchId: string) => void;
   onQueueUpdated: (playerId: string, queueSize: number) => void;
+  onMatchFinished: (record: FinishedMatchRecord) => void;
 }
 
 export interface SubmitWordResult {
@@ -129,4 +130,17 @@ export interface SubmitWordResult {
 export interface SubmitGuessResult {
   ok: boolean;
   code?: string;
+}
+
+export interface FinishedMatchRecord {
+  matchId: string;
+  createdAtMs: number;
+  finishedAtMs: number;
+  players: Array<{
+    playerId: string;
+    displayName: string;
+    score: number;
+  }>;
+  winnerPlayerId: string | null;
+  roundResults: SerializedRoundResult[];
 }

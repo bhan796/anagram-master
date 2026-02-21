@@ -16,7 +16,10 @@ import com.bhan796.anagramarena.ui.screens.LettersPracticeScreen
 import com.bhan796.anagramarena.ui.screens.MatchmakingScreen
 import com.bhan796.anagramarena.ui.screens.OnlineMatchScreen
 import com.bhan796.anagramarena.ui.screens.PracticeMenuScreen
+import com.bhan796.anagramarena.ui.screens.ProfileScreen
+import com.bhan796.anagramarena.ui.screens.SettingsScreen
 import com.bhan796.anagramarena.viewmodel.OnlineMatchViewModel
+import com.bhan796.anagramarena.viewmodel.ProfileViewModel
 import com.bhan796.anagramarena.viewmodel.PracticeSettingsViewModel
 
 private object Routes {
@@ -26,14 +29,21 @@ private object Routes {
     const val CONUNDRUM = "practice_conundrum"
     const val ONLINE_MATCHMAKING = "online_matchmaking"
     const val ONLINE_MATCH = "online_match"
+    const val PROFILE = "profile"
+    const val SETTINGS = "settings"
 }
 
 @Composable
 fun AnagramArenaApp(dependencies: AppDependencies) {
     val navController = rememberNavController()
-    val settingsViewModel: PracticeSettingsViewModel = viewModel()
+    val settingsViewModel: PracticeSettingsViewModel = viewModel(
+        factory = PracticeSettingsViewModel.factory(dependencies.settingsStore)
+    )
     val onlineMatchViewModel: OnlineMatchViewModel = viewModel(
         factory = OnlineMatchViewModel.factory(dependencies.onlineMatchRepository)
+    )
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModel.factory(dependencies.profileRepository, dependencies.sessionStore)
     )
     val settings by settingsViewModel.state.collectAsState()
     val onlineState by onlineMatchViewModel.state.collectAsState()
@@ -44,7 +54,9 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                 HomeScreen(
                     contentPadding = innerPadding,
                     onPlayOnline = { navController.navigate(Routes.ONLINE_MATCHMAKING) },
-                    onPracticeMode = { navController.navigate(Routes.PRACTICE) }
+                    onPracticeMode = { navController.navigate(Routes.PRACTICE) },
+                    onProfile = { navController.navigate(Routes.PROFILE) },
+                    onSettings = { navController.navigate(Routes.SETTINGS) }
                 )
             }
 
@@ -105,6 +117,23 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                     onBackToHome = {
                         navController.popBackStack(Routes.HOME, false)
                     }
+                )
+            }
+
+            composable(Routes.PROFILE) {
+                ProfileScreen(
+                    contentPadding = innerPadding,
+                    viewModel = profileViewModel
+                )
+            }
+
+            composable(Routes.SETTINGS) {
+                SettingsScreen(
+                    contentPadding = innerPadding,
+                    state = settings,
+                    onTimerToggle = settingsViewModel::setTimerEnabled,
+                    onSoundToggle = settingsViewModel::setSoundEnabled,
+                    onVibrationToggle = settingsViewModel::setVibrationEnabled
                 )
             }
         }

@@ -6,6 +6,8 @@
 ## Current Backend Endpoints
 
 - `GET /api/health`
+- `GET /api/profiles/:playerId/stats`
+- `GET /api/profiles/:playerId/matches?limit=20`
 
 ## Transport
 

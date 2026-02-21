@@ -1,88 +1,63 @@
 # Android App
 
-Android Phase A0 + A1 + A3 implementation for Anagram Master.
+Android MVP client for Anagram Master.
 
-## Scope Implemented
+## Implemented Scope
 
-- Kotlin + Jetpack Compose app scaffold
-- Offline practice mode parity with iOS Phase 1
-- Core game rules in a testable Kotlin module (`:core`)
-- Online multiplayer MVP integration (Socket.IO)
-- Practice flows:
-  - Home
-  - Practice menu (timer toggle)
-  - Letters practice round (pick -> solve -> result)
-  - Conundrum practice round (solve -> result)
-- Online flows:
-  - Matchmaking (join/cancel)
-  - Live round sync (letters + conundrum)
-  - Server-authoritative timers and results
-  - Reconnect/resume using persisted guest session
+- Offline practice mode (letters + conundrum)
+- Online multiplayer flow (matchmaking -> live rounds -> results)
+- Reconnect/resume support for active matches
+- Profile/stats screen backed by backend stats/history endpoints
+- Settings screen with persisted toggles (timer, sound/vibration placeholders)
 
-## Module Layout
+## Modules
 
-- `android-app/app` Android application (Compose UI + ViewModels + repositories/network)
-- `android-app/core` Pure Kotlin game logic + unit tests
+- `app/` Compose UI, networking, repositories, view models
+- `core/` pure Kotlin game logic and tests
 
-## Package Name
+## Requirements
 
-- `com.bhan796.anagramarena`
+- Android Studio (latest stable)
+- Android SDK Platform 35
+- Android SDK Build Tools 34.0.0
+- JDK 17 (Gradle JDK)
 
-## SDK Targets
-
-- `minSdk = 26`
-- `targetSdk = 35`
-- `compileSdk = 35`
-
-## Data Files
-
-- Dictionary: `app/src/main/assets/data/dictionary_common_10k.txt` (default)
-- Small sample dictionary: `app/src/main/assets/data/dictionary_sample.txt`
-- Conundrums: `app/src/main/assets/data/conundrums.json`
-
-To swap larger datasets:
-
-1. Replace those files with larger versions.
-2. Keep dictionary format as one word per line.
-3. Keep conundrum JSON schema:
-   - `[ { "id": "...", "scrambled": "...", "answer": "..." } ]`
-
-## Backend URL Config
-
-Android online mode reads `BuildConfig.BACKEND_BASE_URL`.
-
-Default value:
-
-- `https://anagram-server-production.up.railway.app`
-
-Override at build time:
-
-- Windows: `gradlew.bat :app:assembleDebug -PbackendBaseUrl=https://your-host`
-- macOS/Linux: `./gradlew :app:assembleDebug -PbackendBaseUrl=https://your-host`
-
-## Run (Android Studio)
-
-1. Open Android Studio.
-2. Open the `android-app` folder as a project.
-3. Let Gradle sync finish.
-4. Ensure SDK Platform 35 and Build Tools 34 are installed.
-5. Run `app` on emulator or device.
-
-## CLI Commands
+## Build and Test
 
 From `android-app/`:
 
-- Run app/core tests:
-  - `./gradlew :app:testDebugUnitTest :core:test` (Windows: `gradlew.bat :app:testDebugUnitTest :core:test`)
-- Build debug APK:
-  - `./gradlew :app:assembleDebug` (Windows: `gradlew.bat :app:assembleDebug`)
+- Unit tests:
+  - `gradlew.bat :app:testDebugUnitTest :core:test`
+- Debug build:
+  - `gradlew.bat :app:assembleDebug`
 
-## Online Manual Verification
+## Backend URL Configuration
 
-See `docs/testing/android-online-manual.md` for two-emulator/device script.
+Default endpoint is baked into `BuildConfig.BACKEND_BASE_URL` via Gradle.
 
-## Notes
+- Default: `https://anagram-server-production.up.railway.app`
 
-- Core game logic remains UI-independent for parity and testability.
-- Multiplayer uses server authority for timers/scores/round transitions.
-- Production auth is intentionally out-of-scope for this MVP phase.
+Override for debug/local testing:
+
+- `gradlew.bat :app:assembleDebug -PbackendBaseUrl=http://10.0.2.2:4000`
+
+## Online Testing
+
+Manual multiplayer flow:
+
+- `docs/testing/android-online-manual.md`
+
+Comprehensive QA checklist:
+
+- `docs/testing/android-qa-checklist.md`
+
+Internal release checklist:
+
+- `docs/testing/android-release-checklist.md`
+
+## Known Limitations / Next Improvements
+
+- No production auth (guest sessions only)
+- Limited visual polish on online round transitions
+- Telemetry is local log abstraction only (no external analytics pipeline yet)
+- No ranked matchmaking/private rooms yet

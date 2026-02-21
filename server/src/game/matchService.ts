@@ -11,6 +11,7 @@ import {
 } from "./rules.js";
 import type {
   ConundrumRoundState,
+  FinishedMatchRecord,
   LiveRoundState,
   MatchServiceOptions,
   MatchState,
@@ -24,7 +25,7 @@ import type {
   WordSubmission
 } from "./types.js";
 
-const defaultOptions: Omit<MatchServiceOptions, "onMatchUpdated" | "onQueueUpdated"> = {
+const defaultOptions: Omit<MatchServiceOptions, "onMatchUpdated" | "onQueueUpdated" | "onMatchFinished"> = {
   now: () => Date.now(),
   setTimer: (callback, delayMs) => setTimeout(callback, delayMs),
   clearTimer: (timer) => clearTimeout(timer as NodeJS.Timeout),
@@ -50,7 +51,8 @@ export class MatchService {
       ...defaultOptions,
       ...options,
       onMatchUpdated: options.onMatchUpdated ?? (() => undefined),
-      onQueueUpdated: options.onQueueUpdated ?? (() => undefined)
+      onQueueUpdated: options.onQueueUpdated ?? (() => undefined),
+      onMatchFinished: options.onMatchFinished ?? (() => undefined)
     };
   }
 
@@ -497,6 +499,7 @@ export class MatchService {
       }
 
       this.options.logEvent("Match finished", { matchId: match.matchId, scores: match.scores, winnerPlayerId: match.winnerPlayerId });
+      this.options.onMatchFinished(this.buildFinishedMatchRecord(match));
       return;
     }
 
@@ -602,5 +605,20 @@ export class MatchService {
       this.options.clearTimer(timer);
       this.timers.delete(matchId);
     }
+  }
+
+  private buildFinishedMatchRecord(match: MatchState): FinishedMatchRecord {
+    return {
+      matchId: match.matchId,
+      createdAtMs: match.createdAtMs,
+      finishedAtMs: this.options.now(),
+      players: match.players.map((playerId) => ({
+        playerId,
+        displayName: this.players.get(playerId)?.displayName ?? "Guest",
+        score: match.scores[playerId] ?? 0
+      })),
+      winnerPlayerId: match.winnerPlayerId,
+      roundResults: match.roundResults
+    };
   }
 }

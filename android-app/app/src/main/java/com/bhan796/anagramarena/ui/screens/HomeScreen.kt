@@ -17,7 +17,9 @@ import androidx.compose.ui.unit.dp
 fun HomeScreen(
     contentPadding: PaddingValues,
     onPlayOnline: () -> Unit,
-    onPracticeMode: () -> Unit
+    onPracticeMode: () -> Unit,
+    onProfile: () -> Unit,
+    onSettings: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -37,11 +39,11 @@ fun HomeScreen(
             Text("Practice Mode")
         }
 
-        OutlinedButton(onClick = {}, enabled = false) {
+        OutlinedButton(onClick = onProfile) {
             Text("Profile / Stats")
         }
 
-        OutlinedButton(onClick = {}, enabled = false) {
+        OutlinedButton(onClick = onSettings) {
             Text("Settings")
         }
     }

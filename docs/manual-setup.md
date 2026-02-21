@@ -199,3 +199,53 @@ Needed for: connecting Android app to multiplayer backend.
 1. Hit backend health endpoint from Android browser:
    - `<baseUrl>/api/health`
 2. Launch Play Online on two clients and verify matchmaking succeeds.
+
+## 8. Android Build Variant Endpoint Strategy
+
+Needed for: preventing debug/staging/prod endpoint mistakes.
+
+### Recommended approach
+
+1. Keep release builds on HTTPS hosted backend.
+2. Use `-PbackendBaseUrl=...` for debug/local overrides only.
+3. Do not commit local IP endpoints as defaults for release.
+
+### Verify
+
+- Debug build connects to intended debug endpoint.
+- Release candidate connects to production HTTPS endpoint only.
+
+## 9. Android Signing Considerations
+
+Needed for: internal testing and production distribution.
+
+### Steps
+
+1. Create and securely store release keystore.
+2. Configure signing in Android Studio/Gradle for release builds.
+3. Keep passwords and keystore paths out of git.
+
+### Verify
+
+- Signed release artifact installs and runs on test devices.
+
+## 10. Android Network Security / HTTPS Notes
+
+Needed for: stable and secure networking.
+
+### Rules
+
+1. Use HTTPS for hosted environments.
+2. For local HTTP debugging, only allow cleartext in debug-only setup.
+3. Do not ship release builds dependent on cleartext HTTP.
+
+### Verify
+
+- Release build communicates over HTTPS only.
+
+## 11. Android Emulator/Device Test Checklist
+
+1. Test on at least one emulator and one physical device if available.
+2. Verify online matchmaking works across two clients.
+3. Verify reconnect flow by toggling network during active round.
+4. Verify profile stats load after completing online matches.

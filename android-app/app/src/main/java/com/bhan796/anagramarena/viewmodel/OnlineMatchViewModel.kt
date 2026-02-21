@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.bhan796.anagramarena.online.MatchPhase
 import com.bhan796.anagramarena.online.OnlineMatchReducer
 import com.bhan796.anagramarena.online.OnlineUiState
+import com.bhan796.anagramarena.repository.NoOpTelemetryLogger
 import com.bhan796.anagramarena.repository.OnlineMatchRepository
+import com.bhan796.anagramarena.repository.TelemetryLogger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +19,8 @@ import kotlinx.coroutines.launch
 
 class OnlineMatchViewModel(
     private val repository: OnlineMatchRepository,
-    private val nowProvider: () -> Long = { System.currentTimeMillis() }
+    private val nowProvider: () -> Long = { System.currentTimeMillis() },
+    private val telemetry: TelemetryLogger = NoOpTelemetryLogger()
 ) : ViewModel() {
     private val _state = MutableStateFlow(OnlineUiState())
     val state: StateFlow<OnlineUiState> = _state.asStateFlow()
@@ -60,7 +63,8 @@ class OnlineMatchViewModel(
                 _state.value = reduced.copy(
                     wordInput = if (resetWord) "" else previous.wordInput,
                     conundrumGuessInput = if (resetWord) "" else previous.conundrumGuessInput,
-                    hasSubmittedWord = if (resetWord) false else previous.hasSubmittedWord
+                    hasSubmittedWord = if (resetWord) false else previous.hasSubmittedWord,
+                    localValidationMessage = if (resetWord) null else previous.localValidationMessage
                 )
             }.collect {}
         }
@@ -69,11 +73,13 @@ class OnlineMatchViewModel(
     }
 
     fun startQueue(displayName: String?) {
+        telemetry.log("queue_start")
         repository.identify(displayName)
         repository.joinQueue()
     }
 
     fun cancelQueue() {
+        telemetry.log("queue_cancel")
         repository.leaveQueue()
     }
 
@@ -97,6 +103,11 @@ class OnlineMatchViewModel(
 
     fun submitWord() {
         if (_state.value.hasSubmittedWord) return
+        if (_state.value.wordInput.trim().isEmpty()) {
+            _state.value = _state.value.copy(localValidationMessage = "Enter a word before submitting.")
+            return
+        }
+        _state.value = _state.value.copy(localValidationMessage = null)
         repository.submitWord(_state.value.wordInput)
         _state.value = _state.value.copy(hasSubmittedWord = true)
     }
@@ -106,12 +117,17 @@ class OnlineMatchViewModel(
     }
 
     fun submitConundrumGuess() {
+        if (_state.value.conundrumGuessInput.trim().isEmpty()) {
+            _state.value = _state.value.copy(localValidationMessage = "Enter a guess before submitting.")
+            return
+        }
+        _state.value = _state.value.copy(localValidationMessage = null)
         repository.submitConundrumGuess(_state.value.conundrumGuessInput)
     }
 
     fun clearError() {
         repository.clearActionError()
-        _state.value = _state.value.copy(lastError = null)
+        _state.value = _state.value.copy(lastError = null, localValidationMessage = null)
     }
 
     private fun startTicker() {
@@ -145,11 +161,11 @@ class OnlineMatchViewModel(
     }
 
     companion object {
-        fun factory(repository: OnlineMatchRepository): ViewModelProvider.Factory {
+        fun factory(repository: OnlineMatchRepository, telemetry: TelemetryLogger = NoOpTelemetryLogger()): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return OnlineMatchViewModel(repository) as T
+                    return OnlineMatchViewModel(repository = repository, telemetry = telemetry) as T
                 }
             }
         }

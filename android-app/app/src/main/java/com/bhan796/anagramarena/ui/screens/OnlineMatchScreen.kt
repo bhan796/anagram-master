@@ -10,12 +10,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import com.bhan796.anagramarena.network.SocketConnectionState
 import com.bhan796.anagramarena.online.MatchPhase
 import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.online.RoundType
@@ -50,6 +52,7 @@ fun OnlineMatchScreen(
         Text("Online Match")
         Text("Round ${match.roundNumber} - ${match.roundType.name.lowercase()}")
         Text("Time: ${state.secondsRemaining}s")
+        Text(state.statusMessage)
 
         val me = state.myPlayer
         val opponent = state.opponentPlayer
@@ -68,16 +71,25 @@ fun OnlineMatchScreen(
             }
         }
 
+        if (state.localValidationMessage != null) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = state.localValidationMessage,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+        }
+
         when (match.phase) {
             MatchPhase.AWAITING_LETTERS_PICK -> {
                 Text(if (state.isMyTurnToPick) "Your turn to pick letters" else "Opponent is picking letters")
                 LetterSlots(match.letters)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onPickVowel, enabled = state.isMyTurnToPick) {
+                    Button(onClick = onPickVowel, enabled = state.isMyTurnToPick && state.connectionState !is SocketConnectionState.Reconnecting) {
                         Text("Vowel")
                     }
-                    Button(onClick = onPickConsonant, enabled = state.isMyTurnToPick) {
+                    Button(onClick = onPickConsonant, enabled = state.isMyTurnToPick && state.connectionState !is SocketConnectionState.Reconnecting) {
                         Text("Consonant")
                     }
                 }
@@ -98,6 +110,7 @@ fun OnlineMatchScreen(
                     Text(if (state.hasSubmittedWord) "Submitted" else "Submit Word")
                 }
                 if (state.hasSubmittedWord) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     Text("Waiting for opponent or timeout...")
                 }
             }

@@ -4,9 +4,10 @@ import { loadEnv } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { loadConundrums, loadDictionarySet } from "../game/data.js";
 import { MatchService } from "../game/matchService.js";
+import type { MatchHistoryStore } from "../store/matchHistoryStore.js";
 import { SocketEvents, toActionError } from "./contracts.js";
 
-export const createSocketServer = (httpServer: HttpServer): Server => {
+export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: MatchHistoryStore): Server => {
   const env = loadEnv();
 
   const io = new Server(httpServer, {
@@ -18,6 +19,10 @@ export const createSocketServer = (httpServer: HttpServer): Server => {
 
   const service = new MatchService(loadDictionarySet(), loadConundrums(), {
     logEvent: (message, details) => logger.info(details ?? {}, message),
+    onMatchFinished: (record) => {
+      matchHistoryStore.recordMatch(record);
+      logger.info({ matchId: record.matchId }, "Persisted finished match record");
+    },
     onMatchUpdated: (matchId) => {
       const match = service.getMatch(matchId);
       if (!match) return;
