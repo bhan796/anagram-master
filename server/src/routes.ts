@@ -16,9 +16,16 @@ export const createApiRouter = (matchHistoryStore: MatchHistoryStore): Router =>
   router.get("/profiles/:playerId/stats", (req: Request, res: Response) => {
     const stats = matchHistoryStore.getPlayerStats(req.params.playerId);
     if (!stats) {
-      res.status(404).json({
-        code: "PROFILE_NOT_FOUND",
-        message: "No stats found for player."
+      res.json({
+        playerId: req.params.playerId,
+        displayName: "Guest",
+        matchesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        totalScore: 0,
+        averageScore: 0,
+        recentMatchIds: []
       });
       return;
     }

@@ -30,7 +30,7 @@ const defaultOptions: Omit<MatchServiceOptions, "onMatchUpdated" | "onQueueUpdat
   setTimer: (callback, delayMs) => setTimeout(callback, delayMs),
   clearTimer: (timer) => clearTimeout(timer as NodeJS.Timeout),
   solveDurationMs: 30_000,
-  resultDurationMs: 3_000,
+  resultDurationMs: 5_000,
   conundrumGuessCooldownMs: 750,
   logEvent: () => undefined
 };

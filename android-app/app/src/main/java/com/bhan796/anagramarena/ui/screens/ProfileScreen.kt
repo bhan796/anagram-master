@@ -76,11 +76,7 @@ fun ProfileScreen(
         val history = state.history
         if (history != null) {
             Text("RECENT MATCHES (${history.count})", style = MaterialTheme.typography.headlineSmall)
-            history.matches.take(5).forEach { match ->
-                val myScore = match.players.firstOrNull { it.playerId == state.playerId }?.score ?: 0
-                val opp = match.players.firstOrNull { it.playerId != state.playerId }
-                val oppScore = opp?.score ?: 0
-
+            if (history.count == 0) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -89,8 +85,27 @@ fun ProfileScreen(
                         .padding(12.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(match.matchId.take(8), style = MaterialTheme.typography.labelMedium, color = ColorDimText)
-                        Text("You $myScore - Opponent $oppScore", style = MaterialTheme.typography.bodyMedium)
+                        Text("No matches played yet", style = MaterialTheme.typography.bodyMedium)
+                        Text("Play an online match to see history and stats.", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
+                    }
+                }
+            } else {
+                history.matches.take(5).forEach { match ->
+                    val myScore = match.players.firstOrNull { it.playerId == state.playerId }?.score ?: 0
+                    val opp = match.players.firstOrNull { it.playerId != state.playerId }
+                    val oppScore = opp?.score ?: 0
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
+                            .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                            .padding(12.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(match.matchId.take(8), style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+                            Text("You $myScore - Opponent $oppScore", style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                 }
             }
