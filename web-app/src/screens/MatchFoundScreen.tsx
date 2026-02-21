@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { OnlineUiState } from "../types/online";
 import { ArcadeScaffold, NeonTitle, RankBadge } from "../components/ArcadeComponents";
 
@@ -8,10 +8,26 @@ interface MatchFoundScreenProps {
 }
 
 export const MatchFoundScreen = ({ state, onDone }: MatchFoundScreenProps) => {
+  const onDoneRef = useRef(onDone);
+  const [secondsLeft, setSecondsLeft] = useState(10);
+
   useEffect(() => {
-    const timer = window.setTimeout(onDone, 10_000);
-    return () => window.clearTimeout(timer);
+    onDoneRef.current = onDone;
   }, [onDone]);
+
+  useEffect(() => {
+    const endAt = Date.now() + 10_000;
+    const timer = window.setInterval(() => {
+      const remainingMs = Math.max(0, endAt - Date.now());
+      const remainingSeconds = Math.ceil(remainingMs / 1000);
+      setSecondsLeft(remainingSeconds);
+      if (remainingMs <= 0) {
+        window.clearInterval(timer);
+        onDoneRef.current();
+      }
+    }, 200);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const me = state.myPlayer;
   const opponent = state.opponentPlayer;
@@ -35,7 +51,7 @@ export const MatchFoundScreen = ({ state, onDone }: MatchFoundScreenProps) => {
             <RankBadge tier={opponent?.rankTier} />
           </div>
         </div>
-        <div className="text-dim">Entering arena in 10 seconds...</div>
+        <div className="text-dim">Entering arena in {secondsLeft}s...</div>
       </div>
     </ArcadeScaffold>
   );

@@ -76,6 +76,19 @@ export const TapLetterComposer = ({
         return;
       }
 
+      if (event.code === "Space" || event.key === " ") {
+        event.preventDefault();
+        setDisplayOrder((previous) => {
+          const next = [...previous];
+          for (let i = next.length - 1; i > 0; i -= 1) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [next[i], next[j]] = [next[j], next[i]];
+          }
+          return next;
+        });
+        return;
+      }
+
       if (!/^[a-z]$/i.test(event.key)) return;
       const char = event.key.toUpperCase();
       setSelectedIndices((previous) => {

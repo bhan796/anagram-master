@@ -20,6 +20,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
@@ -35,6 +37,7 @@ import com.bhan796.anagramarena.ui.theme.sdp
 
 @Composable
 fun MatchFoundScreen(contentPadding: PaddingValues, state: OnlineUiState, onDone: () -> Unit) {
+    val countdownState = remember { mutableIntStateOf(10) }
     val pulse = rememberInfiniteTransition(label = "matchFoundPulse")
     val scale by pulse.animateFloat(
         initialValue = 1f,
@@ -44,7 +47,10 @@ fun MatchFoundScreen(contentPadding: PaddingValues, state: OnlineUiState, onDone
     )
 
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(10_000)
+        while (countdownState.intValue > 0) {
+            kotlinx.coroutines.delay(1_000)
+            countdownState.intValue -= 1
+        }
         onDone()
     }
 
@@ -77,7 +83,7 @@ fun MatchFoundScreen(contentPadding: PaddingValues, state: OnlineUiState, onDone
                 }
             }
 
-            Text("Entering arena in 10 seconds...", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
+            Text("Entering arena in ${countdownState.intValue}s...", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
         }
     }
 }
