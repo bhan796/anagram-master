@@ -21,6 +21,7 @@ import com.bhan796.anagramarena.ui.screens.SettingsScreen
 import com.bhan796.anagramarena.viewmodel.OnlineMatchViewModel
 import com.bhan796.anagramarena.viewmodel.ProfileViewModel
 import com.bhan796.anagramarena.viewmodel.PracticeSettingsViewModel
+import kotlinx.coroutines.delay
 
 private object Routes {
     const val HOME = "home"
@@ -93,6 +94,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
             composable(Routes.ONLINE_MATCHMAKING) {
                 LaunchedEffect(onlineState.matchState?.matchId) {
                     if (onlineState.matchState != null) {
+                        delay(1000)
                         navController.navigate(Routes.ONLINE_MATCH)
                     }
                 }
