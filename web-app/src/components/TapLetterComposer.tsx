@@ -36,6 +36,7 @@ export const TapLetterComposer = ({
   onSubmit
 }: TapLetterComposerProps) => {
   const selected = useMemo(() => value.split(""), [value]);
+  const lettersKey = useMemo(() => letters.join(""), [letters]);
   const [selectedIndices, setSelectedIndices] = useState<number[]>(() => buildIndicesFromValue(letters, value));
   const [displayOrder, setDisplayOrder] = useState<number[]>(() => letters.map((_, index) => index));
 
@@ -46,11 +47,11 @@ export const TapLetterComposer = ({
 
   useEffect(() => {
     setDisplayOrder(letters.map((_, index) => index));
-  }, [letters]);
+  }, [lettersKey]);
 
   useEffect(() => {
     setSelectedIndices(buildIndicesFromValue(letters, value));
-  }, [letters, value]);
+  }, [lettersKey, value]);
 
   useEffect(() => {
     if (disabled) return;
@@ -89,7 +90,7 @@ export const TapLetterComposer = ({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [disabled, letters, onSubmit, onValueChange]);
+  }, [disabled, lettersKey, onSubmit, onValueChange]);
 
   const handleTap = (index: number) => {
     if (disabled || selectedIndices.includes(index)) return;

@@ -67,6 +67,7 @@ Notes:
 
 - `answer` is the source of truth.
 - Scramble is regenerated at runtime for server matches and practice providers, so each display can differ.
+- Current dataset is constrained to 1,000 frequency-ranked common 9-letter English words (from `FrequencyWords` English 50k list).
 
 ### Replace conundrum set
 
