@@ -63,6 +63,11 @@ Schema:
 ]
 ```
 
+Notes:
+
+- `answer` is the source of truth.
+- Scramble is regenerated at runtime for server matches and practice providers, so each display can differ.
+
 ### Replace conundrum set
 
 1. Keep valid 9-letter `answer` values.

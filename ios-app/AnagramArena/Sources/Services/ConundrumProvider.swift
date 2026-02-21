@@ -13,7 +13,12 @@ final class BundledConundrumProvider: ConundrumProviding {
     }
 
     func randomConundrum() -> Conundrum? {
-        conundrums.randomElement()
+        guard let selected = conundrums.randomElement() else { return nil }
+        return Conundrum(
+            id: selected.id,
+            scrambled: Self.scrambleWord(selected.answer),
+            answer: selected.answer
+        )
     }
 
     func allConundrums() -> [Conundrum] {
@@ -28,5 +33,21 @@ final class BundledConundrumProvider: ConundrumProviding {
         }
 
         return decoded
+    }
+
+    private static func scrambleWord(_ answer: String) -> String {
+        let normalized = answer.uppercased()
+        guard normalized.count > 1 else { return normalized }
+
+        let chars = Array(normalized)
+        for _ in 0..<12 {
+            let shuffled = chars.shuffled()
+            let candidate = String(shuffled)
+            if candidate != normalized {
+                return candidate
+            }
+        }
+
+        return String(normalized.dropFirst()) + String(normalized.prefix(1))
     }
 }

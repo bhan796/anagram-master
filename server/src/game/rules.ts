@@ -104,3 +104,25 @@ export const drawWeightedLetter = (kind: PickKind, random: () => number): string
 };
 
 export const createGuestName = (): string => `Guest-${randomUUID().slice(0, 6)}`;
+
+export const scrambleWord = (word: string, random: () => number = Math.random): string => {
+  const normalized = word.trim().toUpperCase();
+  if (normalized.length <= 1) return normalized;
+
+  const chars = normalized.split("");
+  let candidate = normalized;
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const shuffled = [...chars];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    candidate = shuffled.join("");
+    if (candidate !== normalized) {
+      return candidate;
+    }
+  }
+
+  return chars.slice(1).join("") + chars[0];
+};

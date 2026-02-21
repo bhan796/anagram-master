@@ -7,6 +7,7 @@ import {
   drawWeightedLetter,
   isAlphabetical,
   normalizeWord,
+  scrambleWord,
   scoreWord
 } from "./rules.js";
 import type {
@@ -636,7 +637,7 @@ export class MatchService {
     const conundrumRound: ConundrumRoundState = {
       type: "conundrum",
       roundNumber: nextPlan.roundNumber,
-      scrambled: conundrum.scrambled,
+      scrambled: scrambleWord(conundrum.answer, Math.random),
       answer: conundrum.answer,
       firstCorrectPlayerId: null,
       firstCorrectAtMs: null,

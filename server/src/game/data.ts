@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 export interface ConundrumEntry {
   id: string;
-  scrambled: string;
+  scrambled?: string;
   answer: string;
 }
 

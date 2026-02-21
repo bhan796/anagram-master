@@ -41,7 +41,10 @@ interface ConundrumProvider {
 class AssetConundrumProvider(context: Context) : ConundrumProvider {
     private val conundrums: List<Conundrum> = loadConundrums(context)
 
-    override fun randomConundrum(): Conundrum? = conundrums.randomOrNull(Random.Default)
+    override fun randomConundrum(): Conundrum? {
+        val selected = conundrums.randomOrNull(Random.Default) ?: return null
+        return selected.copy(scrambled = scrambleWord(selected.answer))
+    }
 
     override fun allConundrums(): List<Conundrum> = conundrums
 
@@ -49,16 +52,34 @@ class AssetConundrumProvider(context: Context) : ConundrumProvider {
         return runCatching {
             val raw = context.assets.open("data/conundrums.json").bufferedReader().use { it.readText() }
             Json.decodeFromString<List<ConundrumDto>>(raw).map { dto ->
-                Conundrum(id = dto.id, scrambled = dto.scrambled, answer = dto.answer)
+                Conundrum(
+                    id = dto.id,
+                    scrambled = dto.scrambled?.takeIf { it.isNotBlank() } ?: scrambleWord(dto.answer),
+                    answer = dto.answer
+                )
             }
         }.getOrElse { emptyList() }
+    }
+
+    private fun scrambleWord(answer: String): String {
+        val normalized = answer.trim().uppercase()
+        if (normalized.length <= 1) return normalized
+
+        val chars = normalized.toMutableList()
+        repeat(12) {
+            chars.shuffle(Random.Default)
+            val candidate = chars.joinToString("")
+            if (candidate != normalized) return candidate
+        }
+
+        return normalized.drop(1) + normalized.first()
     }
 }
 
 @Serializable
 private data class ConundrumDto(
     val id: String,
-    val scrambled: String,
+    val scrambled: String? = null,
     val answer: String
 )
 

@@ -8,7 +8,7 @@ import {
   WordTiles
 } from "../components/ArcadeComponents";
 import { TapLetterComposer } from "../components/TapLetterComposer";
-import type { ConundrumEntry } from "../logic/gameRules";
+import { scrambleWord, type ConundrumEntry } from "../logic/gameRules";
 
 interface ConundrumPracticeScreenProps {
   timerEnabled: boolean;
@@ -23,11 +23,17 @@ export const ConundrumPracticeScreen = ({ timerEnabled, conundrums, conundrumErr
   const [secondsRemaining, setSecondsRemaining] = useState(TOTAL_SECONDS);
   const [guess, setGuess] = useState("");
   const [result, setResult] = useState<null | { correct: boolean; answer: string }>(null);
+  const [seed, setSeed] = useState(0);
 
   const current = useMemo(() => {
     if (conundrums.length === 0) return null;
     return conundrums[Math.floor(Math.random() * conundrums.length)];
-  }, [conundrums.length, result === null]);
+  }, [conundrums, seed]);
+
+  const displayScramble = useMemo(() => {
+    if (!current) return "";
+    return scrambleWord(current.answer);
+  }, [current]);
 
   useEffect(() => {
     if (!timerEnabled || result || !current) return;
@@ -49,6 +55,7 @@ export const ConundrumPracticeScreen = ({ timerEnabled, conundrums, conundrumErr
     setGuess("");
     setResult(null);
     setSecondsRemaining(TOTAL_SECONDS);
+    setSeed((value) => value + 1);
   };
 
   return (
@@ -72,13 +79,13 @@ export const ConundrumPracticeScreen = ({ timerEnabled, conundrums, conundrumErr
                 lineHeight: 1.5
               }}
             >
-              {current.scrambled.toUpperCase()}
+              {displayScramble}
             </div>
           </div>
 
           {timerEnabled ? <TimerBar secondsRemaining={secondsRemaining} totalSeconds={TOTAL_SECONDS} /> : null}
           <TapLetterComposer
-            letters={current.scrambled.toUpperCase().split("")}
+            letters={displayScramble.split("")}
             value={guess.toUpperCase()}
             onValueChange={setGuess}
             onSubmit={submit}
@@ -91,7 +98,7 @@ export const ConundrumPracticeScreen = ({ timerEnabled, conundrums, conundrumErr
         <>
           <NeonTitle text={result.correct ? "Correct" : "Result"} />
           <div className="card" style={{ display: "grid", gap: 10 }}>
-            <WordTiles label="Scrambled" word={current?.scrambled ?? ""} accent="var(--gold)" />
+            <WordTiles label="Scrambled" word={displayScramble} accent="var(--gold)" />
             <WordTiles label="Your Guess" word={guess || "-"} />
             <WordTiles label="Answer" word={result.answer} accent="var(--green)" />
             <div className="headline" style={{ color: result.correct ? "var(--green)" : "var(--red)" }}>
