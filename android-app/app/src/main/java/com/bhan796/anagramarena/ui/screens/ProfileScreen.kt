@@ -94,6 +94,16 @@ fun ProfileScreen(
                     val myScore = match.players.firstOrNull { it.playerId == state.playerId }?.score ?: 0
                     val opp = match.players.firstOrNull { it.playerId != state.playerId }
                     val oppScore = opp?.score ?: 0
+                    val outcomeLabel = when {
+                        match.winnerPlayerId == null -> "DRAW"
+                        match.winnerPlayerId == state.playerId -> "WIN"
+                        else -> "LOSS"
+                    }
+                    val outcomeColor = when (outcomeLabel) {
+                        "WIN" -> ColorCyan
+                        "LOSS" -> com.bhan796.anagramarena.ui.theme.ColorRed
+                        else -> ColorDimText
+                    }
 
                     Box(
                         modifier = Modifier
@@ -103,7 +113,10 @@ fun ProfileScreen(
                             .padding(12.dp)
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(match.matchId.take(8), style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(match.matchId.take(8), style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+                                Text(outcomeLabel, style = MaterialTheme.typography.labelMedium, color = outcomeColor)
+                            }
                             Text("You $myScore - Opponent $oppScore", style = MaterialTheme.typography.bodyMedium)
                         }
                     }
