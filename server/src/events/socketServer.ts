@@ -2,6 +2,9 @@ import type { Server as HttpServer } from "node:http";
 import { Server } from "socket.io";
 import { loadEnv } from "../config/env.js";
 import { logger } from "../config/logger.js";
+import { loadConundrums, loadDictionarySet } from "../game/data.js";
+import { MatchService } from "../game/matchService.js";
+import { SocketEvents, toActionError } from "./contracts.js";
 
 export const createSocketServer = (httpServer: HttpServer): Server => {
   const env = loadEnv();
@@ -13,11 +16,150 @@ export const createSocketServer = (httpServer: HttpServer): Server => {
     }
   });
 
+  const service = new MatchService(loadDictionarySet(), loadConundrums(), {
+    logEvent: (message, details) => logger.info(details ?? {}, message),
+    onMatchUpdated: (matchId) => {
+      const match = service.getMatch(matchId);
+      if (!match) return;
+
+      for (const playerId of match.players) {
+        const player = service.getPlayer(playerId);
+        if (!player?.socketId) continue;
+
+        const payload = service.serializeForPlayer(match, playerId);
+        io.to(player.socketId).emit(SocketEvents.matchState, payload);
+      }
+    },
+    onQueueUpdated: (playerId, queueSize) => {
+      const player = service.getPlayer(playerId);
+      if (!player?.socketId) return;
+      io.to(player.socketId).emit(SocketEvents.matchmakingStatus, {
+        queueSize,
+        state: "searching"
+      });
+    }
+  });
+
   io.on("connection", (socket) => {
     logger.info({ socketId: socket.id }, "Client connected");
 
+    let playerId: string | null = null;
+
+    socket.on(SocketEvents.sessionIdentify, (payload: { playerId?: string; displayName?: string } = {}) => {
+      const player = service.connectPlayer(socket.id, payload.playerId, payload.displayName);
+      playerId = player.playerId;
+
+      socket.emit(SocketEvents.sessionIdentify, {
+        playerId: player.playerId,
+        displayName: player.displayName,
+        serverNowMs: Date.now()
+      });
+
+      const activeMatch = service.getMatchByPlayer(player.playerId);
+      if (activeMatch) {
+        socket.emit(SocketEvents.matchState, service.serializeForPlayer(activeMatch, player.playerId));
+      }
+    });
+
+    socket.on(SocketEvents.queueJoin, () => {
+      if (!playerId) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.queueJoin, "UNKNOWN_PLAYER"));
+        return;
+      }
+
+      const result = service.joinQueue(playerId);
+      if (!result.ok && result.code) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.queueJoin, result.code));
+        return;
+      }
+
+      const match = service.getMatchByPlayer(playerId);
+      if (match) {
+        socket.emit(SocketEvents.matchFound, {
+          matchId: match.matchId,
+          serverNowMs: Date.now()
+        });
+        socket.emit(SocketEvents.matchState, service.serializeForPlayer(match, playerId));
+
+        for (const otherPlayerId of match.players) {
+          if (otherPlayerId === playerId) continue;
+          const other = service.getPlayer(otherPlayerId);
+          if (other?.socketId) {
+            io.to(other.socketId).emit(SocketEvents.matchFound, {
+              matchId: match.matchId,
+              serverNowMs: Date.now()
+            });
+          }
+        }
+      }
+    });
+
+    socket.on(SocketEvents.queueLeave, () => {
+      if (!playerId) return;
+      service.leaveQueue(playerId);
+      socket.emit(SocketEvents.matchmakingStatus, {
+        queueSize: 0,
+        state: "idle"
+      });
+    });
+
+    socket.on(SocketEvents.matchResume, (payload: { matchId: string }) => {
+      if (!playerId) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.matchResume, "UNKNOWN_PLAYER"));
+        return;
+      }
+
+      const result = service.resumeMatch(playerId, payload.matchId);
+      if (!result.ok && result.code) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.matchResume, result.code));
+        return;
+      }
+
+      const match = service.getMatch(payload.matchId);
+      if (match) {
+        socket.emit(SocketEvents.matchState, service.serializeForPlayer(match, playerId));
+      }
+    });
+
+    socket.on(SocketEvents.roundPickLetter, (payload: { kind: "vowel" | "consonant" }) => {
+      if (!playerId) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.roundPickLetter, "UNKNOWN_PLAYER"));
+        return;
+      }
+
+      const result = service.pickLetter(playerId, payload.kind);
+      if (!result.ok && result.code) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.roundPickLetter, result.code));
+      }
+    });
+
+    socket.on(SocketEvents.roundSubmitWord, (payload: { word: string }) => {
+      if (!playerId) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.roundSubmitWord, "UNKNOWN_PLAYER"));
+        return;
+      }
+
+      const result = service.submitWord(playerId, payload.word ?? "");
+      if (!result.ok && result.code) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.roundSubmitWord, result.code));
+      }
+    });
+
+    socket.on(SocketEvents.roundSubmitConundrumGuess, (payload: { guess: string }) => {
+      if (!playerId) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.roundSubmitConundrumGuess, "UNKNOWN_PLAYER"));
+        return;
+      }
+
+      const result = service.submitConundrumGuess(playerId, payload.guess ?? "");
+      if (!result.ok && result.code) {
+        socket.emit(SocketEvents.actionError, toActionError(SocketEvents.roundSubmitConundrumGuess, result.code));
+      }
+    });
+
     socket.on("disconnect", (reason) => {
-      logger.info({ socketId: socket.id, reason }, "Client disconnected");
+      service.disconnectSocket(socket.id);
+      logger.info({ socketId: socket.id, playerId, reason }, "Client disconnected");
     });
   });
 

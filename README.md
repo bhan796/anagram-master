@@ -15,7 +15,8 @@ Production-oriented MVP scaffold for a real-time head-to-head anagram game.
 - Phase 0 complete: bootstrap, structure, tooling, and docs skeleton
 - Phase 1 complete: shared core game logic + offline iOS practice mode
 - Phase A0+A1 complete: Android scaffold + offline practice mode parity
-- Phase 2 next: real-time backend authoritative multiplayer
+- Phase A2 complete: real-time backend authoritative multiplayer foundation (Android-first docs)
+- Phase A3 complete: Android realtime multiplayer integration (queue, live sync, reconnect/resume)
 
 ## Technology Decisions (MVP)
 
@@ -67,5 +68,5 @@ This workspace includes an XcodeGen spec to create the Xcode project.
 
 - Practice mode works fully offline with bundled dictionary/conundrum data.
 - Android and iOS both support offline practice mode in current state.
-- Multiplayer services are scaffolded now and become authoritative in Phase 2.
+- Multiplayer backend now runs authoritative queue/match/timer/score logic for local online testing.
 - See `docs/manual-setup.md` for external account/service setup steps.

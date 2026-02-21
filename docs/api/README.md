@@ -1,10 +1,13 @@
 # API and Event Docs
 
-Phase 0 placeholder.
+- Socket contract: `docs/api/websocket-contract.md`
+- Android integration notes: `docs/api/android-integration.md`
 
-Upcoming:
+## Current Backend Endpoints
 
-- REST health and diagnostics endpoints
-- Socket.IO event schemas
-- Error payload shapes
-- Idempotency and retry behavior
+- `GET /api/health`
+
+## Transport
+
+- Realtime gameplay: Socket.IO
+- Authoritative server timer and score logic

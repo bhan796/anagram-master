@@ -1,10 +1,14 @@
-# Multiplayer Event Contract (Draft)
+# Multiplayer Event Contract
 
-Phase 0 placeholder. Full event contracts will be finalized in Phase 2.
+Authoritative contract now documented in:
 
-Planned namespaces:
+- `docs/api/websocket-contract.md`
+- `docs/api/android-integration.md`
 
+Server event namespaces:
+
+- `session:*` guest identity/reconnect identity
 - `queue:*` matchmaking
 - `match:*` match lifecycle and state sync
-- `round:*` round transitions and timing
-- `submission:*` word guesses and scoring outcomes
+- `round:*` pick/submit actions
+- `action:error` standardized action-level error responses

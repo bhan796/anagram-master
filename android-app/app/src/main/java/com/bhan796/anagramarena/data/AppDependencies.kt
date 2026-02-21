@@ -1,8 +1,12 @@
 package com.bhan796.anagramarena.data
 
 import android.content.Context
+import com.bhan796.anagramarena.BuildConfig
 import com.bhan796.anagram.core.model.Conundrum
 import com.bhan796.anagram.core.validation.DictionaryProvider
+import com.bhan796.anagramarena.network.SocketIoMultiplayerClient
+import com.bhan796.anagramarena.repository.OnlineMatchRepository
+import com.bhan796.anagramarena.storage.SessionStore
 import java.io.BufferedReader
 import kotlin.random.Random
 import kotlinx.serialization.Serializable
@@ -17,7 +21,7 @@ class AssetDictionaryProvider(context: Context) : DictionaryProvider {
 
     private fun loadWords(context: Context): Set<String> {
         return runCatching {
-            context.assets.open("data/dictionary_sample.txt").bufferedReader().use(BufferedReader::readLines)
+            context.assets.open("data/dictionary_common_10k.txt").bufferedReader().use(BufferedReader::readLines)
                 .map { it.trim().lowercase() }
                 .filter { it.isNotEmpty() && it.all(Char::isLetter) }
                 .toSet()
@@ -56,14 +60,23 @@ private data class ConundrumDto(
 
 data class AppDependencies(
     val dictionaryProvider: AssetDictionaryProvider,
-    val conundrumProvider: ConundrumProvider
+    val conundrumProvider: ConundrumProvider,
+    val onlineMatchRepository: OnlineMatchRepository
 ) {
     companion object {
         fun from(context: Context): AppDependencies {
             val appContext = context.applicationContext
+            val sessionStore = SessionStore(appContext)
+            val socketClient = SocketIoMultiplayerClient()
+
             return AppDependencies(
                 dictionaryProvider = AssetDictionaryProvider(appContext),
-                conundrumProvider = AssetConundrumProvider(appContext)
+                conundrumProvider = AssetConundrumProvider(appContext),
+                onlineMatchRepository = OnlineMatchRepository(
+                    socketClient = socketClient,
+                    sessionStore = sessionStore,
+                    backendUrl = BuildConfig.BACKEND_BASE_URL
+                )
             )
         }
     }

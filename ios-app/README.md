@@ -38,7 +38,8 @@ Current tests cover:
 
 ## Data Files (Replaceable)
 
-- Dictionary sample: `ios-app/AnagramArena/Resources/Data/dictionary_sample.txt`
+- Dictionary: `ios-app/AnagramArena/Resources/Data/dictionary_common_10k.txt` (default)
+- Small sample dictionary: `ios-app/AnagramArena/Resources/Data/dictionary_sample.txt`
 - Conundrums sample: `ios-app/AnagramArena/Resources/Data/conundrums.json`
 
 To swap in larger datasets:

@@ -15,7 +15,7 @@ struct InMemoryDictionaryProvider: DictionaryProviding {
 final class BundledDictionaryProvider: DictionaryProviding {
     private let words: Set<String>
 
-    init(resourceName: String = "dictionary_sample", subdirectory: String = "Data", bundle: Bundle = .main) {
+    init(resourceName: String = "dictionary_common_10k", subdirectory: String = "Data", bundle: Bundle = .main) {
         self.words = Self.loadWords(resourceName: resourceName, subdirectory: subdirectory, bundle: bundle)
     }
 

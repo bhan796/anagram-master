@@ -97,6 +97,45 @@ Needed for: internet-accessible multiplayer.
 
 - iOS app can connect and complete a live match.
 
+## 6. Backend Services for Online Multiplayer (when moving beyond local)
+
+Needed for: production-style reliability and persistence (Postgres + Redis).
+
+### Recommended free-tier starter stack
+
+1. Backend host: Railway
+2. Postgres: Neon
+3. Redis: Upstash Redis
+
+### Steps
+
+1. Create Railway project and deploy `server/` as Node service.
+2. Create Neon database; copy connection string.
+3. Create Upstash Redis database; copy Redis URL.
+4. In Railway service variables, set:
+   - `DATABASE_URL`
+   - `REDIS_URL`
+   - `PORT` (host default if required)
+   - `CLIENT_ORIGIN` (Android test origin for web tools if needed)
+5. Configure Android app base socket URL to Railway endpoint.
+
+### Secrets/keys to copy
+
+- Neon `DATABASE_URL`
+- Upstash `REDIS_URL`
+- Railway service public URL
+
+### Where to apply
+
+- `server/.env` for local mirror config
+- host environment variable dashboard
+- Android app network config (future Phase A3)
+
+### Verify
+
+- `GET /api/health` returns status from deployed host
+- two Android clients can complete one full online match
+
 ## 5. Android Local Build and Run
 
 Needed for: running and testing the Android practice-mode app.
@@ -137,3 +176,26 @@ Needed for: running and testing the Android practice-mode app.
 - If Gradle sync fails due JDK:
   - Set Gradle JDK to 17 in Android Studio:
     - Settings -> Build, Execution, Deployment -> Build Tools -> Gradle.
+
+## 7. Android Online Networking Tips (Phase A3)
+
+Needed for: connecting Android app to multiplayer backend.
+
+### Base URL notes
+
+- Hosted backend (Railway): use HTTPS URL, e.g. `https://anagram-server-production.up.railway.app`
+- Android emulator to local backend:
+  - `http://10.0.2.2:4000` (not `localhost`)
+- Physical Android device to local backend:
+  - `http://<your-computer-lan-ip>:4000`
+
+### TLS / cleartext notes
+
+- HTTPS recommended for hosted environments.
+- If using local HTTP URLs for debug, ensure Android network security policy allows cleartext for debug builds if needed.
+
+### Verify
+
+1. Hit backend health endpoint from Android browser:
+   - `<baseUrl>/api/health`
+2. Launch Play Online on two clients and verify matchmaking succeeds.

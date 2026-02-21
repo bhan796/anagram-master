@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun HomeScreen(
     contentPadding: PaddingValues,
+    onPlayOnline: () -> Unit,
     onPracticeMode: () -> Unit
 ) {
     Column(
@@ -28,8 +29,8 @@ fun HomeScreen(
     ) {
         Text(text = "Anagram Arena")
 
-        Button(onClick = {}, enabled = false) {
-            Text("Play Online (Coming Soon)")
+        Button(onClick = onPlayOnline) {
+            Text("Play Online")
         }
 
         Button(onClick = onPracticeMode) {
