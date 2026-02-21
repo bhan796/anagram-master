@@ -19,6 +19,43 @@ const connectionUrl = (import.meta.env.VITE_SERVER_URL as string | undefined)?.t
 const isActiveMatch = (match: MatchStatePayload | null | undefined): boolean =>
   Boolean(match && match.phase !== "finished");
 
+const normalizeMatchPayload = (payload: MatchStatePayload): MatchStatePayload => {
+  const normalizedRoundResults = (payload.roundResults ?? []).map((result) => {
+    const details = (result as unknown as { details?: Record<string, unknown> }).details ?? {};
+    return {
+      ...result,
+      letters: result.letters ?? ((details.letters as string[] | undefined) ?? []),
+      submissions:
+        result.submissions ??
+        ((details.submissions as Record<
+          string,
+          {
+            word: string;
+            normalizedWord: string;
+            isValid: boolean;
+            failureCode: string | null;
+            score: number;
+            submittedAtMs: number;
+          }
+        >) ??
+          {}),
+      scrambled: result.scrambled ?? ((details.scrambled as string | undefined) ?? null),
+      answer: result.answer ?? ((details.answer as string | undefined) ?? null),
+      firstCorrectPlayerId:
+        result.firstCorrectPlayerId ?? ((details.firstCorrectPlayerId as string | undefined) ?? null),
+      firstCorrectAtMs: result.firstCorrectAtMs ?? ((details.firstCorrectAtMs as number | undefined) ?? null)
+    };
+  });
+
+  return {
+    ...payload,
+    pickerPlayerId: payload.pickerPlayerId ?? null,
+    letters: payload.letters ?? [],
+    scrambled: payload.scrambled ?? null,
+    roundResults: normalizedRoundResults
+  };
+};
+
 const computeRemainingSeconds = (match: MatchStatePayload | null, offsetMs: number): number => {
   if (!match?.phaseEndsAtMs) return 0;
   const now = Date.now() + offsetMs;
@@ -161,7 +198,8 @@ export const useOnlineMatch = () => {
       setState((previous) => ({ ...previous, matchId: payload.matchId }));
     });
 
-    socket.on(SocketEventNames.MATCH_STATE, (payload: MatchStatePayload) => {
+    socket.on(SocketEventNames.MATCH_STATE, (rawPayload: MatchStatePayload) => {
+      const payload = normalizeMatchPayload(rawPayload);
       const offset = payload.serverNowMs - Date.now();
       setClockOffsetMs((previous) => Math.round(previous * 0.7 + offset * 0.3));
       if (payload.phase === "finished") {

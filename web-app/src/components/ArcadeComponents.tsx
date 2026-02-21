@@ -48,8 +48,8 @@ export const LetterTile = ({
     className={`letter-tile ${empty ? "empty" : ""} ${selected ? "selected" : ""}`.trim()}
     onClick={onClick}
     style={{
-      borderColor: empty ? undefined : accent,
-      color: empty ? undefined : accent,
+      borderColor: empty ? undefined : selected ? "var(--dim)" : accent,
+      color: empty ? undefined : selected ? "var(--dim)" : accent,
       cursor: onClick ? "pointer" : "default",
       ...style
     }}
