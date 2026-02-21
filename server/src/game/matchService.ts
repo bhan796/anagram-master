@@ -173,6 +173,14 @@ export class MatchService {
     return this.matches.get(matchId);
   }
 
+  getOnlinePlayerCount(): number {
+    let count = 0;
+    for (const player of this.players.values()) {
+      if (player.connected) count += 1;
+    }
+    return count;
+  }
+
   resumeMatch(playerId: string, matchId: string): { ok: boolean; code?: string } {
     const match = this.matches.get(matchId);
     if (!match) return { ok: false, code: "MATCH_NOT_FOUND" };

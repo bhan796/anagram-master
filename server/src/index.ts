@@ -8,12 +8,14 @@ import { logger } from "./config/logger.js";
 import { createApiRouter } from "./routes.js";
 import { createSocketServer } from "./events/socketServer.js";
 import { MatchHistoryStore } from "./store/matchHistoryStore.js";
+import { PresenceStore } from "./store/presenceStore.js";
 
 dotenv.config();
 
 const env = loadEnv();
 const app = express();
 const matchHistoryStore = new MatchHistoryStore();
+const presenceStore = new PresenceStore();
 const isAllowedOrigin = createOriginChecker(env.CLIENT_ORIGIN);
 
 app.use(
@@ -29,10 +31,10 @@ app.use(
 );
 app.use(express.json());
 
-app.use("/api", createApiRouter(matchHistoryStore));
+app.use("/api", createApiRouter(matchHistoryStore, presenceStore));
 
 const httpServer = createServer(app);
-createSocketServer(httpServer, matchHistoryStore);
+createSocketServer(httpServer, matchHistoryStore, presenceStore);
 
 httpServer.listen(env.PORT, () => {
   logger.info({ port: env.PORT }, "Server started");

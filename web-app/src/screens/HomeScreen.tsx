@@ -5,9 +5,10 @@ interface HomeScreenProps {
   onPracticeMode: () => void;
   onProfile: () => void;
   onSettings: () => void;
+  playersOnline: number;
 }
 
-export const HomeScreen = ({ onPlayOnline, onPracticeMode, onProfile, onSettings }: HomeScreenProps) => (
+export const HomeScreen = ({ onPlayOnline, onPracticeMode, onProfile, onSettings, playersOnline }: HomeScreenProps) => (
   <ArcadeScaffold>
     <div style={{ flex: 1 }} />
     <TileLogo />
@@ -16,6 +17,9 @@ export const HomeScreen = ({ onPlayOnline, onPracticeMode, onProfile, onSettings
     <ArcadeButton text="Practice Mode" onClick={onPracticeMode} />
     <ArcadeButton text="Profile / Stats" onClick={onProfile} accent="gold" />
     <ArcadeButton text="Settings" onClick={onSettings} accent="magenta" />
+    <div className="headline" style={{ color: "var(--white)", textAlign: "center", marginTop: 4 }}>
+      Players Online: <span style={{ color: "var(--green)" }}>{playersOnline}</span>
+    </div>
     <div style={{ flex: 1 }} />
   </ArcadeScaffold>
 );

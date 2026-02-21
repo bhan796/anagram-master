@@ -7,9 +7,14 @@ import { loadConundrums, loadDictionarySet } from "../game/data.js";
 import { MatchService } from "../game/matchService.js";
 import type { MatchMode } from "../game/types.js";
 import type { MatchHistoryStore } from "../store/matchHistoryStore.js";
+import type { PresenceStore } from "../store/presenceStore.js";
 import { SocketEvents, toActionError } from "./contracts.js";
 
-export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: MatchHistoryStore): Server => {
+export const createSocketServer = (
+  httpServer: HttpServer,
+  matchHistoryStore: MatchHistoryStore,
+  presenceStore: PresenceStore
+): Server => {
   const env = loadEnv();
   const isAllowedOrigin = createOriginChecker(env.CLIENT_ORIGIN);
 
@@ -32,16 +37,16 @@ export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: Ma
       const match = service.getMatch(matchId);
       if (!match) return;
 
-      for (const playerId of match.players) {
-        const player = service.getPlayer(playerId);
+      for (const participantId of match.players) {
+        const player = service.getPlayer(participantId);
         if (!player?.socketId) continue;
 
         const payload = service.serializeForPlayer(match);
         io.to(player.socketId).emit(SocketEvents.matchState, payload);
       }
     },
-    onQueueUpdated: (playerId, queueSize, mode) => {
-      const player = service.getPlayer(playerId);
+    onQueueUpdated: (updatedPlayerId, queueSize, mode) => {
+      const player = service.getPlayer(updatedPlayerId);
       if (!player?.socketId) return;
       io.to(player.socketId).emit(SocketEvents.matchmakingStatus, {
         queueSize,
@@ -59,6 +64,7 @@ export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: Ma
     socket.on(SocketEvents.sessionIdentify, (payload: { playerId?: string; displayName?: string } = {}) => {
       const player = service.connectPlayer(socket.id, payload.playerId, payload.displayName);
       playerId = player.playerId;
+      presenceStore.markOnline(player.playerId);
 
       socket.emit(SocketEvents.sessionIdentify, {
         playerId: player.playerId,
@@ -185,6 +191,9 @@ export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: Ma
     });
 
     socket.on("disconnect", (reason) => {
+      if (playerId) {
+        presenceStore.markOffline(playerId);
+      }
       service.disconnectSocket(socket.id);
       logger.info({ socketId: socket.id, playerId, reason }, "Client disconnected");
     });

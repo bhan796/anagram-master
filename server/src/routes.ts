@@ -1,8 +1,9 @@
 import type { Request, Response } from "express";
 import { Router } from "express";
+import type { PresenceStore } from "./store/presenceStore.js";
 import type { MatchHistoryStore } from "./store/matchHistoryStore.js";
 
-export const createApiRouter = (matchHistoryStore: MatchHistoryStore): Router => {
+export const createApiRouter = (matchHistoryStore: MatchHistoryStore, presenceStore: PresenceStore): Router => {
   const router = Router();
 
   router.get("/health", (_req: Request, res: Response) => {
@@ -10,6 +11,13 @@ export const createApiRouter = (matchHistoryStore: MatchHistoryStore): Router =>
       status: "ok",
       service: "anagram-server",
       timestamp: new Date().toISOString()
+    });
+  });
+
+  router.get("/presence", (_req: Request, res: Response) => {
+    res.json({
+      playersOnline: presenceStore.getCount(),
+      serverNowMs: Date.now()
     });
   });
 

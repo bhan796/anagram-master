@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.bhan796.anagramarena.online.MatchHistoryResponse
 import com.bhan796.anagramarena.online.PlayerStats
+import com.bhan796.anagramarena.online.LeaderboardEntry
 import com.bhan796.anagramarena.repository.ProfileRepository
 import com.bhan796.anagramarena.storage.SessionStore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ data class ProfileUiState(
     val isLoading: Boolean = false,
     val stats: PlayerStats? = null,
     val history: MatchHistoryResponse? = null,
+    val leaderboard: List<LeaderboardEntry> = emptyList(),
     val errorMessage: String? = null
 )
 
@@ -42,6 +44,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             val statsResult = repository.loadStats(playerId)
             val historyResult = repository.loadHistory(playerId)
+            val leaderboardResult = repository.loadLeaderboard(20)
 
             val error = statsResult.exceptionOrNull()?.message ?: historyResult.exceptionOrNull()?.message
             _state.update {
@@ -49,6 +52,7 @@ class ProfileViewModel(
                     isLoading = false,
                     stats = statsResult.getOrNull(),
                     history = historyResult.getOrNull(),
+                    leaderboard = leaderboardResult.getOrDefault(emptyList()),
                     errorMessage = error
                 )
             }

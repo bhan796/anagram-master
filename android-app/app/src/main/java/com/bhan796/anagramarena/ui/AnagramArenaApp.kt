@@ -20,6 +20,7 @@ import com.bhan796.anagramarena.ui.screens.SettingsScreen
 import com.bhan796.anagramarena.viewmodel.OnlineMatchViewModel
 import com.bhan796.anagramarena.viewmodel.ProfileViewModel
 import com.bhan796.anagramarena.viewmodel.PracticeSettingsViewModel
+import com.bhan796.anagramarena.viewmodel.HomeStatusViewModel
 
 private object Routes {
     const val HOME = "home"
@@ -44,14 +45,19 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModel.factory(dependencies.profileRepository, dependencies.sessionStore)
     )
+    val homeStatusViewModel: HomeStatusViewModel = viewModel(
+        factory = HomeStatusViewModel.factory(dependencies.profileRepository)
+    )
     val settings by settingsViewModel.state.collectAsState()
     val onlineState by onlineMatchViewModel.state.collectAsState()
+    val homeStatus by homeStatusViewModel.state.collectAsState()
 
     Scaffold { innerPadding ->
         NavHost(navController = navController, startDestination = Routes.HOME) {
             composable(Routes.HOME) {
                 HomeScreen(
                     contentPadding = innerPadding,
+                    playersOnline = homeStatus.playersOnline,
                     onPlayOnline = { navController.navigate(Routes.ONLINE_MATCHMAKING) },
                     onPracticeMode = { navController.navigate(Routes.PRACTICE) },
                     onProfile = { navController.navigate(Routes.PROFILE) },

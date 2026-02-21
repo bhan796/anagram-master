@@ -104,6 +104,19 @@ export const App = () => {
   const [history, setHistory] = useState<MatchHistoryItem[]>([]);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = useState<
+    Array<{
+      playerId: string;
+      displayName: string;
+      rating: number;
+      rankTier: string;
+      rankedGames: number;
+      wins: number;
+      losses: number;
+      draws: number;
+    }>
+  >([]);
+  const [playersOnline, setPlayersOnline] = useState(0);
 
   const online = useOnlineMatch();
 
@@ -145,6 +158,12 @@ export const App = () => {
         const historyPayload = (await historyRes.json()) as { matches: MatchHistoryItem[] };
         setStats(statsPayload);
         setHistory(historyPayload.matches ?? []);
+
+        const leaderboardRes = await fetch(`${apiBaseUrl}/api/leaderboard?limit=20`);
+        if (leaderboardRes.ok) {
+          const leaderboardPayload = (await leaderboardRes.json()) as { entries?: typeof leaderboard };
+          setLeaderboard(leaderboardPayload.entries ?? []);
+        }
       } catch (error) {
         setProfileError(error instanceof Error ? error.message : "Unable to load profile");
       } finally {
@@ -153,6 +172,27 @@ export const App = () => {
     },
     [online.state.playerId]
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    const pullPresence = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/presence`);
+        if (!response.ok) return;
+        const payload = (await response.json()) as { playersOnline?: number };
+        if (!cancelled) setPlayersOnline(payload.playersOnline ?? 0);
+      } catch {
+        // ignore presence polling failures
+      }
+    };
+
+    void pullPresence();
+    const timer = window.setInterval(() => void pullPresence(), 10000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (route === "profile") {
@@ -170,6 +210,7 @@ export const App = () => {
         onPracticeMode={() => setRoute("practice")}
         onProfile={() => setRoute("profile")}
         onSettings={() => setRoute("settings")}
+        playersOnline={playersOnline}
       />
     );
   }
@@ -248,6 +289,7 @@ export const App = () => {
         error={profileError}
         stats={stats}
         history={history}
+        leaderboard={leaderboard}
         onBack={() => setRoute("home")}
         onRetry={() => void loadProfile()}
       />
