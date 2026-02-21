@@ -11,6 +11,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,9 +30,11 @@ fun MatchmakingScreen(
     onBack: () -> Unit,
     onJoinQueue: (String?) -> Unit,
     onCancelQueue: () -> Unit,
-    onRetryConnection: () -> Unit
+    onRetryConnection: () -> Unit,
+    onMatchReady: () -> Unit
 ) {
     var displayName by remember { mutableStateOf(onlineState.displayName.orEmpty()) }
+    var searchStarted by remember { mutableStateOf(false) }
     val dotsAnim = rememberInfiniteTransition(label = "searchDots")
     val dotsProgress by dotsAnim.animateFloat(
         initialValue = 0f,
@@ -41,15 +44,24 @@ fun MatchmakingScreen(
     )
 
     val searchingLabel = "SEARCHING" + ".".repeat((dotsProgress * 3).toInt() + 1)
+    val hasMatchAfterSearch = searchStarted && onlineState.matchState != null
     val primaryButtonText = when {
-        onlineState.matchState != null -> "MATCH FOUND!"
-        onlineState.isInMatchmaking -> searchingLabel
+        hasMatchAfterSearch -> "MATCH FOUND!"
+        searchStarted && onlineState.isInMatchmaking -> searchingLabel
         else -> "FIND OPPONENT"
     }
     val primaryButtonEnabled =
-        !onlineState.isInMatchmaking &&
-            onlineState.matchState == null &&
+        !searchStarted &&
+            !onlineState.isInMatchmaking &&
             onlineState.connectionState is SocketConnectionState.Connected
+
+    LaunchedEffect(searchStarted, onlineState.matchState?.matchId) {
+        if (searchStarted && onlineState.matchState != null) {
+            kotlinx.coroutines.delay(1000)
+            onMatchReady()
+            searchStarted = false
+        }
+    }
 
     ArcadeScaffold(contentPadding = contentPadding) {
         ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
@@ -65,15 +77,21 @@ fun MatchmakingScreen(
 
         ArcadeButton(
             text = primaryButtonText,
-            onClick = { onJoinQueue(displayName.ifBlank { null }) },
+            onClick = {
+                searchStarted = true
+                onJoinQueue(displayName.ifBlank { null })
+            },
             enabled = primaryButtonEnabled,
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (onlineState.isInMatchmaking && onlineState.matchState == null) {
+        if (searchStarted && onlineState.isInMatchmaking && onlineState.matchState == null) {
             ArcadeButton(
                 text = "CANCEL SEARCH",
-                onClick = onCancelQueue,
+                onClick = {
+                    searchStarted = false
+                    onCancelQueue()
+                },
                 modifier = Modifier.fillMaxWidth()
             )
         }

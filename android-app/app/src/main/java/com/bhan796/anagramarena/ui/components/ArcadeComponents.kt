@@ -60,7 +60,7 @@ fun TileLogo(modifier: Modifier = Modifier) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             bottom.forEachIndexed { index, letter ->
-                LogoTile(letter = letter, color = palette[(index + 1) % palette.size], index = index + top.size)
+                LogoTile(letter = letter, color = palette[(index + 2) % palette.size], index = index + top.size)
             }
         }
     }
