@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.TextUnit
 
 // --- Palette ---
 val ColorBackground      = Color(0xFF0A0A18)   // near-black dark navy
@@ -70,7 +71,11 @@ private fun Typography.scale(scale: Float): Typography = copy(
 )
 
 private fun TextStyle.scale(scale: Float): TextStyle = copy(
-    fontSize = fontSize * scale,
-    lineHeight = lineHeight * scale,
-    letterSpacing = letterSpacing * scale
+    fontSize = fontSize.scaleIfSpecified(scale),
+    lineHeight = lineHeight.scaleIfSpecified(scale),
+    letterSpacing = letterSpacing.scaleIfSpecified(scale)
 )
+
+private fun TextUnit.scaleIfSpecified(scale: Float): TextUnit {
+    return if (isUnspecified) this else this * scale
+}
