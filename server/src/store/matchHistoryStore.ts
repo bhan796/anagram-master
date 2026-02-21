@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ratingToTier } from "../game/ranking.js";
 import type { FinishedMatchRecord } from "../game/types.js";
 
 interface PersistedShape {
@@ -17,6 +18,25 @@ export interface PlayerStats {
   totalScore: number;
   averageScore: number;
   recentMatchIds: string[];
+  rating: number;
+  peakRating: number;
+  rankTier: string;
+  rankedGames: number;
+  rankedWins: number;
+  rankedLosses: number;
+  rankedDraws: number;
+}
+
+export interface LeaderboardEntry {
+  playerId: string;
+  displayName: string;
+  rating: number;
+  rankTier: string;
+  rankedGames: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  peakRating: number;
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -62,6 +82,18 @@ export class MatchHistoryStore {
       .slice(0, 10)
       .map((match) => match.matchId);
 
+    const rankedMatches = playerMatches.filter((match) => match.mode === "ranked");
+    const rankedGames = rankedMatches.length;
+    const rankedWins = rankedMatches.filter((match) => match.winnerPlayerId === playerId).length;
+    const rankedDraws = rankedMatches.filter((match) => match.winnerPlayerId === null).length;
+    const rankedLosses = rankedGames - rankedWins - rankedDraws;
+
+    const rating = latestPlayer?.ratingAfter ?? 1000;
+    const peakRating = playerMatches.reduce((max, match) => {
+      const entry = match.players.find((player) => player.playerId === playerId);
+      return Math.max(max, entry?.ratingAfter ?? 1000);
+    }, 1000);
+
     return {
       playerId,
       displayName: latestPlayer?.displayName ?? "Guest",
@@ -71,7 +103,14 @@ export class MatchHistoryStore {
       draws,
       totalScore,
       averageScore,
-      recentMatchIds
+      recentMatchIds,
+      rating,
+      peakRating,
+      rankTier: ratingToTier(rating),
+      rankedGames,
+      rankedWins,
+      rankedLosses,
+      rankedDraws
     };
   }
 
@@ -79,6 +118,39 @@ export class MatchHistoryStore {
     return this.matches
       .filter((match) => match.players.some((player) => player.playerId === playerId))
       .sort((a, b) => b.finishedAtMs - a.finishedAtMs)
+      .slice(0, limit);
+  }
+
+  getLeaderboard(limit = 50): LeaderboardEntry[] {
+    const latestByPlayer = new Map<string, LeaderboardEntry>();
+
+    const byFinishedAsc = [...this.matches].sort((a, b) => a.finishedAtMs - b.finishedAtMs);
+    for (const match of byFinishedAsc) {
+      for (const player of match.players) {
+        const current = latestByPlayer.get(player.playerId);
+        const updated: LeaderboardEntry = {
+          playerId: player.playerId,
+          displayName: player.displayName,
+          rating: player.ratingAfter,
+          rankTier: player.rankTier,
+          rankedGames: (current?.rankedGames ?? 0) + (match.mode === "ranked" ? 1 : 0),
+          wins:
+            (current?.wins ?? 0) + (match.mode === "ranked" && match.winnerPlayerId === player.playerId ? 1 : 0),
+          draws:
+            (current?.draws ?? 0) + (match.mode === "ranked" && match.winnerPlayerId === null ? 1 : 0),
+          losses:
+            (current?.losses ?? 0) +
+            (match.mode === "ranked" && match.winnerPlayerId !== null && match.winnerPlayerId !== player.playerId ? 1 : 0),
+          peakRating: Math.max(current?.peakRating ?? 1000, player.ratingAfter)
+        };
+
+        latestByPlayer.set(player.playerId, updated);
+      }
+    }
+
+    return [...latestByPlayer.values()]
+      .filter((entry) => entry.rankedGames > 0)
+      .sort((a, b) => (b.rating === a.rating ? b.rankedGames - a.rankedGames : b.rating - a.rating))
       .slice(0, limit);
   }
 

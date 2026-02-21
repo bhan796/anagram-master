@@ -7,6 +7,7 @@ export type MatchPhase =
 
 export type RoundType = "letters" | "conundrum";
 export type PickKind = "vowel" | "consonant";
+export type MatchMode = "casual" | "ranked";
 
 export interface PlayerRuntime {
   playerId: string;
@@ -14,7 +15,14 @@ export interface PlayerRuntime {
   socketId: string | null;
   connected: boolean;
   matchId: string | null;
+  queuedMode: MatchMode | null;
   lastConundrumGuessAtMs: number;
+  rating: number;
+  rankedGames: number;
+  rankedWins: number;
+  rankedLosses: number;
+  rankedDraws: number;
+  peakRating: number;
 }
 
 export interface RoundPlan {
@@ -73,7 +81,9 @@ export interface RoundResult {
 export interface MatchState {
   matchId: string;
   createdAtMs: number;
+  mode: MatchMode;
   players: [string, string];
+  startRatings: Record<string, number>;
   phase: MatchPhase;
   phaseEndsAtMs: number | null;
   roundIndex: number;
@@ -83,6 +93,7 @@ export interface MatchState {
   scores: Record<string, number>;
   winnerPlayerId: string | null;
   endReason: "completed" | "forfeit_disconnect" | "forfeit_manual" | null;
+  ratingChanges: Record<string, number> | null;
   updatedAtMs: number;
 }
 
@@ -91,6 +102,8 @@ export interface SerializedPlayer {
   displayName: string;
   connected: boolean;
   score: number;
+  rating: number;
+  rankTier: string;
 }
 
 export interface SerializedRoundResult extends RoundResult {}
@@ -102,6 +115,7 @@ export interface SerializedMatchState {
   serverNowMs: number;
   roundNumber: number;
   roundType: RoundType;
+  mode: MatchMode;
   players: SerializedPlayer[];
   pickerPlayerId?: string;
   letters?: string[];
@@ -109,6 +123,7 @@ export interface SerializedMatchState {
   roundResults: SerializedRoundResult[];
   winnerPlayerId: string | null;
   matchEndReason?: "completed" | "forfeit_disconnect" | "forfeit_manual";
+  ratingChanges?: Record<string, number>;
 }
 
 export interface MatchServiceOptions {
@@ -121,7 +136,7 @@ export interface MatchServiceOptions {
   conundrumGuessCooldownMs: number;
   logEvent: (message: string, details?: Record<string, unknown>) => void;
   onMatchUpdated: (matchId: string) => void;
-  onQueueUpdated: (playerId: string, queueSize: number) => void;
+  onQueueUpdated: (playerId: string, queueSize: number, mode: MatchMode) => void;
   onMatchFinished: (record: FinishedMatchRecord) => void;
 }
 
@@ -139,11 +154,18 @@ export interface FinishedMatchRecord {
   matchId: string;
   createdAtMs: number;
   finishedAtMs: number;
+  mode: MatchMode;
   players: Array<{
     playerId: string;
     displayName: string;
     score: number;
+    ratingBefore: number;
+    ratingAfter: number;
+    ratingDelta: number;
+    rankTier: string;
   }>;
   winnerPlayerId: string | null;
+  matchEndReason: "completed" | "forfeit_disconnect" | "forfeit_manual" | null;
+  ratingChanges: Record<string, number>;
   roundResults: SerializedRoundResult[];
 }

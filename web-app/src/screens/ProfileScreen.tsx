@@ -9,6 +9,13 @@ interface StatsSummary {
   losses: number;
   draws: number;
   totalScore: number;
+  rating: number;
+  peakRating: number;
+  rankTier: string;
+  rankedGames: number;
+  rankedWins: number;
+  rankedLosses: number;
+  rankedDraws: number;
 }
 
 interface HistoryPlayer {
@@ -21,6 +28,7 @@ interface HistoryItem {
   matchId: string;
   createdAtMs: number;
   finishedAtMs: number;
+  mode: "casual" | "ranked";
   winnerPlayerId: string | null;
   players: HistoryPlayer[];
 }
@@ -43,7 +51,11 @@ export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetr
             ["Wins", stats.wins],
             ["Losses", stats.losses],
             ["Draws", stats.draws],
-            ["Total Score", stats.totalScore]
+            ["Total Score", stats.totalScore],
+            ["Rank", stats.rankTier.toUpperCase()],
+            ["Rating", stats.rating],
+            ["Peak Rating", stats.peakRating],
+            ["Ranked", `${stats.rankedWins}-${stats.rankedLosses}-${stats.rankedDraws}`]
           ]
         : [],
     [stats]
@@ -106,6 +118,7 @@ export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetr
                   </span>
                 </div>
                 <div className="text-dim">Your score: {myPlayer?.score ?? 0}</div>
+                <div className="text-dim">Mode: {(match.mode ?? "casual").toUpperCase()}</div>
                 {match.players.map((player) => (
                   <div key={`${match.matchId}-${player.playerId}`} className="text-dim">
                     {player.displayName}: {player.score}

@@ -5,7 +5,7 @@ import { ArcadeBackButton, ArcadeButton, ArcadeScaffold, NeonTitle } from "../co
 interface MatchmakingScreenProps {
   state: OnlineUiState;
   onBack: () => void;
-  onJoinQueue: () => void;
+  onJoinQueue: (mode: "casual" | "ranked") => void;
   onCancelQueue: () => void;
   onRetryConnection: () => void;
   onMatchReady: () => void;
@@ -14,6 +14,7 @@ interface MatchmakingScreenProps {
 export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, onRetryConnection, onMatchReady }: MatchmakingScreenProps) => {
   const [searchStarted, setSearchStarted] = useState(false);
   const [dots, setDots] = useState(1);
+  const [selectedMode, setSelectedMode] = useState<"casual" | "ranked">("casual");
   const hasActiveMatch = Boolean(state.matchState && state.matchState.phase !== "finished");
 
   useEffect(() => {
@@ -56,11 +57,26 @@ export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, o
         </div>
       </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <ArcadeButton
+          text="Casual"
+          onClick={() => setSelectedMode("casual")}
+          disabled={searchStarted || state.isInMatchmaking || hasActiveMatch || selectedMode === "casual"}
+          accent="gold"
+        />
+        <ArcadeButton
+          text="Ranked"
+          onClick={() => setSelectedMode("ranked")}
+          disabled={searchStarted || state.isInMatchmaking || hasActiveMatch || selectedMode === "ranked"}
+          accent="magenta"
+        />
+      </div>
+
       <ArcadeButton
         text={buttonText}
         onClick={() => {
           setSearchStarted(true);
-          onJoinQueue();
+          onJoinQueue(selectedMode);
         }}
         disabled={!primaryEnabled}
       />

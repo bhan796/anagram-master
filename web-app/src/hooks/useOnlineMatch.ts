@@ -131,6 +131,7 @@ const reduceOnlineState = (
     displayName: session?.displayName ?? previous.displayName,
     queueState,
     queueSize: matchmaking?.queueSize ?? previous.queueSize,
+    queueMode: matchmaking?.mode ?? previous.queueMode,
     isInMatchmaking,
     matchState: updatedMatch,
     matchId: updatedMatch?.matchId ?? previous.matchId,
@@ -261,14 +262,15 @@ export const useOnlineMatch = () => {
     setState((previous) => ({ ...previous, conundrumGuessInput: value }));
   }, []);
 
-  const startQueue = useCallback(() => {
+  const startQueue = useCallback((mode: "casual" | "ranked" = "casual") => {
     const socket = socketRef.current;
     if (!socket) return;
 
     const identifyPayload: Record<string, string> = {};
     if (state.playerId) identifyPayload.playerId = state.playerId;
     socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
-    socket.emit(SocketEventNames.QUEUE_JOIN);
+    socket.emit(SocketEventNames.QUEUE_JOIN, { mode });
+    setState((previous) => ({ ...previous, queueMode: mode }));
   }, [state.playerId]);
 
   const cancelQueue = useCallback(() => {

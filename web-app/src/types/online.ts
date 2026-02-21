@@ -17,6 +17,7 @@ export interface SessionIdentifyPayload {
 export interface MatchmakingStatusPayload {
   queueSize: number;
   state: string;
+  mode?: "casual" | "ranked";
 }
 
 export interface MatchFoundPayload {
@@ -35,6 +36,8 @@ export interface PlayerSnapshot {
   displayName: string;
   connected: boolean;
   score: number;
+  rating?: number;
+  rankTier?: string;
 }
 
 export interface WordSubmissionSnapshot {
@@ -65,6 +68,7 @@ export interface MatchStatePayload {
   serverNowMs: number;
   roundNumber: number;
   roundType: RoundType;
+  mode?: "casual" | "ranked";
   players: PlayerSnapshot[];
   pickerPlayerId: string | null;
   letters: string[];
@@ -72,6 +76,7 @@ export interface MatchStatePayload {
   roundResults: RoundResultSnapshot[];
   winnerPlayerId: string | null;
   matchEndReason?: "completed" | "forfeit_disconnect" | "forfeit_manual";
+  ratingChanges?: Record<string, number>;
 }
 
 export interface OnlineUiState {
@@ -80,6 +85,7 @@ export interface OnlineUiState {
   displayName: string | null;
   queueState: string;
   queueSize: number;
+  queueMode: "casual" | "ranked";
   isInMatchmaking: boolean;
   matchId: string | null;
   matchState: MatchStatePayload | null;
@@ -102,6 +108,7 @@ export const initialOnlineUiState: OnlineUiState = {
   displayName: null,
   queueState: "idle",
   queueSize: 0,
+  queueMode: "casual",
   isInMatchmaking: false,
   matchId: null,
   matchState: null,

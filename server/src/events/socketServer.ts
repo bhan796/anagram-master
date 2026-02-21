@@ -5,6 +5,7 @@ import { loadEnv } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { loadConundrums, loadDictionarySet } from "../game/data.js";
 import { MatchService } from "../game/matchService.js";
+import type { MatchMode } from "../game/types.js";
 import type { MatchHistoryStore } from "../store/matchHistoryStore.js";
 import { SocketEvents, toActionError } from "./contracts.js";
 
@@ -35,16 +36,17 @@ export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: Ma
         const player = service.getPlayer(playerId);
         if (!player?.socketId) continue;
 
-        const payload = service.serializeForPlayer(match, playerId);
+        const payload = service.serializeForPlayer(match);
         io.to(player.socketId).emit(SocketEvents.matchState, payload);
       }
     },
-    onQueueUpdated: (playerId, queueSize) => {
+    onQueueUpdated: (playerId, queueSize, mode) => {
       const player = service.getPlayer(playerId);
       if (!player?.socketId) return;
       io.to(player.socketId).emit(SocketEvents.matchmakingStatus, {
         queueSize,
-        state: "searching"
+        state: queueSize > 0 ? "searching" : "idle",
+        mode
       });
     }
   });
@@ -66,17 +68,18 @@ export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: Ma
 
       const activeMatch = service.getMatchByPlayer(player.playerId);
       if (activeMatch) {
-        socket.emit(SocketEvents.matchState, service.serializeForPlayer(activeMatch, player.playerId));
+        socket.emit(SocketEvents.matchState, service.serializeForPlayer(activeMatch));
       }
     });
 
-    socket.on(SocketEvents.queueJoin, () => {
+    socket.on(SocketEvents.queueJoin, (payload: { mode?: MatchMode } = {}) => {
       if (!playerId) {
         socket.emit(SocketEvents.actionError, toActionError(SocketEvents.queueJoin, "UNKNOWN_PLAYER"));
         return;
       }
 
-      const result = service.joinQueue(playerId);
+      const mode: MatchMode = payload.mode === "ranked" ? "ranked" : "casual";
+      const result = service.joinQueue(playerId, mode);
       if (!result.ok && result.code) {
         socket.emit(SocketEvents.actionError, toActionError(SocketEvents.queueJoin, result.code));
         return;
@@ -88,7 +91,7 @@ export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: Ma
           matchId: match.matchId,
           serverNowMs: Date.now()
         });
-        socket.emit(SocketEvents.matchState, service.serializeForPlayer(match, playerId));
+        socket.emit(SocketEvents.matchState, service.serializeForPlayer(match));
 
         for (const otherPlayerId of match.players) {
           if (otherPlayerId === playerId) continue;
@@ -105,10 +108,13 @@ export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: Ma
 
     socket.on(SocketEvents.queueLeave, () => {
       if (!playerId) return;
+      const player = service.getPlayer(playerId);
+      const mode = player?.queuedMode ?? "casual";
       service.leaveQueue(playerId);
       socket.emit(SocketEvents.matchmakingStatus, {
         queueSize: 0,
-        state: "idle"
+        state: "idle",
+        mode
       });
     });
 
@@ -126,7 +132,7 @@ export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: Ma
 
       const match = service.getMatch(payload.matchId);
       if (match) {
-        socket.emit(SocketEvents.matchState, service.serializeForPlayer(match, playerId));
+        socket.emit(SocketEvents.matchState, service.serializeForPlayer(match));
       }
     });
 

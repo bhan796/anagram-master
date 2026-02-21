@@ -27,6 +27,8 @@ import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.NeonTitle
 import com.bhan796.anagramarena.ui.theme.ColorCyan
+import com.bhan796.anagramarena.ui.theme.ColorGold
+import com.bhan796.anagramarena.ui.theme.ColorMagenta
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.ui.theme.sdp
 
@@ -35,12 +37,13 @@ fun MatchmakingScreen(
     contentPadding: PaddingValues,
     onlineState: OnlineUiState,
     onBack: () -> Unit,
-    onJoinQueue: () -> Unit,
+    onJoinQueue: (String) -> Unit,
     onCancelQueue: () -> Unit,
     onRetryConnection: () -> Unit,
     onMatchReady: () -> Unit
 ) {
     var searchStarted by remember { mutableStateOf(false) }
+    var selectedMode by remember { mutableStateOf("casual") }
     val dotsAnim = rememberInfiniteTransition(label = "searchDots")
     val dotsProgress by dotsAnim.animateFloat(
         initialValue = 0f,
@@ -87,11 +90,28 @@ fun MatchmakingScreen(
             Text(onlineState.displayName.orEmpty())
         }
 
+        androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(sdp(10.dp))) {
+            ArcadeButton(
+                text = "CASUAL",
+                onClick = { selectedMode = "casual" },
+                enabled = !searchStarted && !onlineState.isInMatchmaking && !hasExistingMatch && selectedMode != "casual",
+                accentColor = ColorGold,
+                modifier = Modifier.weight(1f)
+            )
+            ArcadeButton(
+                text = "RANKED",
+                onClick = { selectedMode = "ranked" },
+                enabled = !searchStarted && !onlineState.isInMatchmaking && !hasExistingMatch && selectedMode != "ranked",
+                accentColor = ColorMagenta,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
         ArcadeButton(
             text = primaryButtonText,
             onClick = {
                 searchStarted = true
-                onJoinQueue()
+                onJoinQueue(selectedMode)
             },
             enabled = primaryButtonEnabled,
             modifier = Modifier.fillMaxWidth()

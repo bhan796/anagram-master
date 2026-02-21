@@ -23,7 +23,8 @@ data class SessionIdentifyPayload(
 
 data class MatchmakingStatusPayload(
     val queueSize: Int,
-    val state: String
+    val state: String,
+    val mode: String = "casual"
 )
 
 data class MatchFoundPayload(
@@ -41,7 +42,9 @@ data class PlayerSnapshot(
     val playerId: String,
     val displayName: String,
     val connected: Boolean,
-    val score: Int
+    val score: Int,
+    val rating: Int = 1000,
+    val rankTier: String = "silver"
 )
 
 data class WordSubmissionSnapshot(
@@ -72,13 +75,15 @@ data class MatchStatePayload(
     val serverNowMs: Long,
     val roundNumber: Int,
     val roundType: RoundType,
+    val mode: String = "casual",
     val players: List<PlayerSnapshot>,
     val pickerPlayerId: String?,
     val letters: List<String>,
     val scrambled: String?,
     val roundResults: List<RoundResultSnapshot>,
     val winnerPlayerId: String?,
-    val matchEndReason: String?
+    val matchEndReason: String?,
+    val ratingChanges: Map<String, Int> = emptyMap()
 )
 
 object SocketEventNames {

@@ -146,3 +146,44 @@ export const WordTiles = ({
     </div>
   );
 };
+
+const rankGlyph: Record<string, string> = {
+  bronze: "▲",
+  silver: "◆",
+  gold: "✦",
+  platinum: "⬢",
+  diamond: "◈",
+  master: "✶"
+};
+
+const rankColor: Record<string, string> = {
+  bronze: "#cd7f32",
+  silver: "#c0c0c0",
+  gold: "var(--gold)",
+  platinum: "#7fffd4",
+  diamond: "#7fdfff",
+  master: "#ff5fd7"
+};
+
+export const RankBadge = ({ tier }: { tier?: string }) => {
+  const normalized = (tier ?? "bronze").toLowerCase();
+  const color = rankColor[normalized] ?? "var(--cyan)";
+  const glyph = rankGlyph[normalized] ?? "▲";
+  return (
+    <div
+      className="label"
+      style={{
+        color,
+        border: "1px solid rgba(0,245,255,.35)",
+        borderRadius: 6,
+        padding: "4px 8px",
+        display: "inline-flex",
+        gap: 6,
+        alignItems: "center"
+      }}
+    >
+      <span>{glyph}</span>
+      <span>{normalized.toUpperCase()}</span>
+    </div>
+  );
+};

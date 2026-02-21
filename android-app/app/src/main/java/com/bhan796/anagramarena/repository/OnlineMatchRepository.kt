@@ -100,9 +100,9 @@ class OnlineMatchRepository(
         socketClient.identify(sessionStore.playerId, displayName)
     }
 
-    fun joinQueue() {
+    fun joinQueue(mode: String = "casual") {
         _actionError.value = null
-        socketClient.joinQueue()
+        socketClient.joinQueue(mode)
     }
 
     fun leaveQueue() {

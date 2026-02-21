@@ -36,14 +36,31 @@ interface StatsSummary {
   losses: number;
   draws: number;
   totalScore: number;
+  rating: number;
+  peakRating: number;
+  rankTier: string;
+  rankedGames: number;
+  rankedWins: number;
+  rankedLosses: number;
+  rankedDraws: number;
 }
 
 interface MatchHistoryItem {
   matchId: string;
   createdAtMs: number;
   finishedAtMs: number;
+  mode: "casual" | "ranked";
   winnerPlayerId: string | null;
-  players: { playerId: string; displayName: string; score: number }[];
+  players: {
+    playerId: string;
+    displayName: string;
+    score: number;
+    ratingBefore: number;
+    ratingAfter: number;
+    ratingDelta: number;
+    rankTier: string;
+  }[];
+  ratingChanges?: Record<string, number>;
 }
 
 const SETTINGS_KEY = "anagram.web.settings";

@@ -15,7 +15,8 @@ object SocketPayloadParser {
     fun parseMatchmakingStatus(obj: JSONObject): MatchmakingStatusPayload {
         return MatchmakingStatusPayload(
             queueSize = obj.optInt("queueSize"),
-            state = obj.optString("state")
+            state = obj.optString("state"),
+            mode = obj.optString("mode", "casual")
         )
     }
 
@@ -45,13 +46,15 @@ object SocketPayloadParser {
             serverNowMs = obj.optLong("serverNowMs"),
             roundNumber = obj.optInt("roundNumber"),
             roundType = parseRoundType(obj.optString("roundType")),
+            mode = obj.optString("mode", "casual"),
             players = players,
             pickerPlayerId = obj.optStringOrNull("pickerPlayerId"),
             letters = obj.optJSONArray("letters")?.toStringList().orEmpty(),
             scrambled = obj.optStringOrNull("scrambled"),
             roundResults = roundResults,
             winnerPlayerId = obj.optStringOrNull("winnerPlayerId"),
-            matchEndReason = obj.optStringOrNull("matchEndReason")
+            matchEndReason = obj.optStringOrNull("matchEndReason"),
+            ratingChanges = obj.optJSONObject("ratingChanges")?.toIntMap().orEmpty()
         )
     }
 
@@ -83,7 +86,9 @@ object SocketPayloadParser {
                         playerId = obj.optString("playerId"),
                         displayName = obj.optString("displayName"),
                         connected = obj.optBoolean("connected"),
-                        score = obj.optInt("score")
+                        score = obj.optInt("score"),
+                        rating = obj.optInt("rating", 1000),
+                        rankTier = obj.optString("rankTier", "silver")
                     )
                 )
             }

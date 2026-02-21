@@ -243,6 +243,39 @@ fun ScoreBadge(label: String, score: Int, color: Color = ColorCyan) {
     }
 }
 
+@Composable
+fun RankBadge(tier: String, modifier: Modifier = Modifier) {
+    val normalized = tier.lowercase()
+    val glyph = when (normalized) {
+        "master" -> "✶"
+        "diamond" -> "◈"
+        "platinum" -> "⬢"
+        "gold" -> "✦"
+        "silver" -> "◆"
+        else -> "▲"
+    }
+    val color = when (normalized) {
+        "master" -> ColorMagenta
+        "diamond" -> Color(0xFF7FDFFF)
+        "platinum" -> Color(0xFF7FFFD4)
+        "gold" -> ColorGold
+        "silver" -> Color(0xFFC0C0C0)
+        else -> Color(0xFFCD7F32)
+    }
+
+    Row(
+        modifier = modifier
+            .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+            .border(sdp(1.dp), ColorCyan.copy(alpha = 0.35f), RoundedCornerShape(sdp(6.dp)))
+            .padding(horizontal = sdp(8.dp), vertical = sdp(6.dp)),
+        horizontalArrangement = Arrangement.spacedBy(sdp(6.dp)),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(glyph, color = color, style = MaterialTheme.typography.labelLarge)
+        Text(normalized.uppercase(), color = color, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
 // -- Section divider ----------------------------------------------------------
 @Composable
 fun NeonDivider(color: Color = ColorCyan.copy(alpha = 0.3f)) {

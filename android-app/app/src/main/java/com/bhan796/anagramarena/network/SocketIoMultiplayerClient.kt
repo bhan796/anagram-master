@@ -102,8 +102,10 @@ class SocketIoMultiplayerClient : MultiplayerSocketClient {
         }
     }
 
-    override fun joinQueue() {
-        emit(SocketEventNames.QUEUE_JOIN)
+    override fun joinQueue(mode: String) {
+        emit(SocketEventNames.QUEUE_JOIN) {
+            put("mode", mode)
+        }
     }
 
     override fun leaveQueue() {

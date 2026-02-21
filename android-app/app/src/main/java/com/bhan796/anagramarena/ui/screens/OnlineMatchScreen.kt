@@ -40,12 +40,14 @@ import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.LetterTile
 import com.bhan796.anagramarena.ui.components.NeonTitle
+import com.bhan796.anagramarena.ui.components.RankBadge
 import com.bhan796.anagramarena.ui.components.ScoreBadge
 import com.bhan796.anagramarena.ui.components.TapLetterComposer
 import com.bhan796.anagramarena.ui.components.TimerBar
 import com.bhan796.anagramarena.ui.theme.ColorCyan
 import com.bhan796.anagramarena.ui.theme.ColorDimText
 import com.bhan796.anagramarena.ui.theme.ColorGold
+import com.bhan796.anagramarena.ui.theme.ColorGreen
 import com.bhan796.anagramarena.ui.theme.ColorRed
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.ui.theme.sdp
@@ -352,6 +354,18 @@ fun OnlineMatchScreen(
 
             MatchPhase.FINISHED -> {
                 NeonTitle("FINAL RESULT")
+                val mySnapshot = match.players.firstOrNull { it.playerId == state.playerId }
+                val myDelta = match.ratingChanges[state.playerId] ?: 0
+                var animatedDelta by remember(match.matchId, myDelta) { mutableStateOf(0) }
+                LaunchedEffect(match.matchId, myDelta) {
+                    animatedDelta = 0
+                    if (myDelta == 0) return@LaunchedEffect
+                    val step = if (myDelta > 0) 1 else -1
+                    while (animatedDelta != myDelta) {
+                        animatedDelta += step
+                        kotlinx.coroutines.delay(20)
+                    }
+                }
                 Text(
                     text = when {
                         match.winnerPlayerId == null -> "Draw"
@@ -360,6 +374,36 @@ fun OnlineMatchScreen(
                     },
                     style = MaterialTheme.typography.headlineSmall
                 )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                        .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+                        .padding(sdp(12.dp))
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(sdp(8.dp))) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Mode", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+                            Text(match.mode.uppercase(), style = MaterialTheme.typography.labelMedium, color = ColorGold)
+                        }
+                        if (mySnapshot != null) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Rank", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+                                RankBadge(tier = mySnapshot.rankTier)
+                            }
+                        }
+                        if (match.mode == "ranked") {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Rating Change", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+                                Text(
+                                    text = if (animatedDelta >= 0) "+$animatedDelta" else animatedDelta.toString(),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = if (animatedDelta >= 0) ColorGreen else ColorRed
+                                )
+                            }
+                        }
+                    }
+                }
 
                 val playersById = match.players.associateBy { it.playerId }
                 Column(

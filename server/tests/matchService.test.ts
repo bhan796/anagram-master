@@ -259,16 +259,63 @@ describe("MatchService", () => {
 
     const p1 = service.connectPlayer("socket-1", undefined, "One").playerId;
     const p2 = service.connectPlayer("socket-2", undefined, "Two").playerId;
+    const p3 = service.connectPlayer("socket-3", undefined, "Three").playerId;
 
     // Simulate queue corruption with duplicate same player id.
-    (service as unknown as { queue: string[] }).queue.push(p1, p1);
+    (service as unknown as { queueByMode: { casual: Array<{ playerId: string; joinedAtMs: number }> } }).queueByMode.casual.push(
+      { playerId: p1, joinedAtMs: scheduler.now() },
+      { playerId: p1, joinedAtMs: scheduler.now() }
+    );
     expect(service.joinQueue(p2).ok).toBe(true);
+    expect(service.joinQueue(p3).ok).toBe(true);
 
-    const match = service.getMatchByPlayer(p1);
+    const match = service.getMatchByPlayer(p2);
     expect(match).toBeTruthy();
     if (!match) return;
     expect(match.players[0]).not.toBe(match.players[1]);
     expect(new Set(match.players).size).toBe(2);
+  });
+
+  it("applies ranked Elo updates for ranked matches only", () => {
+    const scheduler = new FakeScheduler();
+    const service = makeService(scheduler);
+    const p1 = service.connectPlayer("socket-1", undefined, "One").playerId;
+    const p2 = service.connectPlayer("socket-2", undefined, "Two").playerId;
+
+    expect(service.joinQueue(p1, "ranked").ok).toBe(true);
+    expect(service.joinQueue(p2, "ranked").ok).toBe(true);
+
+    let match = service.getMatchByPlayer(p1);
+    expect(match?.mode).toBe("ranked");
+    if (!match || match.liveRound.type !== "letters") return;
+
+    for (let round = 0; round < 4; round += 1) {
+      const current = service.getMatchByPlayer(p1);
+      if (!current || current.liveRound.type !== "letters") return;
+      const picker = current.liveRound.pickerPlayerId;
+
+      for (let i = 0; i < 9; i += 1) {
+        expect(service.pickLetter(picker, i < 8 ? "vowel" : "consonant").ok).toBe(true);
+      }
+      expect(service.submitWord(p1, "stone").ok).toBe(true);
+      expect(service.submitWord(p2, "").ok).toBe(true);
+      scheduler.advanceBy(250);
+    }
+
+    match = service.getMatchByPlayer(p1);
+    expect(match?.phase).toBe("conundrum_solving");
+    expect(service.submitConundrumGuess(p1, "algorithm").ok).toBe(true);
+    scheduler.advanceBy(250);
+
+    const finished = service.getMatch(match?.matchId ?? "");
+    expect(finished?.phase).toBe("finished");
+    expect(finished?.ratingChanges).toBeTruthy();
+
+    const afterP1 = service.getPlayer(p1);
+    const afterP2 = service.getPlayer(p2);
+    expect(afterP1?.rating).not.toBe(1000);
+    expect(afterP2?.rating).not.toBe(1000);
+    expect((afterP1?.rankedGames ?? 0) + (afterP2?.rankedGames ?? 0)).toBe(2);
   });
 
   it("auto-fills remaining letters after 10s pick timer and starts solving phase", () => {

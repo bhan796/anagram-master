@@ -25,7 +25,14 @@ export const createApiRouter = (matchHistoryStore: MatchHistoryStore): Router =>
         draws: 0,
         totalScore: 0,
         averageScore: 0,
-        recentMatchIds: []
+        recentMatchIds: [],
+        rating: 1000,
+        peakRating: 1000,
+        rankTier: "silver",
+        rankedGames: 0,
+        rankedWins: 0,
+        rankedLosses: 0,
+        rankedDraws: 0
       });
       return;
     }
@@ -40,6 +47,15 @@ export const createApiRouter = (matchHistoryStore: MatchHistoryStore): Router =>
       playerId: req.params.playerId,
       count: history.length,
       matches: history
+    });
+  });
+
+  router.get("/leaderboard", (req: Request, res: Response) => {
+    const limit = Number(req.query.limit ?? 50);
+    const entries = matchHistoryStore.getLeaderboard(Number.isFinite(limit) ? limit : 50);
+    res.json({
+      count: entries.length,
+      entries
     });
   });
 

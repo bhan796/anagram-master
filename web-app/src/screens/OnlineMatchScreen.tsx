@@ -5,6 +5,7 @@ import {
   ArcadeScaffold,
   LetterTile,
   NeonTitle,
+  RankBadge,
   ScoreBadge,
   TimerBar,
   WordTiles
@@ -89,6 +90,34 @@ export const OnlineMatchScreen = ({
     if (!match.winnerPlayerId) return "Draw";
     return match.winnerPlayerId === state.playerId ? "You Win" : "You Lose";
   }, [match, state.playerId]);
+
+  const [animatedDelta, setAnimatedDelta] = useState(0);
+  const myDelta = useMemo(() => {
+    if (!match || match.phase !== "finished" || !state.playerId) return 0;
+    return match.ratingChanges?.[state.playerId] ?? 0;
+  }, [match, state.playerId]);
+
+  useEffect(() => {
+    if (!match || match.phase !== "finished") return;
+    setAnimatedDelta(0);
+    const step = myDelta > 0 ? 1 : myDelta < 0 ? -1 : 0;
+    if (step === 0) return;
+    const timer = window.setInterval(() => {
+      setAnimatedDelta((prev) => {
+        if (prev === myDelta) {
+          window.clearInterval(timer);
+          return prev;
+        }
+        const next = prev + step;
+        if ((step > 0 && next > myDelta) || (step < 0 && next < myDelta)) {
+          window.clearInterval(timer);
+          return myDelta;
+        }
+        return next;
+      });
+    }, 20);
+    return () => window.clearInterval(timer);
+  }, [match, myDelta]);
 
   return (
     <ArcadeScaffold>
@@ -246,6 +275,36 @@ export const OnlineMatchScreen = ({
             <>
               <NeonTitle text="Final Result" />
               <div className="headline">{winnerLabel}</div>
+              <div className="card" style={{ display: "grid", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                  <div className="text-dim">Match Mode</div>
+                  <div className="label" style={{ color: "var(--gold)" }}>
+                    {(match.mode ?? "casual").toUpperCase()}
+                  </div>
+                </div>
+                {state.myPlayer ? (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                      <div className="text-dim">Current Rank</div>
+                      <RankBadge tier={state.myPlayer.rankTier} />
+                    </div>
+                    {(match.mode ?? "casual") === "ranked" ? (
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                        <div className="text-dim">Rating Change</div>
+                        <div
+                          className="headline"
+                          style={{
+                            color: animatedDelta >= 0 ? "var(--green)" : "var(--red)",
+                            textShadow: `0 0 16px ${animatedDelta >= 0 ? "rgba(57,255,20,.4)" : "rgba(255,58,58,.45)"}`
+                          }}
+                        >
+                          {animatedDelta >= 0 ? `+${animatedDelta}` : animatedDelta}
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
               <div style={{ display: "grid", gap: 12, maxHeight: "48vh", overflow: "auto" }}>
                 {match.roundResults.map((round) => (
                   <div key={`round-${round.roundNumber}`} className="card" style={{ display: "grid", gap: 10 }}>

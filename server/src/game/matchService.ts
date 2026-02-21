@@ -10,10 +10,12 @@ import {
   scrambleWord,
   scoreWord
 } from "./rules.js";
+import { computeEloDelta, ratingToTier } from "./ranking.js";
 import type {
   ConundrumRoundState,
   FinishedMatchRecord,
   LiveRoundState,
+  MatchMode,
   MatchServiceOptions,
   MatchState,
   PickKind,
@@ -37,9 +39,17 @@ const defaultOptions: Omit<MatchServiceOptions, "onMatchUpdated" | "onQueueUpdat
   logEvent: () => undefined
 };
 
+interface QueueEntry {
+  playerId: string;
+  joinedAtMs: number;
+}
+
 export class MatchService {
   private readonly players = new Map<string, PlayerRuntime>();
-  private readonly queue: string[] = [];
+  private readonly queueByMode: Record<MatchMode, QueueEntry[]> = {
+    casual: [],
+    ranked: []
+  };
   private readonly matches = new Map<string, MatchState>();
   private readonly timers = new Map<string, unknown>();
   private readonly dictionary: Set<string>;
@@ -70,7 +80,14 @@ export class MatchService {
         socketId,
         connected: true,
         matchId: null,
-        lastConundrumGuessAtMs: 0
+        queuedMode: null,
+        lastConundrumGuessAtMs: 0,
+        rating: 1000,
+        rankedGames: 0,
+        rankedWins: 0,
+        rankedLosses: 0,
+        rankedDraws: 0,
+        peakRating: 1000
       };
 
     player.socketId = socketId;
@@ -85,42 +102,53 @@ export class MatchService {
 
   disconnectSocket(socketId: string): void {
     for (const player of this.players.values()) {
-      if (player.socketId === socketId) {
-        player.connected = false;
-        player.socketId = null;
-        this.leaveQueue(player.playerId);
-        if (player.matchId) {
-          this.forfeitMatch(player.playerId, "disconnect");
-        }
-        this.options.logEvent("Player disconnected", { playerId: player.playerId, socketId });
+      if (player.socketId !== socketId) continue;
 
-        break;
+      player.connected = false;
+      player.socketId = null;
+      this.leaveQueue(player.playerId);
+      if (player.matchId) {
+        this.forfeitMatch(player.playerId, "disconnect");
       }
+      this.options.logEvent("Player disconnected", { playerId: player.playerId, socketId });
+      break;
     }
   }
 
-  joinQueue(playerId: string): { ok: boolean; code?: string; queueSize?: number } {
+  joinQueue(playerId: string, mode: MatchMode = "casual"): { ok: boolean; code?: string; queueSize?: number } {
     const player = this.players.get(playerId);
     if (!player) return { ok: false, code: "UNKNOWN_PLAYER" };
+
     this.reconcilePlayerMatch(player);
     if (player.matchId) return { ok: false, code: "ALREADY_IN_MATCH" };
 
-    this.pruneQueue();
+    this.leaveQueue(playerId);
+    this.pruneQueue(mode);
 
-    if (!this.queue.includes(playerId)) {
-      this.queue.push(playerId);
-      this.options.onQueueUpdated(playerId, this.queue.length);
+    const queue = this.queueByMode[mode];
+    if (!queue.some((entry) => entry.playerId === playerId)) {
+      queue.push({ playerId, joinedAtMs: this.options.now() });
+      player.queuedMode = mode;
     }
 
-    this.tryMatchPlayers();
-    return { ok: true, queueSize: this.queue.length };
+    this.options.onQueueUpdated(playerId, queue.length, mode);
+    this.tryMatchPlayers(mode);
+    return { ok: true, queueSize: queue.length };
   }
 
   leaveQueue(playerId: string): void {
-    const idx = this.queue.indexOf(playerId);
-    if (idx >= 0) {
-      this.queue.splice(idx, 1);
-      this.options.onQueueUpdated(playerId, this.queue.length);
+    const player = this.players.get(playerId);
+    for (const mode of ["casual", "ranked"] as const) {
+      const queue = this.queueByMode[mode];
+      const next = queue.filter((entry) => entry.playerId !== playerId);
+      if (next.length !== queue.length) {
+        queue.splice(0, queue.length, ...next);
+        this.options.onQueueUpdated(playerId, queue.length, mode);
+      }
+    }
+
+    if (player) {
+      player.queuedMode = null;
     }
   }
 
@@ -131,11 +159,13 @@ export class MatchService {
   getMatchByPlayer(playerId: string): MatchState | undefined {
     const player = this.players.get(playerId);
     if (!player?.matchId) return undefined;
+
     const match = this.matches.get(player.matchId);
     if (!match || match.phase === "finished") {
       player.matchId = null;
       return undefined;
     }
+
     return match;
   }
 
@@ -147,6 +177,12 @@ export class MatchService {
     const match = this.matches.get(matchId);
     if (!match) return { ok: false, code: "MATCH_NOT_FOUND" };
     if (!match.players.includes(playerId)) return { ok: false, code: "NOT_MATCH_PARTICIPANT" };
+
+    const player = this.players.get(playerId);
+    if (player) {
+      player.matchId = matchId;
+    }
+
     return { ok: true };
   }
 
@@ -156,18 +192,30 @@ export class MatchService {
     if (match.phase === "finished") return { ok: false, code: "INVALID_PHASE" };
 
     this.clearPhaseTimer(match.matchId);
-    const winnerPlayerId = match.players.find((id) => id !== playerId) ?? null;
 
+    const winnerPlayerId = match.players.find((id) => id !== playerId) ?? null;
     match.phase = "finished";
     match.phaseEndsAtMs = null;
     match.winnerPlayerId = winnerPlayerId;
     match.endReason = reason === "disconnect" ? "forfeit_disconnect" : "forfeit_manual";
+
+    if (match.mode === "ranked" && winnerPlayerId) {
+      const loserPlayerId = match.players.find((id) => id !== winnerPlayerId) ?? playerId;
+      this.applyRankedOutcome(match, winnerPlayerId, loserPlayerId, 1);
+    } else {
+      match.ratingChanges = {
+        [match.players[0]]: 0,
+        [match.players[1]]: 0
+      };
+    }
+
     match.updatedAtMs = this.options.now();
 
     for (const id of match.players) {
       const player = this.players.get(id);
       if (player) {
         player.matchId = null;
+        player.queuedMode = null;
       }
     }
 
@@ -175,7 +223,9 @@ export class MatchService {
       matchId: match.matchId,
       forfeitedBy: playerId,
       winnerPlayerId,
-      reason
+      reason,
+      mode: match.mode,
+      ratingChanges: match.ratingChanges
     });
 
     this.options.onMatchUpdated(match.matchId);
@@ -226,16 +276,13 @@ export class MatchService {
     match.liveRound.submissions[playerId] = submission;
     match.updatedAtMs = this.options.now();
 
-    this.options.logEvent(
-      "Letters word submitted",
-      {
-        matchId: match.matchId,
-        playerId,
-        normalizedWord: submission.normalizedWord,
-        isValid: submission.isValid,
-        score: submission.score
-      }
-    );
+    this.options.logEvent("Letters word submitted", {
+      matchId: match.matchId,
+      playerId,
+      normalizedWord: submission.normalizedWord,
+      isValid: submission.isValid,
+      score: submission.score
+    });
 
     if (Object.keys(match.liveRound.submissions).length >= 2) {
       this.finalizeLettersRound(match);
@@ -287,15 +334,18 @@ export class MatchService {
     return { ok: true };
   }
 
-  serializeForPlayer(match: MatchState, requesterPlayerId?: string): SerializedMatchState {
+  serializeForPlayer(match: MatchState): SerializedMatchState {
     const now = this.options.now();
     const playerViews = match.players.map((playerId) => {
       const player = this.players.get(playerId);
+      const rating = player?.rating ?? match.startRatings[playerId] ?? 1000;
       return {
         playerId,
         displayName: player?.displayName ?? "Guest",
         connected: player?.connected ?? false,
-        score: match.scores[playerId] ?? 0
+        score: match.scores[playerId] ?? 0,
+        rating,
+        rankTier: ratingToTier(rating)
       };
     });
 
@@ -306,10 +356,13 @@ export class MatchService {
       serverNowMs: now,
       roundNumber: match.liveRound.roundNumber,
       roundType: match.liveRound.type,
+      mode: match.mode,
       players: playerViews,
       roundResults: match.roundResults,
-      winnerPlayerId: match.winnerPlayerId
+      winnerPlayerId: match.winnerPlayerId,
+      ratingChanges: match.ratingChanges ?? undefined
     };
+
     if (match.endReason) {
       payload.matchEndReason = match.endReason;
     }
@@ -324,66 +377,121 @@ export class MatchService {
       }
     }
 
-    if (requesterPlayerId && match.liveRound.type === "letters" && match.phase === "round_result") {
-      payload.roundResults = match.roundResults;
-    }
-
     return payload;
   }
 
-  private tryMatchPlayers(): void {
-    this.pruneQueue();
+  private tryMatchPlayers(mode: MatchMode): void {
+    this.pruneQueue(mode);
 
-    while (this.queue.length >= 2) {
-      const playerAId = this.queue.shift();
-      const playerBId = this.queue.shift();
-      if (!playerAId || !playerBId) break;
-      if (playerAId === playerBId) {
-        const player = this.players.get(playerAId);
-        if (player && player.connected && player.socketId && !player.matchId && !this.queue.includes(playerAId)) {
-          this.queue.push(playerAId);
-        }
+    const queue = this.queueByMode[mode];
+    let matched = true;
+    while (queue.length >= 2 && matched) {
+      matched = false;
+      const pair = this.findMatchPair(mode, queue);
+      if (!pair) break;
+
+      const [firstIdx, secondIdx] = pair;
+      const first = queue[firstIdx];
+      const second = queue[secondIdx];
+      queue.splice(secondIdx, 1);
+      queue.splice(firstIdx, 1);
+
+      const playerA = this.players.get(first.playerId);
+      const playerB = this.players.get(second.playerId);
+      if (!playerA || !playerB || playerA.matchId || playerB.matchId) {
         continue;
       }
 
-      const playerA = this.players.get(playerAId);
-      const playerB = this.players.get(playerBId);
-      if (
-        !playerA ||
-        !playerB ||
-        !playerA.connected ||
-        !playerB.connected ||
-        !playerA.socketId ||
-        !playerB.socketId ||
-        playerA.matchId ||
-        playerB.matchId
-      ) {
-        continue;
-      }
-
-      const match = this.createMatch(playerAId, playerBId);
+      const match = this.createMatch(mode, playerA.playerId, playerB.playerId);
       playerA.matchId = match.matchId;
       playerB.matchId = match.matchId;
+      playerA.queuedMode = null;
+      playerB.queuedMode = null;
 
-      this.options.logEvent("Match created", { matchId: match.matchId, players: match.players });
+      this.options.onQueueUpdated(playerA.playerId, queue.length, mode);
+      this.options.onQueueUpdated(playerB.playerId, queue.length, mode);
+
+      this.options.logEvent("Match created", {
+        matchId: match.matchId,
+        mode,
+        players: match.players,
+        ratings: {
+          [playerA.playerId]: playerA.rating,
+          [playerB.playerId]: playerB.rating
+        }
+      });
+
       this.options.onMatchUpdated(match.matchId);
+      matched = true;
     }
   }
 
-  private pruneQueue(): void {
-    const seen = new Set<string>();
-    const filtered = this.queue.filter((playerId) => {
-      if (seen.has(playerId)) return false;
-      seen.add(playerId);
+  private findMatchPair(mode: MatchMode, queue: QueueEntry[]): [number, number] | null {
+    if (queue.length < 2) return null;
 
-      const player = this.players.get(playerId);
-      return Boolean(player && player.connected && player.socketId && !player.matchId);
-    });
+    if (mode === "casual") {
+      for (let i = 0; i < queue.length - 1; i += 1) {
+        const a = queue[i];
+        const b = queue[i + 1];
+        if (a.playerId !== b.playerId) {
+          return [i, i + 1];
+        }
+      }
+      return null;
+    }
 
-    this.queue.splice(0, this.queue.length, ...filtered);
+    const now = this.options.now();
+    for (let i = 0; i < queue.length - 1; i += 1) {
+      const a = queue[i];
+      const playerA = this.players.get(a.playerId);
+      if (!playerA) continue;
+
+      for (let j = i + 1; j < queue.length; j += 1) {
+        const b = queue[j];
+        if (a.playerId === b.playerId) continue;
+
+        const playerB = this.players.get(b.playerId);
+        if (!playerB) continue;
+
+        const ratingDiff = Math.abs(playerA.rating - playerB.rating);
+        const waitMs = Math.max(now - a.joinedAtMs, now - b.joinedAtMs);
+        const allowedDiff = this.allowedRankedRatingDiff(waitMs);
+        if (ratingDiff <= allowedDiff) {
+          return [i, j];
+        }
+      }
+    }
+
+    return null;
   }
 
-  private createMatch(playerAId: string, playerBId: string): MatchState {
+  private allowedRankedRatingDiff(waitMs: number): number {
+    const base = 75;
+    const widened = Math.floor(waitMs / 5_000) * 25;
+    return Math.min(400, base + widened);
+  }
+
+  private pruneQueue(mode: MatchMode): void {
+    const queue = this.queueByMode[mode];
+    const seen = new Set<string>();
+    const filtered = queue.filter((entry) => {
+      if (seen.has(entry.playerId)) return false;
+      seen.add(entry.playerId);
+
+      const player = this.players.get(entry.playerId);
+      return Boolean(
+        player &&
+          player.connected &&
+          player.socketId &&
+          !player.matchId &&
+          player.queuedMode === mode
+      );
+    });
+
+    queue.splice(0, queue.length, ...filtered);
+  }
+
+  private createMatch(mode: MatchMode, playerAId: string, playerBId: string): MatchState {
     const matchId = randomUUID();
     const now = this.options.now();
     const rounds = this.buildRoundPlans(playerAId, playerBId);
@@ -398,10 +506,18 @@ export class MatchService {
       submissions: {}
     };
 
+    const playerARating = this.players.get(playerAId)?.rating ?? 1000;
+    const playerBRating = this.players.get(playerBId)?.rating ?? 1000;
+
     const match: MatchState = {
       matchId,
       createdAtMs: now,
+      mode,
       players: [playerAId, playerBId],
+      startRatings: {
+        [playerAId]: playerARating,
+        [playerBId]: playerBRating
+      },
       phase: "awaiting_letters_pick",
       phaseEndsAtMs: null,
       roundIndex: 0,
@@ -414,6 +530,7 @@ export class MatchService {
       },
       winnerPlayerId: null,
       endReason: null,
+      ratingChanges: null,
       updatedAtMs: now
     };
 
@@ -577,15 +694,12 @@ export class MatchService {
     match.phaseEndsAtMs = this.options.now() + this.options.resultDurationMs;
     match.updatedAtMs = this.options.now();
 
-    this.options.logEvent(
-      "Conundrum round finalized",
-      {
-        matchId: match.matchId,
-        roundNumber: match.liveRound.roundNumber,
-        solvedEarly,
-        firstCorrectPlayerId: match.liveRound.firstCorrectPlayerId
-      }
-    );
+    this.options.logEvent("Conundrum round finalized", {
+      matchId: match.matchId,
+      roundNumber: match.liveRound.roundNumber,
+      solvedEarly,
+      firstCorrectPlayerId: match.liveRound.firstCorrectPlayerId
+    });
 
     this.schedulePhaseTimer(match.matchId, this.options.resultDurationMs, () => {
       const current = this.matches.get(match.matchId);
@@ -603,20 +717,45 @@ export class MatchService {
       match.phaseEndsAtMs = null;
       match.updatedAtMs = this.options.now();
 
-      const [playerA, playerB] = match.players;
-      const scoreA = match.scores[playerA];
-      const scoreB = match.scores[playerB];
-      match.winnerPlayerId = scoreA === scoreB ? null : scoreA > scoreB ? playerA : playerB;
+      const [playerAId, playerBId] = match.players;
+      const scoreA = match.scores[playerAId];
+      const scoreB = match.scores[playerBId];
+
+      match.winnerPlayerId = scoreA === scoreB ? null : scoreA > scoreB ? playerAId : playerBId;
       match.endReason = "completed";
+
+      if (match.mode === "ranked") {
+        if (scoreA === scoreB) {
+          this.applyRankedOutcome(match, playerAId, playerBId, 0.5);
+        } else if (scoreA > scoreB) {
+          this.applyRankedOutcome(match, playerAId, playerBId, 1);
+        } else {
+          this.applyRankedOutcome(match, playerAId, playerBId, 0);
+        }
+      } else {
+        match.ratingChanges = {
+          [playerAId]: 0,
+          [playerBId]: 0
+        };
+      }
 
       for (const playerId of match.players) {
         const player = this.players.get(playerId);
         if (player) {
           player.matchId = null;
+          player.queuedMode = null;
         }
       }
 
-      this.options.logEvent("Match finished", { matchId: match.matchId, scores: match.scores, winnerPlayerId: match.winnerPlayerId });
+      this.options.logEvent("Match finished", {
+        matchId: match.matchId,
+        mode: match.mode,
+        scores: match.scores,
+        winnerPlayerId: match.winnerPlayerId,
+        ratingChanges: match.ratingChanges
+      });
+
+      this.options.onMatchUpdated(match.matchId);
       this.options.onMatchFinished(this.buildFinishedMatchRecord(match));
       return;
     }
@@ -654,6 +793,48 @@ export class MatchService {
     };
 
     this.startConundrumSolving(match, conundrumRound);
+  }
+
+  private applyRankedOutcome(match: MatchState, playerAId: string, playerBId: string, outcomeA: number): void {
+    const playerA = this.players.get(playerAId);
+    const playerB = this.players.get(playerBId);
+    if (!playerA || !playerB) return;
+
+    const beforeA = playerA.rating;
+    const beforeB = playerB.rating;
+    const { deltaA, deltaB } = computeEloDelta(beforeA, beforeB, outcomeA, playerA.rankedGames, playerB.rankedGames);
+
+    playerA.rating += deltaA;
+    playerB.rating += deltaB;
+    playerA.peakRating = Math.max(playerA.peakRating, playerA.rating);
+    playerB.peakRating = Math.max(playerB.peakRating, playerB.rating);
+
+    playerA.rankedGames += 1;
+    playerB.rankedGames += 1;
+
+    if (outcomeA === 1) {
+      playerA.rankedWins += 1;
+      playerB.rankedLosses += 1;
+    } else if (outcomeA === 0) {
+      playerA.rankedLosses += 1;
+      playerB.rankedWins += 1;
+    } else {
+      playerA.rankedDraws += 1;
+      playerB.rankedDraws += 1;
+    }
+
+    match.ratingChanges = {
+      [playerAId]: deltaA,
+      [playerBId]: deltaB
+    };
+
+    this.options.logEvent("Ranked rating updated", {
+      matchId: match.matchId,
+      players: {
+        [playerAId]: { before: beforeA, after: playerA.rating, delta: deltaA },
+        [playerBId]: { before: beforeB, after: playerB.rating, delta: deltaB }
+      }
+    });
   }
 
   private evaluateWordSubmission(rawWord: string, letters: string[]): WordSubmission {
@@ -728,16 +909,35 @@ export class MatchService {
   }
 
   private buildFinishedMatchRecord(match: MatchState): FinishedMatchRecord {
+    const changes = match.ratingChanges ?? {
+      [match.players[0]]: 0,
+      [match.players[1]]: 0
+    };
+
     return {
       matchId: match.matchId,
       createdAtMs: match.createdAtMs,
       finishedAtMs: this.options.now(),
-      players: match.players.map((playerId) => ({
-        playerId,
-        displayName: this.players.get(playerId)?.displayName ?? "Guest",
-        score: match.scores[playerId] ?? 0
-      })),
+      mode: match.mode,
+      players: match.players.map((playerId) => {
+        const runtime = this.players.get(playerId);
+        const ratingBefore = match.startRatings[playerId] ?? 1000;
+        const ratingDelta = changes[playerId] ?? 0;
+        const ratingAfter = runtime?.rating ?? ratingBefore + ratingDelta;
+
+        return {
+          playerId,
+          displayName: runtime?.displayName ?? "Guest",
+          score: match.scores[playerId] ?? 0,
+          ratingBefore,
+          ratingAfter,
+          ratingDelta,
+          rankTier: ratingToTier(ratingAfter)
+        };
+      }),
       winnerPlayerId: match.winnerPlayerId,
+      matchEndReason: match.endReason,
+      ratingChanges: changes,
       roundResults: match.roundResults
     };
   }
@@ -747,6 +947,7 @@ export class MatchService {
     const match = this.matches.get(player.matchId);
     if (!match || match.phase === "finished") {
       player.matchId = null;
+      player.queuedMode = null;
     }
   }
 }
