@@ -1,15 +1,17 @@
 package com.bhan796.anagramarena.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +24,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bhan796.anagram.core.model.LetterKind
 import com.bhan796.anagram.core.model.WordValidationFailure
 import com.bhan796.anagram.core.validation.DictionaryProvider
+import com.bhan796.anagramarena.ui.components.ArcadeButton
+import com.bhan796.anagramarena.ui.components.ArcadeScaffold
+import com.bhan796.anagramarena.ui.components.LetterTile
+import com.bhan796.anagramarena.ui.components.NeonTitle
+import com.bhan796.anagramarena.ui.components.TimerBar
+import com.bhan796.anagramarena.ui.theme.ColorCyan
+import com.bhan796.anagramarena.ui.theme.ColorDimText
+import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.viewmodel.LettersPracticePhase
 import com.bhan796.anagramarena.viewmodel.LettersPracticeViewModel
 
@@ -39,43 +49,48 @@ fun LettersPracticeScreen(
     val state by vm.state.collectAsState()
     val allowedKinds = vm.allowedKinds
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    ArcadeScaffold(contentPadding = contentPadding) {
         if (!dictionaryLoaded) {
-            Text("Dictionary data failed to load. Validation may mark all words invalid.")
+            Text(
+                "Dictionary data failed to load. Validation may mark all words invalid.",
+                color = ColorDimText,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         when (state.phase) {
             LettersPracticePhase.PICKING -> {
-                Text("Pick 9 Letters")
-                Text("Progress: ${state.letters.size}/9")
+                NeonTitle("LETTERS")
+                Text("Progress: ${state.letters.size}/9", style = MaterialTheme.typography.headlineSmall)
                 LetterSlots(letters = state.letters)
+
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(
+                    ArcadeButton(
+                        text = "VOWEL",
                         onClick = { vm.pick(LetterKind.VOWEL) },
-                        enabled = allowedKinds.contains(LetterKind.VOWEL)
-                    ) {
-                        Text("Vowel")
-                    }
-                    Button(
+                        enabled = allowedKinds.contains(LetterKind.VOWEL),
+                        modifier = Modifier.weight(1f)
+                    )
+                    ArcadeButton(
+                        text = "CONSONANT",
                         onClick = { vm.pick(LetterKind.CONSONANT) },
-                        enabled = allowedKinds.contains(LetterKind.CONSONANT)
-                    ) {
-                        Text("Consonant")
-                    }
+                        enabled = allowedKinds.contains(LetterKind.CONSONANT),
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-                Text("Vowels: ${state.vowelCount}  Consonants: ${state.consonantCount}")
+
+                Text(
+                    "Vowels: ${state.vowelCount}  Consonants: ${state.consonantCount}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ColorDimText
+                )
             }
 
             LettersPracticePhase.SOLVING -> {
-                Text("Solve")
-                Text("Time: ${state.secondsRemaining}s")
+                NeonTitle("SOLVE")
+                TimerBar(secondsRemaining = state.secondsRemaining, totalSeconds = 30)
                 LetterSlots(letters = state.letters)
+
                 OutlinedTextField(
                     value = state.submittedWord,
                     onValueChange = vm::updateSubmittedWord,
@@ -83,28 +98,40 @@ fun LettersPracticeScreen(
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                     modifier = Modifier.fillMaxWidth()
                 )
-                Button(onClick = vm::submit, enabled = state.canSubmit) {
-                    Text("Submit")
-                }
+
+                ArcadeButton("SUBMIT", onClick = vm::submit, enabled = state.canSubmit)
             }
 
             LettersPracticePhase.RESULT -> {
                 val result = state.result
                 if (result != null) {
-                    Text("Round Result")
-                    Text("Letters: ${result.letters.joinToString("")}")
-                    Text("Your Word: ${if (result.submittedWord.isEmpty()) "(none)" else result.submittedWord}")
-                    Text(
-                        text = if (result.validation.isValid) {
-                            "Valid"
-                        } else {
-                            "Invalid: ${failureText(result.validation.failure)}"
+                    NeonTitle("ROUND RESULT")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
+                            .border(1.dp, ColorCyan.copy(0.3f), RoundedCornerShape(6.dp))
+                            .padding(12.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Letters: ${result.letters.joinToString("")}", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "Your Word: ${if (result.submittedWord.isEmpty()) "(none)" else result.submittedWord}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = if (result.validation.isValid) {
+                                    "Valid"
+                                } else {
+                                    "Invalid: ${failureText(result.validation.failure)}"
+                                },
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text("Score: ${result.validation.score}", style = MaterialTheme.typography.headlineSmall)
                         }
-                    )
-                    Text("Score: ${result.validation.score}")
-                    Button(onClick = vm::resetRound) {
-                        Text("Play Another Letters Round")
                     }
+
+                    ArcadeButton("PLAY ANOTHER LETTERS ROUND", onClick = vm::resetRound)
                 }
             }
         }
@@ -115,12 +142,8 @@ fun LettersPracticeScreen(
 private fun LetterSlots(letters: List<Char>) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         repeat(9) { index ->
-            Card {
-                Text(
-                    text = if (index < letters.size) letters[index].toString() else "_",
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp)
-                )
-            }
+            val letter = if (index < letters.size) letters[index].toString() else "_"
+            LetterTile(letter = letter, revealed = index < letters.size, index = index)
         }
     }
 }

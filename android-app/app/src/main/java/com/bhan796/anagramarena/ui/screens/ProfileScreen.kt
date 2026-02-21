@@ -1,20 +1,33 @@
 package com.bhan796.anagramarena.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bhan796.anagramarena.ui.components.ArcadeButton
+import com.bhan796.anagramarena.ui.components.ArcadeScaffold
+import com.bhan796.anagramarena.ui.components.NeonDivider
+import com.bhan796.anagramarena.ui.components.NeonTitle
+import com.bhan796.anagramarena.ui.theme.ColorCyan
+import com.bhan796.anagramarena.ui.theme.ColorDimText
+import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.viewmodel.ProfileViewModel
 
 @Composable
@@ -28,45 +41,68 @@ fun ProfileScreen(
         viewModel.refresh()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text("Profile & Stats")
+    ArcadeScaffold(contentPadding = contentPadding) {
+        NeonTitle(state.stats?.displayName ?: "PLAYER")
 
         if (state.isLoading) {
             CircularProgressIndicator()
         }
 
         if (state.errorMessage != null) {
-            Text("Error: ${state.errorMessage}")
-            Button(onClick = viewModel::refresh) {
-                Text("Retry")
-            }
+            Text("Error: ${state.errorMessage}", style = MaterialTheme.typography.bodyMedium)
+            ArcadeButton(
+                text = "RETRY",
+                onClick = viewModel::refresh,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
         val stats = state.stats
         if (stats != null) {
-            Text("Player: ${stats.displayName}")
-            Text("Player ID: ${stats.playerId}")
-            Text("Matches: ${stats.matchesPlayed}")
-            Text("Wins: ${stats.wins}  Losses: ${stats.losses}  Draws: ${stats.draws}")
-            Text("Total Score: ${stats.totalScore}")
-            Text("Average Score: ${stats.averageScore}")
+            StatRow("Matches Played", stats.matchesPlayed.toString())
+            NeonDivider()
+            StatRow("Wins", stats.wins.toString())
+            NeonDivider()
+            StatRow("Losses", stats.losses.toString())
+            NeonDivider()
+            StatRow("Draws", stats.draws.toString())
+            NeonDivider()
+            StatRow("Total Score", stats.totalScore.toString())
         }
 
         val history = state.history
         if (history != null) {
-            Text("Recent Matches (${history.count})")
+            Text("RECENT MATCHES (${history.count})", style = MaterialTheme.typography.headlineSmall)
             history.matches.take(5).forEach { match ->
                 val myScore = match.players.firstOrNull { it.playerId == state.playerId }?.score ?: 0
                 val opp = match.players.firstOrNull { it.playerId != state.playerId }
                 val oppScore = opp?.score ?: 0
-                Text("${match.matchId.take(8)}: You $myScore - Opponent $oppScore")
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
+                        .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                        .padding(12.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(match.matchId.take(8), style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+                        Text("You $myScore - Opponent $oppScore", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun StatRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = ColorDimText)
+        Text(value, style = MaterialTheme.typography.headlineSmall, color = ColorCyan)
     }
 }

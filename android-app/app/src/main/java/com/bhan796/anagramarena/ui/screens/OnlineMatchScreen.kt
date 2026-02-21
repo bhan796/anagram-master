@@ -1,26 +1,40 @@
 package com.bhan796.anagramarena.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bhan796.anagramarena.network.SocketConnectionState
 import com.bhan796.anagramarena.online.MatchPhase
 import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.online.RoundType
+import com.bhan796.anagramarena.ui.components.ArcadeButton
+import com.bhan796.anagramarena.ui.components.ArcadeScaffold
+import com.bhan796.anagramarena.ui.components.LetterTile
+import com.bhan796.anagramarena.ui.components.NeonTitle
+import com.bhan796.anagramarena.ui.components.ScoreBadge
+import com.bhan796.anagramarena.ui.components.TimerBar
+import com.bhan796.anagramarena.ui.theme.ColorCyan
+import com.bhan796.anagramarena.ui.theme.ColorDimText
+import com.bhan796.anagramarena.ui.theme.ColorGold
+import com.bhan796.anagramarena.ui.theme.ColorRed
+import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 
 @Composable
 fun OnlineMatchScreen(
@@ -37,66 +51,87 @@ fun OnlineMatchScreen(
 ) {
     val match = state.matchState
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    ArcadeScaffold(contentPadding = contentPadding) {
         if (match == null) {
-            Text("Waiting for match state...")
-            return@Column
+            NeonTitle("MATCH")
+            Text("Waiting for match state...", style = MaterialTheme.typography.bodyMedium)
+            return@ArcadeScaffold
         }
 
-        Text("Online Match")
-        Text("Round ${match.roundNumber} - ${match.roundType.name.lowercase()}")
-        Text("Time: ${state.secondsRemaining}s")
-        Text(state.statusMessage)
+        NeonTitle("ROUND ${match.roundNumber}")
+        NeonTitle(match.phase.name.replace('_', ' '))
+        TimerBar(secondsRemaining = state.secondsRemaining, totalSeconds = 30)
+        Text(state.statusMessage, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
 
         val me = state.myPlayer
         val opponent = state.opponentPlayer
         if (me != null && opponent != null) {
-            Text("You (${me.displayName}): ${me.score}  |  Opponent (${opponent.displayName}): ${opponent.score}")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                ScoreBadge(label = me.displayName, score = me.score, color = ColorCyan)
+                ScoreBadge(label = opponent.displayName, score = opponent.score, color = ColorGold)
+            }
         }
 
         if (state.lastError != null) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Error: ${state.lastError.message}")
-                    Button(onClick = onDismissError) {
-                        Text("Dismiss")
-                    }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
+                    .border(1.dp, ColorRed, RoundedCornerShape(6.dp))
+                    .padding(12.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Error: ${state.lastError.message}", style = MaterialTheme.typography.bodyMedium)
+                    ArcadeButton(
+                        text = "DISMISS",
+                        onClick = onDismissError,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
 
         if (state.localValidationMessage != null) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = state.localValidationMessage,
-                    modifier = Modifier.padding(12.dp)
-                )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
+                    .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                    .padding(12.dp)
+            ) {
+                Text(text = state.localValidationMessage, style = MaterialTheme.typography.bodyMedium)
             }
         }
 
         when (match.phase) {
             MatchPhase.AWAITING_LETTERS_PICK -> {
-                Text(if (state.isMyTurnToPick) "Your turn to pick letters" else "Opponent is picking letters")
+                Text(
+                    if (state.isMyTurnToPick) "YOUR TURN TO PICK" else "OPPONENT IS PICKING",
+                    style = MaterialTheme.typography.headlineSmall
+                )
                 LetterSlots(match.letters)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onPickVowel, enabled = state.isMyTurnToPick && state.connectionState !is SocketConnectionState.Reconnecting) {
-                        Text("Vowel")
-                    }
-                    Button(onClick = onPickConsonant, enabled = state.isMyTurnToPick && state.connectionState !is SocketConnectionState.Reconnecting) {
-                        Text("Consonant")
-                    }
+                    ArcadeButton(
+                        text = "VOWEL",
+                        onClick = onPickVowel,
+                        enabled = state.isMyTurnToPick && state.connectionState !is SocketConnectionState.Reconnecting,
+                        modifier = Modifier.weight(1f)
+                    )
+                    ArcadeButton(
+                        text = "CONSONANT",
+                        onClick = onPickConsonant,
+                        enabled = state.isMyTurnToPick && state.connectionState !is SocketConnectionState.Reconnecting,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
 
             MatchPhase.LETTERS_SOLVING -> {
-                Text("Build your longest valid word")
+                Text("Build your longest valid word", style = MaterialTheme.typography.headlineSmall)
                 LetterSlots(match.letters)
                 OutlinedTextField(
                     value = state.wordInput,
@@ -106,18 +141,39 @@ fun OnlineMatchScreen(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !state.hasSubmittedWord
                 )
-                Button(onClick = onSubmitWord, enabled = !state.hasSubmittedWord) {
-                    Text(if (state.hasSubmittedWord) "Submitted" else "Submit Word")
-                }
+                ArcadeButton(
+                    text = if (state.hasSubmittedWord) "SUBMITTED" else "SUBMIT WORD",
+                    onClick = onSubmitWord,
+                    enabled = !state.hasSubmittedWord,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 if (state.hasSubmittedWord) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    Text("Waiting for opponent or timeout...")
+                    LinearProgressIndicator(
+                        progress = { 0.5f },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = ColorCyan,
+                        trackColor = ColorSurfaceVariant
+                    )
+                    Text("Waiting for opponent or timeout...", style = MaterialTheme.typography.labelMedium)
                 }
             }
 
             MatchPhase.CONUNDRUM_SOLVING -> {
-                Text("Conundrum")
-                Text(match.scrambled?.uppercase().orEmpty())
+                NeonTitle("CONUNDRUM")
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
+                        .border(1.dp, ColorCyan.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = match.scrambled?.uppercase().orEmpty(),
+                        style = MaterialTheme.typography.displaySmall,
+                        color = ColorGold,
+                        letterSpacing = 8.sp
+                    )
+                }
                 OutlinedTextField(
                     value = state.conundrumGuessInput,
                     onValueChange = onConundrumGuessChange,
@@ -125,51 +181,66 @@ fun OnlineMatchScreen(
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                     modifier = Modifier.fillMaxWidth()
                 )
-                Button(onClick = onSubmitConundrumGuess) {
-                    Text("Submit Guess")
-                }
-                Text("Multiple guesses allowed. Respect rate limit.")
+                ArcadeButton(
+                    text = "SUBMIT GUESS",
+                    onClick = onSubmitConundrumGuess,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text("Multiple guesses allowed. Respect rate limit.", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
             }
 
             MatchPhase.ROUND_RESULT -> {
-                Text("Round Result")
+                NeonTitle("ROUND RESULT")
                 val result = match.roundResults.lastOrNull()
                 if (result != null) {
-                    Text("Round ${result.roundNumber} (${result.type.name.lowercase()})")
-                    if (result.type == RoundType.LETTERS) {
-                        Text("Letters: ${result.letters?.joinToString(separator = "").orEmpty()}")
-                        val myId = state.playerId
-                        val mySubmission = myId?.let { result.submissions?.get(it) }
-                        Text("Your word: ${mySubmission?.word ?: "(none)"}")
-                        Text("Valid: ${mySubmission?.isValid ?: false}, Score: ${mySubmission?.score ?: 0}")
-                    } else {
-                        Text("Scramble: ${result.scrambled.orEmpty()}")
-                        Text("Answer: ${result.answer.orEmpty()}")
-                        Text("First solver: ${result.firstCorrectPlayerId ?: "none"}")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
+                            .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                            .padding(12.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Round ${result.roundNumber} (${result.type.name.lowercase()})", style = MaterialTheme.typography.bodyMedium)
+                            if (result.type == RoundType.LETTERS) {
+                                Text("Letters: ${result.letters?.joinToString(separator = "").orEmpty()}")
+                                val myId = state.playerId
+                                val mySubmission = myId?.let { result.submissions?.get(it) }
+                                Text("Your word: ${mySubmission?.word ?: "(none)"}")
+                                Text("Valid: ${mySubmission?.isValid ?: false}, Score: ${mySubmission?.score ?: 0}")
+                            } else {
+                                Text("Scramble: ${result.scrambled.orEmpty()}")
+                                Text("Answer: ${result.answer.orEmpty()}")
+                                Text("First solver: ${result.firstCorrectPlayerId ?: "none"}")
+                            }
+                        }
                     }
                 }
-                Text("Next round starting soon...")
+                Text("Next round starting soon...", style = MaterialTheme.typography.labelMedium)
             }
 
             MatchPhase.FINISHED -> {
-                Text("Final Result")
+                NeonTitle("FINAL RESULT")
                 Text(
-                    when {
+                    text = when {
                         match.winnerPlayerId == null -> "Draw"
                         match.winnerPlayerId == state.playerId -> "You Win"
                         else -> "You Lose"
-                    }
+                    },
+                    style = MaterialTheme.typography.headlineSmall
                 )
-                for (result in match.roundResults) {
+                match.roundResults.forEach { result ->
                     Text("R${result.roundNumber} ${result.type.name.lowercase()} -> ${result.awardedScores}")
                 }
-                Button(onClick = onBackToHome) {
-                    Text("Back Home")
-                }
+                ArcadeButton(
+                    text = "BACK HOME",
+                    onClick = onBackToHome,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             MatchPhase.UNKNOWN -> {
-                Text("Unknown match phase")
+                Text("Unknown match phase", style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
@@ -179,12 +250,8 @@ fun OnlineMatchScreen(
 private fun LetterSlots(letters: List<String>) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         repeat(9) { index ->
-            Card {
-                Text(
-                    text = if (index < letters.size) letters[index] else "_",
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp)
-                )
-            }
+            val letter = if (index < letters.size) letters[index] else "_"
+            LetterTile(letter = letter, revealed = index < letters.size, index = index)
         }
     }
 }

@@ -1,15 +1,23 @@
 package com.bhan796.anagramarena.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.bhan796.anagramarena.ui.components.ArcadeScaffold
+import com.bhan796.anagramarena.ui.components.NeonDivider
+import com.bhan796.anagramarena.ui.components.NeonTitle
+import com.bhan796.anagramarena.ui.theme.ColorBackground
+import com.bhan796.anagramarena.ui.theme.ColorCyan
+import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
+import com.bhan796.anagramarena.ui.theme.ColorWhite
 import com.bhan796.anagramarena.viewmodel.PracticeSettingsState
 
 @Composable
@@ -20,25 +28,33 @@ fun SettingsScreen(
     onSoundToggle: (Boolean) -> Unit,
     onVibrationToggle: (Boolean) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text("Settings")
+    ArcadeScaffold(contentPadding = contentPadding) {
+        NeonTitle("SETTINGS")
 
         SettingToggle("Practice Timer", state.timerEnabled, onTimerToggle)
+        NeonDivider()
         SettingToggle("Sound Effects (placeholder)", state.soundEnabled, onSoundToggle)
+        NeonDivider()
         SettingToggle("Vibration (placeholder)", state.vibrationEnabled, onVibrationToggle)
     }
 }
 
 @Composable
 private fun SettingToggle(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label)
-        Switch(checked = checked, onCheckedChange = onChange)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = ColorWhite)
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = ColorBackground,
+                checkedTrackColor = ColorCyan,
+                uncheckedTrackColor = ColorSurfaceVariant
+            )
+        )
     }
 }

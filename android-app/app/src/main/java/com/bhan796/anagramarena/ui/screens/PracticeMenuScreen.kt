@@ -1,17 +1,24 @@
 package com.bhan796.anagramarena.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.bhan796.anagramarena.ui.components.ArcadeButton
+import com.bhan796.anagramarena.ui.components.ArcadeScaffold
+import com.bhan796.anagramarena.ui.components.NeonDivider
+import com.bhan796.anagramarena.ui.components.NeonTitle
+import com.bhan796.anagramarena.ui.theme.ColorBackground
+import com.bhan796.anagramarena.ui.theme.ColorCyan
+import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
+import com.bhan796.anagramarena.ui.theme.ColorWhite
 
 @Composable
 fun PracticeMenuScreen(
@@ -21,27 +28,38 @@ fun PracticeMenuScreen(
     onPracticeLetters: () -> Unit,
     onPracticeConundrum: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-        horizontalAlignment = Alignment.Start
-    ) {
-        Text("Practice Mode")
+    ArcadeScaffold(contentPadding = contentPadding) {
+        NeonTitle("PRACTICE")
 
-        Button(onClick = onPracticeLetters) {
-            Text("Practice Letters Round")
-        }
+        ArcadeButton(
+            text = "PRACTICE LETTERS ROUND",
+            onClick = onPracticeLetters,
+            modifier = Modifier.fillMaxWidth()
+        )
 
-        Button(onClick = onPracticeConundrum) {
-            Text("Practice Conundrum")
-        }
+        ArcadeButton(
+            text = "PRACTICE CONUNDRUM",
+            onClick = onPracticeConundrum,
+            modifier = Modifier.fillMaxWidth()
+        )
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Enable 30s Timer")
-            Switch(checked = timerEnabled, onCheckedChange = onTimerToggle)
+        NeonDivider()
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Enable 30s Timer", style = MaterialTheme.typography.bodyMedium, color = ColorWhite)
+            Switch(
+                checked = timerEnabled,
+                onCheckedChange = onTimerToggle,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = ColorBackground,
+                    checkedTrackColor = ColorCyan,
+                    uncheckedTrackColor = ColorSurfaceVariant
+                )
+            )
         }
     }
 }
