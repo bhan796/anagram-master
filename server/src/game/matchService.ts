@@ -81,6 +81,7 @@ export class MatchService {
     }
 
     this.players.set(playerId, player);
+    this.reconcilePlayerMatch(player);
 
     this.options.logEvent("Player connected", { playerId, socketId, connectedAtMs: now });
     return player;
@@ -105,6 +106,7 @@ export class MatchService {
   joinQueue(playerId: string): { ok: boolean; code?: string; queueSize?: number } {
     const player = this.players.get(playerId);
     if (!player) return { ok: false, code: "UNKNOWN_PLAYER" };
+    this.reconcilePlayerMatch(player);
     if (player.matchId) return { ok: false, code: "ALREADY_IN_MATCH" };
 
     this.pruneQueue();
@@ -133,7 +135,12 @@ export class MatchService {
   getMatchByPlayer(playerId: string): MatchState | undefined {
     const player = this.players.get(playerId);
     if (!player?.matchId) return undefined;
-    return this.matches.get(player.matchId);
+    const match = this.matches.get(player.matchId);
+    if (!match || match.phase === "finished") {
+      player.matchId = null;
+      return undefined;
+    }
+    return match;
   }
 
   getMatch(matchId: string): MatchState | undefined {
@@ -731,5 +738,13 @@ export class MatchService {
       winnerPlayerId: match.winnerPlayerId,
       roundResults: match.roundResults
     };
+  }
+
+  private reconcilePlayerMatch(player: PlayerRuntime): void {
+    if (!player.matchId) return;
+    const match = this.matches.get(player.matchId);
+    if (!match || match.phase === "finished") {
+      player.matchId = null;
+    }
   }
 }

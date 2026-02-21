@@ -1,5 +1,6 @@
 import type { Server as HttpServer } from "node:http";
 import { Server } from "socket.io";
+import { createOriginChecker } from "../config/cors.js";
 import { loadEnv } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { loadConundrums, loadDictionarySet } from "../game/data.js";
@@ -9,13 +10,13 @@ import { SocketEvents, toActionError } from "./contracts.js";
 
 export const createSocketServer = (httpServer: HttpServer, matchHistoryStore: MatchHistoryStore): Server => {
   const env = loadEnv();
-  const allowedOrigins = env.CLIENT_ORIGIN.split(",")
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0);
+  const isAllowedOrigin = createOriginChecker(env.CLIENT_ORIGIN);
 
   const io = new Server(httpServer, {
     cors: {
-      origin: allowedOrigins.length <= 1 ? (allowedOrigins[0] ?? env.CLIENT_ORIGIN) : allowedOrigins,
+      origin: (origin, callback) => {
+        callback(null, isAllowedOrigin(origin));
+      },
       methods: ["GET", "POST"]
     }
   });
