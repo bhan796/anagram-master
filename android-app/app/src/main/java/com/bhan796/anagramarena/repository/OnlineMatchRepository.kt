@@ -65,6 +65,8 @@ class OnlineMatchRepository(
 
         socketClient.matchStateListener = { payload ->
             _matchState.value = payload
+            _actionError.value = null
+            _matchmaking.value = MatchmakingStatusPayload(queueSize = 0, state = "idle")
             telemetry.log("match_state", mapOf("phase" to payload.phase.name, "round" to payload.roundNumber.toString()))
             sessionStore.matchId = payload.matchId
 

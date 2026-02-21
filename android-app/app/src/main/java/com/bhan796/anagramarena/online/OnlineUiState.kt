@@ -35,6 +35,7 @@ object OnlineMatchReducer {
         serverClockOffsetMs: Long
     ): OnlineUiState {
         val updatedMatch = matchState ?: previous.matchState
+        val effectiveError = if (updatedMatch != null) null else actionError
         val me = updatedMatch?.players?.firstOrNull { it.playerId == (session?.playerId ?: previous.playerId) }
         val opponent = updatedMatch?.players?.firstOrNull { it.playerId != (session?.playerId ?: previous.playerId) }
 
@@ -45,7 +46,7 @@ object OnlineMatchReducer {
             connection is SocketConnectionState.Reconnecting -> "Reconnecting..."
             connection is SocketConnectionState.Disconnected && updatedMatch != null -> "Disconnected. Trying to recover match..."
             connection is SocketConnectionState.Failed -> "Connection failed. Retry to continue."
-            actionError != null -> actionError.message
+            effectiveError != null -> effectiveError.message
             updatedMatch == null && inQueue -> "Finding opponent..."
             updatedMatch?.phase == MatchPhase.AWAITING_LETTERS_PICK -> "Letter picking in progress"
             updatedMatch?.phase == MatchPhase.LETTERS_SOLVING -> "Submit your best word before time expires"
@@ -71,7 +72,7 @@ object OnlineMatchReducer {
             opponentPlayer = opponent,
             isMyTurnToPick = isMyTurnToPick,
             secondsRemaining = remaining,
-            lastError = actionError,
+            lastError = effectiveError,
             statusMessage = message
         )
     }
