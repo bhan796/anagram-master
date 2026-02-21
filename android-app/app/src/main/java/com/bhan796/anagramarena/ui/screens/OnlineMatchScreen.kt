@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -33,7 +35,6 @@ import com.bhan796.anagramarena.network.SocketConnectionState
 import com.bhan796.anagramarena.online.MatchPhase
 import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.online.RoundType
-import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.LetterTile
@@ -62,9 +63,41 @@ fun OnlineMatchScreen(
     onBackToHome: () -> Unit
 ) {
     val match = state.matchState
+    var showLeaveDialog by remember { mutableStateOf(false) }
 
     ArcadeScaffold(contentPadding = contentPadding) {
-        ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
+        ArcadeButton(
+            text = "LEAVE GAME",
+            onClick = { showLeaveDialog = true },
+            accentColor = ColorGold,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            "If you leave now, you will forfeit the match.",
+            style = MaterialTheme.typography.bodySmall,
+            color = ColorRed
+        )
+
+        if (showLeaveDialog) {
+            AlertDialog(
+                onDismissRequest = { showLeaveDialog = false },
+                title = { Text("Leave game?") },
+                text = { Text("Leaving an active match counts as a forfeit and awards your opponent the win.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showLeaveDialog = false
+                        onBack()
+                    }) {
+                        Text("Forfeit & Leave", color = ColorRed)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLeaveDialog = false }) {
+                        Text("Stay")
+                    }
+                }
+            )
+        }
 
         if (match == null) {
             NeonTitle("MATCH")
@@ -245,22 +278,61 @@ fun OnlineMatchScreen(
                             .padding(12.dp)
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Round ${result.roundNumber} (${result.type.name.lowercase()})", style = MaterialTheme.typography.bodyMedium)
+                            Text("Round ${result.roundNumber} • ${result.type.name.lowercase()}", style = MaterialTheme.typography.headlineSmall)
                             if (result.type == RoundType.LETTERS) {
-                                Text("Letters: ${result.letters?.joinToString(separator = "").orEmpty()}")
-                                val myId = state.playerId
-                                val mySubmission = myId?.let { result.submissions?.get(it) }
-                                Text("Your word: ${mySubmission?.word ?: "(none)"}")
-                                Text("Valid: ${mySubmission?.isValid ?: false}, Score: ${mySubmission?.score ?: 0}")
+                                WordTiles(
+                                    label = "Letters",
+                                    word = result.letters?.joinToString(separator = "").orEmpty(),
+                                    accentColor = ColorGold
+                                )
+                                match.players.forEach { player ->
+                                    val submission = result.submissions?.get(player.playerId)
+                                    val word = submission?.word?.takeIf { it.isNotBlank() } ?: "-"
+                                    val points = result.awardedScores[player.playerId] ?: 0
+                                    val isValid = submission?.isValid ?: false
+                                    RoundResultPlayerRow(
+                                        name = player.displayName,
+                                        word = word,
+                                        points = points,
+                                        extra = if (submission == null) "No submission" else if (isValid) "Valid" else "Invalid",
+                                        extraColor = if (isValid) ColorCyan else ColorRed
+                                    )
+                                }
                             } else {
-                                Text("Scramble: ${result.scrambled.orEmpty()}")
-                                Text("Answer: ${result.answer.orEmpty()}")
-                                Text("First solver: ${result.firstCorrectPlayerId ?: "none"}")
+                                WordTiles(
+                                    label = "Scramble",
+                                    word = result.scrambled.orEmpty(),
+                                    accentColor = ColorGold
+                                )
+                                WordTiles(
+                                    label = "Answer",
+                                    word = result.answer.orEmpty(),
+                                    accentColor = ColorCyan
+                                )
+                                match.players.forEach { player ->
+                                    val points = result.awardedScores[player.playerId] ?: 0
+                                    val solved = result.firstCorrectPlayerId == player.playerId
+                                    RoundResultPlayerRow(
+                                        name = player.displayName,
+                                        word = if (solved) result.answer.orEmpty() else "-",
+                                        points = points,
+                                        extra = if (solved) "Solved first" else "Not solved",
+                                        extraColor = if (solved) ColorCyan else ColorDimText
+                                    )
+                                }
                             }
                         }
                     }
                 }
-                Text("Next round starting soon...", style = MaterialTheme.typography.labelMedium)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
+                        .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                        .padding(10.dp)
+                ) {
+                    Text("Next round starts in a few seconds...", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+                }
             }
 
             MatchPhase.FINISHED -> {
@@ -426,6 +498,21 @@ private fun RoundPlayerRow(name: String, word: String, points: Int) {
             Text("$points pts", style = MaterialTheme.typography.labelMedium, color = ColorCyan)
         }
         WordTiles(label = null, word = word, accentColor = ColorCyan)
+    }
+}
+
+@Composable
+private fun RoundResultPlayerRow(name: String, word: String, points: Int, extra: String, extraColor: androidx.compose.ui.graphics.Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(name, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+            Text("$points pts", style = MaterialTheme.typography.labelMedium, color = ColorCyan)
+        }
+        WordTiles(label = null, word = word, accentColor = ColorCyan)
+        Text(extra, style = MaterialTheme.typography.labelSmall, color = extraColor)
     }
 }
 
