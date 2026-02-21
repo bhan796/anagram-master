@@ -42,6 +42,41 @@ fun NeonTitle(text: String, modifier: Modifier = Modifier) {
     )
 }
 
+@Composable
+fun TileLogo(modifier: Modifier = Modifier) {
+    val top = "ANAGRAM".toList()
+    val bottom = "ARENA".toList()
+    val palette = listOf(ColorCyan, ColorGold, ColorMagenta, ColorGreen)
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            top.forEachIndexed { index, letter ->
+                LogoTile(letter = letter, color = palette[index % palette.size], index = index)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            bottom.forEachIndexed { index, letter ->
+                LogoTile(letter = letter, color = palette[(index + 1) % palette.size], index = index + top.size)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LogoTile(letter: Char, color: Color, index: Int) {
+    LetterTile(
+        letter = letter.toString(),
+        revealed = true,
+        index = index,
+        accentColor = color,
+        modifier = Modifier.size(40.dp)
+    )
+}
+
 // -- Arcade-style primary button ----------------------------------------------
 @Composable
 fun ArcadeButton(

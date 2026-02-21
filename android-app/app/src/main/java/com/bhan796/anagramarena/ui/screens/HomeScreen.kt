@@ -28,14 +28,7 @@ fun HomeScreen(
             visible = visible,
             enter = fadeIn(tween(600)) + slideInVertically(tween(600, easing = FastOutSlowInEasing)) { -40 }
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                NeonTitle("ANAGRAM", modifier = Modifier.fillMaxWidth())
-                NeonTitle("ARENA",   modifier = Modifier.fillMaxWidth())
-            }
+            TileLogo(modifier = Modifier.fillMaxWidth())
         }
 
         Spacer(Modifier.height(32.dp))
