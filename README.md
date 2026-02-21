@@ -5,6 +5,7 @@ Production-oriented MVP for a real-time head-to-head anagram game.
 ## Repo Layout
 
 - `android-app/` Kotlin + Compose client (offline + online MVP)
+- `web-app/` React browser client (Android-parity styling + online/offline MVP)
 - `ios-app/` SwiftUI client scaffold (offline practice complete)
 - `server/` authoritative Node.js + TypeScript backend
 - `shared/` shared datasets/specs
@@ -26,6 +27,14 @@ Production-oriented MVP for a real-time head-to-head anagram game.
 3. `Copy-Item server/.env.example server/.env`
 4. `npm run server:dev`
 5. Verify `http://localhost:4000/api/health`
+
+### Web
+
+1. `npm install`
+2. `npm run web:dev`
+3. Open local Vite URL
+4. Optional backend override:
+   - PowerShell: `$env:VITE_SERVER_URL="https://anagram-server-production.up.railway.app"`
 
 ### Android
 

@@ -1,0 +1,295 @@
+import { useEffect, useMemo, useState } from "react";
+import type { MatchStatePayload, OnlineUiState } from "../types/online";
+import {
+  ArcadeButton,
+  ArcadeScaffold,
+  LetterTile,
+  NeonTitle,
+  ScoreBadge,
+  TimerBar,
+  WordTiles
+} from "../components/ArcadeComponents";
+import { TapLetterComposer } from "../components/TapLetterComposer";
+
+interface OnlineMatchScreenProps {
+  state: OnlineUiState;
+  onPickVowel: () => void;
+  onPickConsonant: () => void;
+  onWordChange: (value: string) => void;
+  onSubmitWord: () => void;
+  onConundrumGuessChange: (value: string) => void;
+  onSubmitConundrumGuess: () => void;
+  onDismissError: () => void;
+  onLeaveGame: () => void;
+  onBackToHome: () => void;
+}
+
+const phaseLabel = (phase: MatchStatePayload["phase"]) => phase.replaceAll("_", " ");
+
+const LetterSlots = ({ letters }: { letters: string[] }) => (
+  <div className="letter-row">
+    {Array.from({ length: 9 }).map((_, index) => {
+      const letter = letters[index] ?? "_";
+      return <LetterTile key={`slot-${index}`} letter={letter} empty={letter === "_"} />;
+    })}
+  </div>
+);
+
+const PlayerResultRow = ({
+  name,
+  word,
+  points,
+  extra,
+  extraColor
+}: {
+  name: string;
+  word: string;
+  points: number;
+  extra: string;
+  extraColor: string;
+}) => (
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+      <div className="text-dim">{name}</div>
+      <div className="label" style={{ color: "var(--cyan)" }}>
+        {points} pts
+      </div>
+    </div>
+    <WordTiles word={word || "-"} accent="var(--cyan)" />
+    <div className="text-dim" style={{ color: extraColor }}>
+      {extra}
+    </div>
+  </div>
+);
+
+export const OnlineMatchScreen = ({
+  state,
+  onPickVowel,
+  onPickConsonant,
+  onWordChange,
+  onSubmitWord,
+  onConundrumGuessChange,
+  onSubmitConundrumGuess,
+  onDismissError,
+  onLeaveGame,
+  onBackToHome
+}: OnlineMatchScreenProps) => {
+  const match = state.matchState;
+  const isFinished = match?.phase === "FINISHED";
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
+  useEffect(() => {
+    if (isFinished) {
+      setShowLeaveConfirm(false);
+    }
+  }, [isFinished]);
+
+  const winnerLabel = useMemo(() => {
+    if (!match || match.phase !== "FINISHED") return "";
+    if (!match.winnerPlayerId) return "Draw";
+    return match.winnerPlayerId === state.playerId ? "You Win" : "You Lose";
+  }, [match, state.playerId]);
+
+  return (
+    <ArcadeScaffold>
+      {isFinished ? (
+        <ArcadeButton text="Back Home" onClick={onBackToHome} accent="gold" />
+      ) : (
+        <>
+          <ArcadeButton text="Leave Game" onClick={() => setShowLeaveConfirm(true)} accent="gold" />
+          <div className="text-dim" style={{ color: "var(--red)" }}>
+            If you leave now, you will forfeit the match.
+          </div>
+        </>
+      )}
+
+      {!match ? (
+        <>
+          <NeonTitle text="Match" />
+          <div className="text-dim">Waiting for match state...</div>
+        </>
+      ) : (
+        <>
+          <NeonTitle text={`Round ${match.roundNumber}`} />
+          <NeonTitle text={phaseLabel(match.phase)} />
+          <TimerBar secondsRemaining={state.secondsRemaining} totalSeconds={match.phase === "AWAITING_LETTERS_PICK" ? 10 : 30} />
+          <div className="text-dim">{state.statusMessage}</div>
+
+          {state.myPlayer && state.opponentPlayer ? (
+            <div className="score-row">
+              <ScoreBadge label={state.myPlayer.displayName} score={state.myPlayer.score} />
+              <ScoreBadge label={state.opponentPlayer.displayName} score={state.opponentPlayer.score} color="var(--gold)" />
+            </div>
+          ) : null}
+
+          {state.lastError ? (
+            <div className="card warning" style={{ display: "grid", gap: 10 }}>
+              <div>Error: {state.lastError.message}</div>
+              <ArcadeButton text="Dismiss" onClick={onDismissError} />
+            </div>
+          ) : null}
+
+          {state.localValidationMessage ? (
+            <div className="card" style={{ color: "var(--red)" }}>
+              {state.localValidationMessage}
+            </div>
+          ) : null}
+
+          {match.phase === "AWAITING_LETTERS_PICK" ? (
+            <>
+              <div className="headline">{state.isMyTurnToPick ? "Your turn to pick" : "Opponent is picking"}</div>
+              <LetterSlots letters={match.letters} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <ArcadeButton text="Vowel" onClick={onPickVowel} disabled={!state.isMyTurnToPick || state.connectionState === "reconnecting"} />
+                <ArcadeButton
+                  text="Consonant"
+                  onClick={onPickConsonant}
+                  disabled={!state.isMyTurnToPick || state.connectionState === "reconnecting"}
+                />
+              </div>
+            </>
+          ) : null}
+
+          {match.phase === "LETTERS_SOLVING" ? (
+            <>
+              <div className="headline">Build your longest valid word</div>
+              <LetterSlots letters={match.letters} />
+              <TapLetterComposer
+                letters={match.letters}
+                value={state.wordInput}
+                onValueChange={onWordChange}
+                disabled={state.hasSubmittedWord}
+              />
+              <ArcadeButton text={state.hasSubmittedWord ? "Submitted" : "Submit Word"} onClick={onSubmitWord} disabled={state.hasSubmittedWord} />
+            </>
+          ) : null}
+
+          {match.phase === "CONUNDRUM_SOLVING" ? (
+            <>
+              <NeonTitle text="Conundrum" />
+              <div className="card" style={{ textAlign: "center", borderColor: "rgba(0,245,255,.45)" }}>
+                <div
+                  className="headline"
+                  style={{
+                    color: "var(--gold)",
+                    letterSpacing: "0.5em",
+                    fontSize: "clamp(18px, 5vw, 28px)",
+                    lineHeight: 1.5
+                  }}
+                >
+                  {match.scrambled?.toUpperCase()}
+                </div>
+              </div>
+              <TapLetterComposer
+                letters={(match.scrambled ?? "").toUpperCase().split("")}
+                value={state.conundrumGuessInput.toUpperCase()}
+                onValueChange={onConundrumGuessChange}
+              />
+              <ArcadeButton text="Submit Guess" onClick={onSubmitConundrumGuess} />
+              <div className="text-dim">Multiple guesses allowed. Respect rate limit.</div>
+            </>
+          ) : null}
+
+          {match.phase === "ROUND_RESULT" ? (
+            <>
+              <NeonTitle text="Round Result" />
+              {match.roundResults.at(-1) ? (
+                <div className="card" style={{ display: "grid", gap: 12 }}>
+                  {match.roundResults.at(-1)?.type === "LETTERS" ? (
+                    <>
+                      <WordTiles label="Letters" word={match.roundResults.at(-1)?.letters?.join("") ?? ""} accent="var(--gold)" />
+                      {match.players.map((player) => {
+                        const submission = match.roundResults.at(-1)?.submissions?.[player.playerId];
+                        const points = match.roundResults.at(-1)?.awardedScores[player.playerId] ?? 0;
+                        const valid = submission?.isValid ?? false;
+                        return (
+                          <PlayerResultRow
+                            key={player.playerId}
+                            name={player.displayName}
+                            word={submission?.word ?? "-"}
+                            points={points}
+                            extra={submission ? (valid ? "Valid" : "Invalid") : "No submission"}
+                            extraColor={valid ? "var(--green)" : "var(--red)"}
+                          />
+                        );
+                      })}
+                    </>
+                  ) : (
+                    <>
+                      <WordTiles label="Scramble" word={match.roundResults.at(-1)?.scrambled ?? ""} accent="var(--gold)" />
+                      <WordTiles label="Answer" word={match.roundResults.at(-1)?.answer ?? ""} accent="var(--cyan)" />
+                      {match.players.map((player) => {
+                        const points = match.roundResults.at(-1)?.awardedScores[player.playerId] ?? 0;
+                        const solved = match.roundResults.at(-1)?.firstCorrectPlayerId === player.playerId;
+                        return (
+                          <PlayerResultRow
+                            key={player.playerId}
+                            name={player.displayName}
+                            word={solved ? (match.roundResults.at(-1)?.answer ?? "") : "-"}
+                            points={points}
+                            extra={solved ? "Solved first" : "Not solved"}
+                            extraColor={solved ? "var(--green)" : "var(--dim)"}
+                          />
+                        );
+                      })}
+                    </>
+                  )}
+                </div>
+              ) : null}
+              <div className="card text-dim">Next round starts in 5 seconds...</div>
+            </>
+          ) : null}
+
+          {match.phase === "FINISHED" ? (
+            <>
+              <NeonTitle text="Final Result" />
+              <div className="headline">{winnerLabel}</div>
+              <div style={{ display: "grid", gap: 12, maxHeight: "48vh", overflow: "auto" }}>
+                {match.roundResults.map((round) => (
+                  <div key={`round-${round.roundNumber}`} className="card" style={{ display: "grid", gap: 10 }}>
+                    <div className="headline" style={{ fontSize: "clamp(12px,1.5vw,14px)" }}>
+                      Round {round.roundNumber} {round.type.toLowerCase()}
+                    </div>
+                    {round.type === "LETTERS" ? (
+                      <WordTiles label="Letters" word={round.letters?.join("") ?? ""} accent="var(--gold)" />
+                    ) : (
+                      <WordTiles label="Answer" word={round.answer ?? ""} accent="var(--gold)" />
+                    )}
+                    {match.players.map((player) => {
+                      const word =
+                        round.type === "LETTERS"
+                          ? (round.submissions?.[player.playerId]?.word ?? "-")
+                          : round.firstCorrectPlayerId === player.playerId
+                            ? (round.answer ?? "-")
+                            : "-";
+                      const points = round.awardedScores[player.playerId] ?? 0;
+                      return <PlayerResultRow key={`${round.roundNumber}-${player.playerId}`} name={player.displayName} word={word} points={points} extra="" extraColor="var(--dim)" />;
+                    })}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </>
+      )}
+
+      {showLeaveConfirm ? (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="headline">Leave game?</div>
+            <div className="text-dim">Leaving an active match counts as a forfeit and awards your opponent the win.</div>
+            <ArcadeButton
+              text="Forfeit & Leave"
+              onClick={() => {
+                setShowLeaveConfirm(false);
+                onLeaveGame();
+                onBackToHome();
+              }}
+            />
+            <ArcadeButton text="Stay" onClick={() => setShowLeaveConfirm(false)} />
+          </div>
+        </div>
+      ) : null}
+    </ArcadeScaffold>
+  );
+};

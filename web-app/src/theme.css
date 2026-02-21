@@ -1,0 +1,29 @@
+@import "@fontsource/press-start-2p";
+@import "@fontsource/orbitron/700.css";
+
+:root {
+  --bg: #0a0a18;
+  --surface: #12122a;
+  --surface-variant: #1c1c3a;
+  --cyan: #00f5ff;
+  --gold: #ffd700;
+  --magenta: #ff00cc;
+  --green: #39ff14;
+  --red: #ff3a3a;
+  --white: #ffffff;
+  --dim: #8888aa;
+
+  --font-pixel: "Press Start 2P", monospace;
+  --font-orbitron: "Orbitron", sans-serif;
+
+  --space-1: clamp(4px, 0.45vw, 6px);
+  --space-2: clamp(8px, 1vw, 12px);
+  --space-3: clamp(12px, 1.5vw, 16px);
+  --space-4: clamp(16px, 2vw, 24px);
+
+  --text-display: clamp(18px, 2.4vw, 24px);
+  --text-headline: clamp(14px, 1.8vw, 18px);
+  --text-body: clamp(10px, 1.1vw, 12px);
+  --text-label: clamp(8px, 0.95vw, 10px);
+  --tile-size: clamp(30px, 4.6vw, 42px);
+}
