@@ -96,3 +96,44 @@ Needed for: internet-accessible multiplayer.
 ### Verify
 
 - iOS app can connect and complete a live match.
+
+## 5. Android Local Build and Run
+
+Needed for: running and testing the Android practice-mode app.
+
+### Steps
+
+1. Install Android Studio (latest stable).
+2. Install Android SDK components from SDK Manager:
+   - Android SDK Platform 35
+   - Android SDK Build-Tools 34.0.0
+   - Android SDK Platform-Tools
+3. Install JDK 17 or let Android Studio use bundled JetBrains Runtime.
+4. Open `android-app` folder in Android Studio.
+5. Allow Gradle sync to complete.
+6. Accept SDK licenses if prompted (or via `sdkmanager --licenses`).
+7. Create/start an emulator (Pixel API 35 recommended) or connect a device with USB debugging.
+8. Run the `app` configuration.
+
+### Secrets/keys to copy
+
+- None for offline Phase A1.
+
+### Where to apply
+
+- SDK path in local machine config (`local.properties`, not committed).
+
+### Verify
+
+- Home -> Practice Mode loads.
+- Letters and Conundrum practice flows work offline.
+- Core tests pass: `cd android-app && gradlew.bat :core:test` (Windows) or `./gradlew :core:test` (macOS/Linux).
+
+### Common fixes
+
+- If build fails with license errors:
+  - Install missing SDK packages in Android Studio SDK Manager.
+  - Accept licenses (`sdkmanager --licenses`).
+- If Gradle sync fails due JDK:
+  - Set Gradle JDK to 17 in Android Studio:
+    - Settings -> Build, Execution, Deployment -> Build Tools -> Gradle.

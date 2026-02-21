@@ -5,6 +5,7 @@ Production-oriented MVP scaffold for a real-time head-to-head anagram game.
 ## Repository Layout
 
 - `ios-app/` SwiftUI iOS client scaffold (iOS-first)
+- `android-app/` Kotlin + Compose Android client scaffold
 - `server/` Node.js + TypeScript + Socket.IO backend scaffold
 - `shared/` shared docs/specs/data placeholders
 - `docs/` architecture, API, setup, and rollout docs
@@ -12,7 +13,9 @@ Production-oriented MVP scaffold for a real-time head-to-head anagram game.
 ## Current Status
 
 - Phase 0 complete: bootstrap, structure, tooling, and docs skeleton
-- Phase 1 next: shared game engine + fully offline iOS practice mode
+- Phase 1 complete: shared core game logic + offline iOS practice mode
+- Phase A0+A1 complete: Android scaffold + offline practice mode parity
+- Phase 2 next: real-time backend authoritative multiplayer
 
 ## Technology Decisions (MVP)
 
@@ -43,6 +46,13 @@ This workspace includes an XcodeGen spec to create the Xcode project.
    - `xcodegen generate`
 4. Open `AnagramArena.xcodeproj` and run on an iPhone simulator
 
+### Android App
+
+1. Open `android-app` in Android Studio
+2. Allow Gradle sync to complete
+3. Install required SDK components if prompted
+4. Run `app` on emulator/device
+
 ## Commands
 
 - `npm run server:dev`
@@ -50,9 +60,12 @@ This workspace includes an XcodeGen spec to create the Xcode project.
 - `npm run server:test`
 - `npm run server:lint`
 - `npm run server:format`
+- `cd android-app && ./gradlew :core:test`
+- `cd android-app && ./gradlew :app:assembleDebug`
 
 ## Notes
 
-- Practice mode will be fully offline in Phase 1.
-- Multiplayer services are scaffolded now and will become authoritative in Phase 2.
+- Practice mode works fully offline with bundled dictionary/conundrum data.
+- Android and iOS both support offline practice mode in current state.
+- Multiplayer services are scaffolded now and become authoritative in Phase 2.
 - See `docs/manual-setup.md` for external account/service setup steps.

@@ -1,20 +1,24 @@
 import SwiftUI
 
 struct HomeView: View {
+    let dependencies: AppDependencies
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
                 Text("Anagram Arena")
                     .font(.largeTitle.bold())
 
-                Text("Phase 0 scaffold")
-                    .foregroundStyle(.secondary)
+                NavigationLink("Play Online") {
+                    Text("Online multiplayer arrives in Phase 2.")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderedProminent)
 
-                Button("Play Online") {}
-                    .buttonStyle(.borderedProminent)
-
-                Button("Practice Mode") {}
-                    .buttonStyle(.bordered)
+                NavigationLink("Practice Mode") {
+                    PracticeMenuView(dependencies: dependencies)
+                }
+                .buttonStyle(.bordered)
 
                 Button("Profile / Stats") {}
                     .buttonStyle(.bordered)
@@ -28,5 +32,6 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView()
+    HomeView(dependencies: .live)
+        .environmentObject(PracticeSettingsStore())
 }

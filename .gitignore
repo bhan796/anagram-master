@@ -11,9 +11,19 @@ dist/
 coverage/
 npm-debug.log*
 
+# Android / Gradle
+**/.gradle/
+**/build/
+android-app/local.properties
+android-app/.idea/
+*.iml
+
 # Environment
 .env
 .env.local
 
 # IDE
 .vscode/settings.json
+
+# Local scratch
+.tmp_*/
