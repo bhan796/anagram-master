@@ -159,11 +159,6 @@ export const App = () => {
         setStats(statsPayload);
         setHistory(historyPayload.matches ?? []);
 
-        const leaderboardRes = await fetch(`${apiBaseUrl}/api/leaderboard?limit=20`);
-        if (leaderboardRes.ok) {
-          const leaderboardPayload = (await leaderboardRes.json()) as { entries?: typeof leaderboard };
-          setLeaderboard(leaderboardPayload.entries ?? []);
-        }
       } catch (error) {
         setProfileError(error instanceof Error ? error.message : "Unable to load profile");
       } finally {
@@ -188,6 +183,27 @@ export const App = () => {
 
     void pullPresence();
     const timer = window.setInterval(() => void pullPresence(), 10000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const pullLeaderboard = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/leaderboard?limit=20`);
+        if (!response.ok) return;
+        const payload = (await response.json()) as { entries?: typeof leaderboard };
+        if (!cancelled) setLeaderboard(payload.entries ?? []);
+      } catch {
+        // ignore leaderboard polling failures
+      }
+    };
+
+    void pullLeaderboard();
+    const timer = window.setInterval(() => void pullLeaderboard(), 15000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
@@ -253,6 +269,7 @@ export const App = () => {
     return (
       <MatchmakingScreen
         state={online.state}
+        leaderboard={leaderboard}
         onBack={() => setRoute("home")}
         onJoinQueue={online.actions.startQueue}
         onCancelQueue={online.actions.cancelQueue}
@@ -289,7 +306,6 @@ export const App = () => {
         error={profileError}
         stats={stats}
         history={history}
-        leaderboard={leaderboard}
         onBack={() => setRoute("home")}
         onRetry={() => void loadProfile()}
       />

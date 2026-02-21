@@ -3,6 +3,7 @@ package com.bhan796.anagramarena.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.bhan796.anagramarena.online.LeaderboardEntry
 import com.bhan796.anagramarena.repository.ProfileRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,7 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class HomeStatusUiState(
-    val playersOnline: Int = 0
+    val playersOnline: Int = 0,
+    val leaderboard: List<LeaderboardEntry> = emptyList()
 )
 
 class HomeStatusViewModel(
@@ -26,6 +28,10 @@ class HomeStatusViewModel(
                 val result = repository.loadPlayersOnline()
                 result.getOrNull()?.let { count ->
                     _state.value = _state.value.copy(playersOnline = count)
+                }
+                val leaderboardResult = repository.loadLeaderboard(20)
+                leaderboardResult.getOrNull()?.let { entries ->
+                    _state.value = _state.value.copy(leaderboard = entries)
                 }
                 delay(10_000)
             }

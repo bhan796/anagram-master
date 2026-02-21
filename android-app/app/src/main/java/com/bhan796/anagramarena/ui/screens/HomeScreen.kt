@@ -61,8 +61,8 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Players Online: ", style = MaterialTheme.typography.headlineSmall, color = ColorWhite)
-            Text(playersOnline.toString(), style = MaterialTheme.typography.headlineSmall, color = ColorGreen)
+            Text("Players Online: ", style = MaterialTheme.typography.labelLarge, color = ColorWhite)
+            Text(playersOnline.toString(), style = MaterialTheme.typography.labelLarge, color = ColorGreen)
         }
 
         Spacer(Modifier.weight(1f))

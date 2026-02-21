@@ -4,6 +4,16 @@ import { ArcadeBackButton, ArcadeButton, ArcadeScaffold, NeonTitle } from "../co
 
 interface MatchmakingScreenProps {
   state: OnlineUiState;
+  leaderboard: Array<{
+    playerId: string;
+    displayName: string;
+    rating: number;
+    rankTier: string;
+    rankedGames: number;
+    wins: number;
+    losses: number;
+    draws: number;
+  }>;
   onBack: () => void;
   onJoinQueue: (mode: "casual" | "ranked") => void;
   onCancelQueue: () => void;
@@ -11,7 +21,15 @@ interface MatchmakingScreenProps {
   onMatchReady: () => void;
 }
 
-export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, onRetryConnection, onMatchReady }: MatchmakingScreenProps) => {
+export const MatchmakingScreen = ({
+  state,
+  leaderboard,
+  onBack,
+  onJoinQueue,
+  onCancelQueue,
+  onRetryConnection,
+  onMatchReady
+}: MatchmakingScreenProps) => {
   const [searchStarted, setSearchStarted] = useState(false);
   const [dots, setDots] = useState(1);
   const [selectedMode, setSelectedMode] = useState<"casual" | "ranked">("casual");
@@ -57,19 +75,23 @@ export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, o
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <ArcadeButton
-          text="Casual"
+      <div className="mode-select-row">
+        <button
+          type="button"
+          className={`mode-select-btn ${selectedMode === "casual" ? "selected" : "unselected"}`}
           onClick={() => setSelectedMode("casual")}
-          disabled={searchStarted || state.isInMatchmaking || hasActiveMatch || selectedMode === "casual"}
-          accent="gold"
-        />
-        <ArcadeButton
-          text="Ranked"
+          disabled={searchStarted || state.isInMatchmaking || hasActiveMatch}
+        >
+          Casual
+        </button>
+        <button
+          type="button"
+          className={`mode-select-btn ${selectedMode === "ranked" ? "selected" : "unselected"}`}
           onClick={() => setSelectedMode("ranked")}
-          disabled={searchStarted || state.isInMatchmaking || hasActiveMatch || selectedMode === "ranked"}
-          accent="magenta"
-        />
+          disabled={searchStarted || state.isInMatchmaking || hasActiveMatch}
+        >
+          Ranked
+        </button>
       </div>
 
       <ArcadeButton
@@ -80,6 +102,26 @@ export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, o
         }}
         disabled={!primaryEnabled}
       />
+
+      <div className="card" style={{ display: "grid", gap: 8 }}>
+        <div className="headline" style={{ fontSize: "clamp(10px, 1.2vw, 12px)" }}>
+          Leaderboard
+        </div>
+        {leaderboard.length === 0 ? (
+          <div className="text-dim">No ranked matches yet.</div>
+        ) : (
+          leaderboard.slice(0, 8).map((entry, index) => (
+            <div key={entry.playerId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <span className="text-dim">
+                #{index + 1} {entry.displayName}
+              </span>
+              <span className="label" style={{ color: "var(--green)" }}>
+                {entry.rating}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
 
       {searchStarted && state.isInMatchmaking && !hasActiveMatch ? (
         <ArcadeButton

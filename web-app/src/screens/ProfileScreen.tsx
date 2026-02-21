@@ -38,21 +38,11 @@ interface ProfileScreenProps {
   error: string | null;
   stats: StatsSummary | null;
   history: HistoryItem[];
-  leaderboard: Array<{
-    playerId: string;
-    displayName: string;
-    rating: number;
-    rankTier: string;
-    rankedGames: number;
-    wins: number;
-    losses: number;
-    draws: number;
-  }>;
   onBack: () => void;
   onRetry: () => void;
 }
 
-export const ProfileScreen = ({ isLoading, error, stats, history, leaderboard, onBack, onRetry }: ProfileScreenProps) => {
+export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetry }: ProfileScreenProps) => {
   const statRows = useMemo(
     () =>
       stats
@@ -137,26 +127,6 @@ export const ProfileScreen = ({ isLoading, error, stats, history, leaderboard, o
               </div>
             );
           })}
-        </div>
-      )}
-
-      <div className="headline">Leaderboard</div>
-      {leaderboard.length === 0 ? (
-        <div className="card">
-          <div className="text-dim">No ranked matches yet.</div>
-        </div>
-      ) : (
-        <div className="card" style={{ display: "grid", gap: 8 }}>
-          {leaderboard.slice(0, 20).map((entry, index) => (
-            <div key={entry.playerId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <span className="text-dim">
-                #{index + 1} {entry.displayName}
-              </span>
-              <span className="label" style={{ color: "var(--green)" }}>
-                {entry.rating}
-              </span>
-            </div>
-          ))}
         </div>
       )}
     </ArcadeScaffold>

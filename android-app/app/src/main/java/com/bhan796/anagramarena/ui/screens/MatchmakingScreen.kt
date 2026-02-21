@@ -6,36 +6,45 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import com.bhan796.anagramarena.network.SocketConnectionState
+import com.bhan796.anagramarena.online.LeaderboardEntry
 import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.NeonTitle
 import com.bhan796.anagramarena.ui.theme.ColorCyan
-import com.bhan796.anagramarena.ui.theme.ColorGold
-import com.bhan796.anagramarena.ui.theme.ColorMagenta
+import com.bhan796.anagramarena.ui.theme.ColorDimText
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
+import com.bhan796.anagramarena.ui.theme.ColorWhite
 import com.bhan796.anagramarena.ui.theme.sdp
 
 @Composable
 fun MatchmakingScreen(
     contentPadding: PaddingValues,
     onlineState: OnlineUiState,
+    leaderboard: List<LeaderboardEntry>,
     onBack: () -> Unit,
     onJoinQueue: (String) -> Unit,
     onCancelQueue: () -> Unit,
@@ -79,7 +88,7 @@ fun MatchmakingScreen(
         ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
         NeonTitle("Search for opponents...")
 
-        Text("Guest Alias")
+        Text("Guest Alias", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -87,22 +96,22 @@ fun MatchmakingScreen(
                 .border(sdp(1.dp), ColorCyan.copy(alpha = 0.55f), RoundedCornerShape(sdp(6.dp)))
                 .padding(horizontal = sdp(14.dp), vertical = sdp(12.dp))
         ) {
-            Text(onlineState.displayName.orEmpty())
+            Text(onlineState.displayName.orEmpty(), style = MaterialTheme.typography.labelLarge, color = ColorWhite)
         }
 
-        androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(sdp(10.dp))) {
-            ArcadeButton(
+        Row(horizontalArrangement = Arrangement.spacedBy(sdp(10.dp))) {
+            ModeOptionButton(
                 text = "CASUAL",
+                selected = selectedMode == "casual",
+                enabled = !searchStarted && !onlineState.isInMatchmaking && !hasExistingMatch,
                 onClick = { selectedMode = "casual" },
-                enabled = !searchStarted && !onlineState.isInMatchmaking && !hasExistingMatch && selectedMode != "casual",
-                accentColor = ColorGold,
                 modifier = Modifier.weight(1f)
             )
-            ArcadeButton(
+            ModeOptionButton(
                 text = "RANKED",
+                selected = selectedMode == "ranked",
+                enabled = !searchStarted && !onlineState.isInMatchmaking && !hasExistingMatch,
                 onClick = { selectedMode = "ranked" },
-                enabled = !searchStarted && !onlineState.isInMatchmaking && !hasExistingMatch && selectedMode != "ranked",
-                accentColor = ColorMagenta,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -116,6 +125,28 @@ fun MatchmakingScreen(
             enabled = primaryButtonEnabled,
             modifier = Modifier.fillMaxWidth()
         )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+                .padding(sdp(12.dp))
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
+                Text("LEADERBOARD", style = MaterialTheme.typography.labelLarge, color = ColorWhite)
+                if (leaderboard.isEmpty()) {
+                    Text("No ranked matches yet.", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
+                } else {
+                    leaderboard.take(8).forEachIndexed { index, entry ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("#${index + 1} ${entry.displayName}", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
+                            Text(entry.rating.toString(), style = MaterialTheme.typography.labelLarge, color = com.bhan796.anagramarena.ui.theme.ColorGreen)
+                        }
+                    }
+                }
+            }
+        }
 
         if (searchStarted && onlineState.isInMatchmaking && onlineState.matchState == null) {
             ArcadeButton(
@@ -135,5 +166,34 @@ fun MatchmakingScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+}
+
+@Composable
+private fun ModeOptionButton(
+    text: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val borderColor = if (selected) ColorCyan else ColorDimText.copy(alpha = 0.45f)
+    val textColor = if (selected) ColorWhite else ColorDimText
+    val background = if (selected) ColorSurfaceVariant.copy(alpha = 0.95f) else ColorSurfaceVariant.copy(alpha = 0.55f)
+
+    Box(
+        modifier = modifier
+            .shadow(
+                elevation = if (selected) sdp(8.dp) else sdp(0.dp),
+                shape = RoundedCornerShape(sdp(6.dp)),
+                clip = false
+            )
+            .background(background, RoundedCornerShape(sdp(6.dp)))
+            .border(sdp(1.dp), borderColor, RoundedCornerShape(sdp(6.dp)))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = sdp(12.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge, color = textColor)
     }
 }

@@ -27,3 +27,40 @@
   --text-label: clamp(8px, 0.95vw, 10px);
   --tile-size: clamp(30px, 4.6vw, 42px);
 }
+
+.mode-select-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mode-select-btn {
+  border: 1px solid rgba(0, 245, 255, 0.35);
+  border-radius: 6px;
+  padding: 12px 10px;
+  background: linear-gradient(180deg, rgba(28, 28, 58, 0.95), rgba(12, 12, 32, 0.95));
+  color: var(--dim);
+  font-family: var(--font-pixel);
+  font-size: var(--text-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+
+.mode-select-btn.unselected {
+  opacity: 0.62;
+  border-color: rgba(136, 136, 170, 0.45);
+}
+
+.mode-select-btn.selected {
+  opacity: 1;
+  color: var(--white);
+  border-color: var(--cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 245, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mode-select-btn:disabled {
+  cursor: not-allowed;
+}

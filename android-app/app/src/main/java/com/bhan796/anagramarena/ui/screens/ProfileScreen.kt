@@ -29,7 +29,6 @@ import com.bhan796.anagramarena.ui.components.NeonTitle
 import com.bhan796.anagramarena.ui.components.RankBadge
 import com.bhan796.anagramarena.ui.theme.ColorCyan
 import com.bhan796.anagramarena.ui.theme.ColorDimText
-import com.bhan796.anagramarena.ui.theme.ColorGreen
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.viewmodel.ProfileViewModel
 
@@ -133,35 +132,6 @@ fun ProfileScreen(
             }
         }
 
-        Text("LEADERBOARD", style = MaterialTheme.typography.headlineSmall)
-        if (state.leaderboard.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-                    .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-                    .padding(12.dp)
-            ) {
-                Text("No ranked matches yet", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-                    .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-                    .padding(12.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    state.leaderboard.take(20).forEachIndexed { index, entry ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("#${index + 1} ${entry.displayName}", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
-                            Text(entry.rating.toString(), style = MaterialTheme.typography.labelLarge, color = ColorGreen)
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

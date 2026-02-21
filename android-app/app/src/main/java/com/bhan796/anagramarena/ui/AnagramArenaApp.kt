@@ -99,6 +99,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                 MatchmakingScreen(
                     contentPadding = innerPadding,
                     onlineState = onlineState,
+                    leaderboard = homeStatus.leaderboard,
                     onBack = { navController.popBackStack() },
                     onJoinQueue = onlineMatchViewModel::startQueue,
                     onCancelQueue = onlineMatchViewModel::cancelQueue,

@@ -17,7 +17,17 @@ export const HomeScreen = ({ onPlayOnline, onPracticeMode, onProfile, onSettings
     <ArcadeButton text="Practice Mode" onClick={onPracticeMode} />
     <ArcadeButton text="Profile / Stats" onClick={onProfile} accent="gold" />
     <ArcadeButton text="Settings" onClick={onSettings} accent="magenta" />
-    <div className="headline" style={{ color: "var(--white)", textAlign: "center", marginTop: 4 }}>
+    <div
+      style={{
+        color: "var(--white)",
+        textAlign: "center",
+        marginTop: 4,
+        fontFamily: "var(--font-pixel)",
+        fontSize: "var(--text-label)",
+        letterSpacing: "0.08em",
+        textTransform: "uppercase"
+      }}
+    >
       Players Online: <span style={{ color: "var(--green)" }}>{playersOnline}</span>
     </div>
     <div style={{ flex: 1 }} />
