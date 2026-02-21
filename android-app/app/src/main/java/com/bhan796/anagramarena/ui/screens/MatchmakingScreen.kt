@@ -44,15 +44,18 @@ fun MatchmakingScreen(
     )
 
     val searchingLabel = "SEARCHING" + ".".repeat((dotsProgress * 3).toInt() + 1)
-    val hasMatchAfterSearch = searchStarted && onlineState.matchState != null
+    val hasExistingMatch = onlineState.matchState != null
+    val hasMatchAfterSearch = searchStarted && hasExistingMatch
     val primaryButtonText = when {
         hasMatchAfterSearch -> "MATCH FOUND!"
         searchStarted && onlineState.isInMatchmaking -> searchingLabel
+        hasExistingMatch -> "ALREADY IN MATCH"
         else -> "FIND OPPONENT"
     }
     val primaryButtonEnabled =
         !searchStarted &&
             !onlineState.isInMatchmaking &&
+            !hasExistingMatch &&
             onlineState.connectionState is SocketConnectionState.Connected
 
     LaunchedEffect(searchStarted, onlineState.matchState?.matchId) {

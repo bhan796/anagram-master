@@ -298,6 +298,13 @@ export class MatchService {
       const playerAId = this.queue.shift();
       const playerBId = this.queue.shift();
       if (!playerAId || !playerBId) break;
+      if (playerAId === playerBId) {
+        const player = this.players.get(playerAId);
+        if (player && player.connected && player.socketId && !player.matchId && !this.queue.includes(playerAId)) {
+          this.queue.push(playerAId);
+        }
+        continue;
+      }
 
       const playerA = this.players.get(playerAId);
       const playerB = this.players.get(playerBId);

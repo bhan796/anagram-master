@@ -258,4 +258,22 @@ describe("MatchService", () => {
     expect(match.players).toContain(p3);
     expect(match.players).not.toContain(p1);
   });
+
+  it("never creates a match with the same player on both sides", () => {
+    const scheduler = new FakeScheduler();
+    const service = makeService(scheduler);
+
+    const p1 = service.connectPlayer("socket-1", undefined, "One").playerId;
+    const p2 = service.connectPlayer("socket-2", undefined, "Two").playerId;
+
+    // Simulate queue corruption with duplicate same player id.
+    (service as unknown as { queue: string[] }).queue.push(p1, p1);
+    expect(service.joinQueue(p2).ok).toBe(true);
+
+    const match = service.getMatchByPlayer(p1);
+    expect(match).toBeTruthy();
+    if (!match) return;
+    expect(match.players[0]).not.toBe(match.players[1]);
+    expect(new Set(match.players).size).toBe(2);
+  });
 });
