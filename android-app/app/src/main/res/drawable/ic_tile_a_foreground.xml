@@ -5,29 +5,31 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Pixel-style A using arcade cyan -->
-    <group
-        android:translateX="18"
-        android:translateY="18">
+    <!-- Tile body centered in adaptive icon safe area -->
+    <path
+        android:fillColor="#1C1C3A"
+        android:pathData="M24,24h60v60h-60z" />
 
-        <!-- Left leg -->
-        <path
-            android:fillColor="#00F5FF"
-            android:pathData="M12,60h6v6h-6zM12,54h6v6h-6zM12,48h6v6h-6zM18,42h6v6h-6zM18,36h6v6h-6zM24,30h6v6h-6zM24,24h6v6h-6z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M24,24h60v60h-60z"
+        android:strokeColor="#00F5FF"
+        android:strokeLineJoin="miter"
+        android:strokeWidth="4" />
 
-        <!-- Right leg -->
-        <path
-            android:fillColor="#00F5FF"
-            android:pathData="M48,60h6v6h-6zM48,54h6v6h-6zM48,48h6v6h-6zM42,42h6v6h-6zM42,36h6v6h-6zM36,30h6v6h-6zM36,24h6v6h-6z" />
+    <!-- Centered A -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M40,72 L54,36 L68,72"
+        android:strokeColor="#00F5FF"
+        android:strokeLineCap="square"
+        android:strokeLineJoin="miter"
+        android:strokeWidth="6" />
 
-        <!-- Top cap -->
-        <path
-            android:fillColor="#00F5FF"
-            android:pathData="M30,18h6v6h-6z" />
-
-        <!-- Crossbar -->
-        <path
-            android:fillColor="#00F5FF"
-            android:pathData="M24,42h6v6h-6zM30,42h6v6h-6zM36,42h6v6h-6z" />
-    </group>
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M46,58 L62,58"
+        android:strokeColor="#00F5FF"
+        android:strokeLineCap="square"
+        android:strokeWidth="6" />
 </vector>
