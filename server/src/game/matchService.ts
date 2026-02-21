@@ -89,6 +89,7 @@ export class MatchService {
       if (player.socketId === socketId) {
         player.connected = false;
         player.socketId = null;
+        this.leaveQueue(player.playerId);
         this.options.logEvent("Player disconnected", { playerId: player.playerId, socketId });
 
         if (player.matchId) {
@@ -104,6 +105,8 @@ export class MatchService {
     const player = this.players.get(playerId);
     if (!player) return { ok: false, code: "UNKNOWN_PLAYER" };
     if (player.matchId) return { ok: false, code: "ALREADY_IN_MATCH" };
+
+    this.pruneQueue();
 
     if (!this.queue.includes(playerId)) {
       this.queue.push(playerId);
@@ -289,6 +292,8 @@ export class MatchService {
   }
 
   private tryMatchPlayers(): void {
+    this.pruneQueue();
+
     while (this.queue.length >= 2) {
       const playerAId = this.queue.shift();
       const playerBId = this.queue.shift();
@@ -296,7 +301,16 @@ export class MatchService {
 
       const playerA = this.players.get(playerAId);
       const playerB = this.players.get(playerBId);
-      if (!playerA || !playerB || playerA.matchId || playerB.matchId) {
+      if (
+        !playerA ||
+        !playerB ||
+        !playerA.connected ||
+        !playerB.connected ||
+        !playerA.socketId ||
+        !playerB.socketId ||
+        playerA.matchId ||
+        playerB.matchId
+      ) {
         continue;
       }
 
@@ -307,6 +321,19 @@ export class MatchService {
       this.options.logEvent("Match created", { matchId: match.matchId, players: match.players });
       this.options.onMatchUpdated(match.matchId);
     }
+  }
+
+  private pruneQueue(): void {
+    const seen = new Set<string>();
+    const filtered = this.queue.filter((playerId) => {
+      if (seen.has(playerId)) return false;
+      seen.add(playerId);
+
+      const player = this.players.get(playerId);
+      return Boolean(player && player.connected && player.socketId && !player.matchId);
+    });
+
+    this.queue.splice(0, this.queue.length, ...filtered);
   }
 
   private createMatch(playerAId: string, playerBId: string): MatchState {

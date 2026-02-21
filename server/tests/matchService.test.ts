@@ -199,4 +199,63 @@ describe("MatchService", () => {
     expect(snapshot.matchId).toBe(matchId);
     expect(snapshot.players.length).toBe(2);
   });
+
+  it("prevents a player from joining queue while already in an active match", () => {
+    const scheduler = new FakeScheduler();
+    const service = makeService(scheduler);
+    const { p1 } = startMatch(service);
+
+    const joinAgain = service.joinQueue(p1);
+    expect(joinAgain.ok).toBe(false);
+    expect(joinAgain.code).toBe("ALREADY_IN_MATCH");
+  });
+
+  it("matches only players who are searching and not already in a match", () => {
+    const scheduler = new FakeScheduler();
+    const service = makeService(scheduler);
+    const { p1, p2 } = startMatch(service);
+
+    const p3 = service.connectPlayer("socket-3", undefined, "Three").playerId;
+    const p4 = service.connectPlayer("socket-4", undefined, "Four").playerId;
+
+    const inMatchJoin = service.joinQueue(p1);
+    expect(inMatchJoin.ok).toBe(false);
+    expect(inMatchJoin.code).toBe("ALREADY_IN_MATCH");
+
+    expect(service.joinQueue(p3).ok).toBe(true);
+    expect(service.joinQueue(p4).ok).toBe(true);
+
+    const secondMatch = service.getMatchByPlayer(p3);
+    expect(secondMatch).toBeTruthy();
+    if (!secondMatch) return;
+
+    expect(secondMatch.players).toContain(p3);
+    expect(secondMatch.players).toContain(p4);
+    expect(secondMatch.players).not.toContain(p1);
+    expect(secondMatch.players).not.toContain(p2);
+  });
+
+  it("removes disconnected players from queue so they are never paired", () => {
+    const scheduler = new FakeScheduler();
+    const service = makeService(scheduler);
+
+    const p1 = service.connectPlayer("socket-1", undefined, "One").playerId;
+    const p2 = service.connectPlayer("socket-2", undefined, "Two").playerId;
+    const p3 = service.connectPlayer("socket-3", undefined, "Three").playerId;
+
+    expect(service.joinQueue(p1).ok).toBe(true);
+    service.disconnectSocket("socket-1");
+
+    expect(service.joinQueue(p2).ok).toBe(true);
+    expect(service.getMatchByPlayer(p2)).toBeUndefined();
+
+    expect(service.joinQueue(p3).ok).toBe(true);
+    const match = service.getMatchByPlayer(p2);
+    expect(match).toBeTruthy();
+    if (!match) return;
+
+    expect(match.players).toContain(p2);
+    expect(match.players).toContain(p3);
+    expect(match.players).not.toContain(p1);
+  });
 });
