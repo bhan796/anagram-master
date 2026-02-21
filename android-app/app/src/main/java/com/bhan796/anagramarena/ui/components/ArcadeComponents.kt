@@ -17,9 +17,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.bhan796.anagramarena.ui.theme.*
 
 // -- Glowing neon text title -------------------------------------------------
@@ -33,9 +31,14 @@ fun NeonTitle(text: String, modifier: Modifier = Modifier) {
             repeatMode = RepeatMode.Reverse
         ), label = "neonAlpha"
     )
+    val scaledStyle = MaterialTheme.typography.displayMedium.copy(
+        fontSize = ssp(MaterialTheme.typography.displayMedium.fontSize),
+        lineHeight = ssp(MaterialTheme.typography.displayMedium.lineHeight),
+        letterSpacing = ssp(MaterialTheme.typography.displayMedium.letterSpacing)
+    )
     Text(
         text = text,
-        style = MaterialTheme.typography.displayMedium,
+        style = scaledStyle,
         color = ColorCyan.copy(alpha = alpha),
         textAlign = TextAlign.Center,
         modifier = modifier
@@ -51,14 +54,14 @@ fun TileLogo(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(sdp(8.dp))
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
             top.forEachIndexed { index, letter ->
                 LogoTile(letter = letter, color = palette[index % palette.size], index = index)
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
             bottom.forEachIndexed { index, letter ->
                 LogoTile(letter = letter, color = palette[(index + 2) % palette.size], index = index + top.size)
             }
@@ -73,7 +76,7 @@ private fun LogoTile(letter: Char, color: Color, index: Int) {
         revealed = true,
         index = index,
         accentColor = color,
-        modifier = Modifier.size(40.dp)
+        modifier = Modifier.size(sdp(40.dp))
     )
 }
 
@@ -97,12 +100,12 @@ fun ArcadeButton(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(sdp(4.dp)))
             .background(
                 if (enabled) Brush.horizontalGradient(listOf(accentColor.copy(alpha = 0.15f), accentColor.copy(alpha = 0.05f)))
                 else Brush.horizontalGradient(listOf(ColorDimText.copy(alpha = 0.1f), ColorDimText.copy(alpha = 0.05f)))
             )
-            .border(1.5.dp, if (enabled) accentColor else ColorDimText, RoundedCornerShape(4.dp))
+            .border(sdp(1.5.dp), if (enabled) accentColor else ColorDimText, RoundedCornerShape(sdp(4.dp)))
     ) {
         Button(
             onClick = onClick,
@@ -161,12 +164,12 @@ fun LetterTile(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .graphicsLayer { translationY = offsetY; this.alpha = alpha }
-            .size(34.dp)
-            .background(ColorSurfaceVariant, RoundedCornerShape(3.dp))
+            .size(sdp(34.dp))
+            .background(ColorSurfaceVariant, RoundedCornerShape(sdp(3.dp)))
             .border(
-                width = if (letter != "_") 1.5.dp else 0.5.dp,
+                width = if (letter != "_") sdp(1.5.dp) else sdp(0.5.dp),
                 color = if (letter != "_") accentColor else ColorDimText.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(3.dp)
+                shape = RoundedCornerShape(sdp(3.dp))
             )
     ) {
         Text(
@@ -199,7 +202,7 @@ fun TimerBar(secondsRemaining: Int, totalSeconds: Int, modifier: Modifier = Modi
         animationSpec = infiniteRepeatable(tween(400), RepeatMode.Reverse),
         label = "pulseAlpha"
     )
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(sdp(4.dp))) {
         Text(
             text = "${secondsRemaining}s",
             style = MaterialTheme.typography.labelLarge,
@@ -207,7 +210,7 @@ fun TimerBar(secondsRemaining: Int, totalSeconds: Int, modifier: Modifier = Modi
         )
         LinearProgressIndicator(
             progress = { animatedFraction },
-            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+            modifier = Modifier.fillMaxWidth().height(sdp(6.dp)).clip(RoundedCornerShape(sdp(3.dp))),
             color = color.copy(alpha = pulseAlpha),
             trackColor = ColorSurfaceVariant
         )
@@ -242,7 +245,7 @@ fun NeonDivider(color: Color = ColorCyan.copy(alpha = 0.3f)) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(1.dp)
+            .height(sdp(1.dp))
             .background(Brush.horizontalGradient(listOf(Color.Transparent, color, Color.Transparent)))
     )
 }
@@ -262,8 +265,8 @@ fun ArcadeScaffold(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = sdp(20.dp), vertical = sdp(16.dp)),
+            verticalArrangement = Arrangement.spacedBy(sdp(16.dp)),
             content = content
         )
     }

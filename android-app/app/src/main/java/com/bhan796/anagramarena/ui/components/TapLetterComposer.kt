@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.bhan796.anagramarena.ui.theme.ColorCyan
 import com.bhan796.anagramarena.ui.theme.ColorDimText
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
+import com.bhan796.anagramarena.ui.theme.sdp
 
 @Composable
 fun TapLetterComposer(
@@ -44,13 +45,13 @@ fun TapLetterComposer(
         onValueChange(selectedIndices.joinToString(separator = "") { letters[it].toString() })
     }
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(sdp(10.dp))) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-                .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-                .padding(12.dp)
+                .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+                .padding(sdp(12.dp))
         ) {
             if (selectedIndices.isEmpty()) {
                 Text(
@@ -59,7 +60,7 @@ fun TapLetterComposer(
                     color = ColorDimText
                 )
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
                     selectedIndices.forEachIndexed { index, letterIndex ->
                         LetterTile(
                             letter = letters[letterIndex].toString(),
@@ -72,7 +73,7 @@ fun TapLetterComposer(
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
             letters.forEachIndexed { index, ch ->
                 val selected = selectedIndices.contains(index)
                 Box(
@@ -80,18 +81,18 @@ fun TapLetterComposer(
                     modifier = Modifier
                         .background(
                             color = if (selected) ColorSurfaceVariant.copy(alpha = 0.35f) else ColorSurfaceVariant,
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RoundedCornerShape(sdp(4.dp))
                         )
                         .border(
-                            width = 1.dp,
+                            width = sdp(1.dp),
                             color = if (selected) ColorDimText else ColorCyan.copy(alpha = 0.8f),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RoundedCornerShape(sdp(4.dp))
                         )
                         .clickable(enabled = enabled && !selected) {
                             selectedIndices.add(index)
                             syncValue()
                         }
-                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                        .padding(horizontal = sdp(10.dp), vertical = sdp(8.dp))
                 ) {
                     Text(
                         text = ch.toString().uppercase(),
@@ -103,7 +104,7 @@ fun TapLetterComposer(
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(sdp(10.dp))) {
             ArcadeButton(
                 text = "UNDO",
                 onClick = {

@@ -3,6 +3,7 @@ package com.bhan796.anagramarena.ui.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 
 // --- Palette ---
@@ -37,9 +38,12 @@ private val ArcadeColorScheme = darkColorScheme(
 
 @Composable
 fun AnagramArenaTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = ArcadeColorScheme,
-        typography  = Typography,
-        content     = content
-    )
+    val uiScale = rememberUiScale()
+    CompositionLocalProvider(LocalUiScale provides uiScale) {
+        MaterialTheme(
+            colorScheme = ArcadeColorScheme,
+            typography  = Typography,
+            content     = content
+        )
+    }
 }

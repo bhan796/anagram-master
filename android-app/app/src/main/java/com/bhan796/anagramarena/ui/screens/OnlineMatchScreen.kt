@@ -48,6 +48,7 @@ import com.bhan796.anagramarena.ui.theme.ColorDimText
 import com.bhan796.anagramarena.ui.theme.ColorGold
 import com.bhan796.anagramarena.ui.theme.ColorRed
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
+import com.bhan796.anagramarena.ui.theme.sdp
 
 @Composable
 fun OnlineMatchScreen(
@@ -137,11 +138,11 @@ fun OnlineMatchScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-                    .border(1.dp, ColorRed, RoundedCornerShape(6.dp))
-                    .padding(12.dp)
+                    .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                    .border(sdp(1.dp), ColorRed, RoundedCornerShape(sdp(6.dp)))
+                    .padding(sdp(12.dp))
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(sdp(8.dp))) {
                     Text("Error: ${state.lastError.message}", style = MaterialTheme.typography.bodyMedium)
                     ArcadeButton(
                         text = "DISMISS",
@@ -156,9 +157,9 @@ fun OnlineMatchScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-                    .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-                    .padding(12.dp)
+                    .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                    .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+                    .padding(sdp(12.dp))
             ) {
                 Text(text = state.localValidationMessage, style = MaterialTheme.typography.bodyMedium)
             }
@@ -172,7 +173,7 @@ fun OnlineMatchScreen(
                 )
                 LetterSlots(match.letters)
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(sdp(8.dp))) {
                     ArcadeButton(
                         text = "VOWEL",
                         onClick = onPickVowel,
@@ -206,7 +207,7 @@ fun OnlineMatchScreen(
                     }
                 )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(sdp(10.dp))) {
                     ArcadeButton(
                         text = "UNDO",
                         onClick = {
@@ -251,9 +252,9 @@ fun OnlineMatchScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-                        .border(1.dp, ColorCyan.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-                        .padding(12.dp)
+                        .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                        .border(sdp(1.dp), ColorCyan.copy(alpha = 0.4f), RoundedCornerShape(sdp(6.dp)))
+                        .padding(sdp(12.dp))
                 ) {
                     Text(
                         text = match.scrambled?.uppercase().orEmpty(),
@@ -284,11 +285,11 @@ fun OnlineMatchScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-                            .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-                            .padding(12.dp)
+                            .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                            .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+                            .padding(sdp(12.dp))
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(sdp(8.dp))) {
                             Text("Round ${result.roundNumber} • ${result.type.name.lowercase()}", style = MaterialTheme.typography.headlineSmall)
                             if (result.type == RoundType.LETTERS) {
                                 WordTiles(
@@ -338,9 +339,9 @@ fun OnlineMatchScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-                        .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-                        .padding(10.dp)
+                        .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                        .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+                        .padding(sdp(10.dp))
                 ) {
                     Text("Next round starts in a few seconds...", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
                 }
@@ -362,17 +363,17 @@ fun OnlineMatchScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(sdp(10.dp))
                 ) {
                     match.roundResults.forEach { result ->
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-                                .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-                                .padding(12.dp)
+                                .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                                .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+                                .padding(sdp(12.dp))
                         ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(sdp(8.dp))) {
                                 Text(
                                     "R${result.roundNumber} ${result.type.name.lowercase()}",
                                     style = MaterialTheme.typography.headlineSmall
@@ -459,16 +460,16 @@ private fun WordTargetRow(letters: List<Char>) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 58.dp)
-            .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-            .border(1.dp, ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-            .padding(10.dp)
+            .heightIn(min = sdp(58.dp))
+            .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+            .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+            .padding(sdp(10.dp))
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (letters.isEmpty()) {
                 Text("Tap big letters to build your word", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
                 repeat(maxLetters) { index ->
                     val ch = letters.getOrNull(index)
                     if (ch != null) {
@@ -537,7 +538,7 @@ private fun WordTiles(label: String?, word: String, accentColor: androidx.compos
         if (!label.isNullOrBlank()) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = ColorDimText)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(sdp(4.dp))) {
             letters.forEachIndexed { idx, ch ->
                 LetterTile(
                     letter = ch.toString(),
