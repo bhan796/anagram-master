@@ -1,0 +1,19 @@
+# macOS / Xcode
+.DS_Store
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcuserstate
+
+# Node
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/settings.json
