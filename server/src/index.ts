@@ -13,10 +13,13 @@ dotenv.config();
 const env = loadEnv();
 const app = express();
 const matchHistoryStore = new MatchHistoryStore();
+const allowedOrigins = env.CLIENT_ORIGIN.split(",")
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
 
 app.use(
   cors({
-    origin: env.CLIENT_ORIGIN
+    origin: allowedOrigins.length <= 1 ? (allowedOrigins[0] ?? env.CLIENT_ORIGIN) : allowedOrigins
   })
 );
 app.use(express.json());

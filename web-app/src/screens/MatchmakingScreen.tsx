@@ -33,18 +33,15 @@ export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, o
     }
   }, [searchStarted, hasActiveMatch, onMatchReady]);
 
-  const hasExistingMatch = hasActiveMatch;
   const buttonText = useMemo(() => {
     if (searchStarted && hasActiveMatch) return "Match Found!";
     if (searchStarted && state.isInMatchmaking) return `Searching${".".repeat(dots)}`;
-    if (hasExistingMatch) return "Already in Match";
     return "Find Opponent";
-  }, [searchStarted, hasActiveMatch, state.isInMatchmaking, dots, hasExistingMatch]);
+  }, [searchStarted, hasActiveMatch, state.isInMatchmaking, dots]);
 
   const primaryEnabled =
     !searchStarted &&
     !state.isInMatchmaking &&
-    !hasExistingMatch &&
     (state.connectionState === "connected" || state.connectionState === "connecting");
 
   return (

@@ -139,7 +139,10 @@ export const App = () => {
   if (route === "home") {
     return (
       <HomeScreen
-        onPlayOnline={() => setRoute("online_matchmaking")}
+        onPlayOnline={() => {
+          online.actions.clearFinishedMatch();
+          setRoute("online_matchmaking");
+        }}
         onPracticeMode={() => setRoute("practice")}
         onProfile={() => setRoute("profile")}
         onSettings={() => setRoute("settings")}
@@ -206,7 +209,10 @@ export const App = () => {
         onSubmitConundrumGuess={online.actions.submitConundrumGuess}
         onDismissError={online.actions.clearError}
         onLeaveGame={online.actions.forfeitMatch}
-        onBackToHome={() => setRoute("home")}
+        onBackToHome={() => {
+          online.actions.clearFinishedMatch();
+          setRoute("home");
+        }}
       />
     );
   }

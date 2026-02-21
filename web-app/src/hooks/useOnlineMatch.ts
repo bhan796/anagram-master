@@ -254,10 +254,6 @@ export const useOnlineMatch = () => {
   const startQueue = useCallback((displayName?: string) => {
     const socket = socketRef.current;
     if (!socket) return;
-    if (isActiveMatch(state.matchState)) {
-      setState((previous) => ({ ...previous, localValidationMessage: "You are already in an active match." }));
-      return;
-    }
 
     const identifyPayload: Record<string, string> = {};
     if (state.playerId) identifyPayload.playerId = state.playerId;
@@ -322,6 +318,27 @@ export const useOnlineMatch = () => {
     }));
   }, []);
 
+  const clearFinishedMatch = useCallback(() => {
+    setState((previous) => {
+      if (previous.matchState?.phase !== "finished") return previous;
+      return {
+        ...previous,
+        matchId: null,
+        matchState: null,
+        myPlayer: null,
+        opponentPlayer: null,
+        isMyTurnToPick: false,
+        secondsRemaining: 0,
+        hasSubmittedWord: false,
+        wordInput: "",
+        conundrumGuessInput: "",
+        localValidationMessage: null,
+        lastError: null
+      };
+    });
+    localStorage.removeItem(MATCH_ID_KEY);
+  }, []);
+
   const value = useMemo(
     () => ({
       state,
@@ -336,7 +353,8 @@ export const useOnlineMatch = () => {
         setConundrumGuessInput,
         submitConundrumGuess,
         clearError,
-        forfeitMatch
+        forfeitMatch,
+        clearFinishedMatch
       }
     }),
     [
@@ -351,7 +369,8 @@ export const useOnlineMatch = () => {
       setConundrumGuessInput,
       submitConundrumGuess,
       clearError,
-      forfeitMatch
+      forfeitMatch,
+      clearFinishedMatch
     ]
   );
 
