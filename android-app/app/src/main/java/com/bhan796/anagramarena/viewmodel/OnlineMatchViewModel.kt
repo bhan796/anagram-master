@@ -72,13 +72,13 @@ class OnlineMatchViewModel(
         startTicker()
     }
 
-    fun startQueue(displayName: String?) {
+    fun startQueue() {
         if (_state.value.matchState != null) {
             _state.value = _state.value.copy(localValidationMessage = "You are already in an active match.")
             return
         }
         telemetry.log("queue_start")
-        repository.identify(displayName)
+        repository.identify(null)
         repository.joinQueue()
     }
 

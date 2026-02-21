@@ -82,6 +82,7 @@ export interface MatchState {
   roundResults: RoundResult[];
   scores: Record<string, number>;
   winnerPlayerId: string | null;
+  endReason: "completed" | "forfeit_disconnect" | "forfeit_manual" | null;
   updatedAtMs: number;
 }
 
@@ -107,6 +108,7 @@ export interface SerializedMatchState {
   scrambled?: string;
   roundResults: SerializedRoundResult[];
   winnerPlayerId: string | null;
+  matchEndReason?: "completed" | "forfeit_disconnect" | "forfeit_manual";
 }
 
 export interface MatchServiceOptions {

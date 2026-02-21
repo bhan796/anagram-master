@@ -77,7 +77,8 @@ data class MatchStatePayload(
     val letters: List<String>,
     val scrambled: String?,
     val roundResults: List<RoundResultSnapshot>,
-    val winnerPlayerId: String?
+    val winnerPlayerId: String?,
+    val matchEndReason: String?
 )
 
 object SocketEventNames {

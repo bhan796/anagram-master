@@ -28,12 +28,11 @@ fun MatchmakingScreen(
     contentPadding: PaddingValues,
     onlineState: OnlineUiState,
     onBack: () -> Unit,
-    onJoinQueue: (String?) -> Unit,
+    onJoinQueue: () -> Unit,
     onCancelQueue: () -> Unit,
     onRetryConnection: () -> Unit,
     onMatchReady: () -> Unit
 ) {
-    var displayName by remember { mutableStateOf(onlineState.displayName.orEmpty()) }
     var searchStarted by remember { mutableStateOf(false) }
     val dotsAnim = rememberInfiniteTransition(label = "searchDots")
     val dotsProgress by dotsAnim.animateFloat(
@@ -71,9 +70,10 @@ fun MatchmakingScreen(
         NeonTitle("Search for opponents...")
 
         OutlinedTextField(
-            value = displayName,
-            onValueChange = { displayName = it },
-            label = { Text("Display Name (optional)") },
+            value = onlineState.displayName.orEmpty(),
+            onValueChange = { },
+            readOnly = true,
+            label = { Text("Display Name") },
             modifier = Modifier.fillMaxWidth(),
             textStyle = MaterialTheme.typography.bodyMedium
         )
@@ -82,7 +82,7 @@ fun MatchmakingScreen(
             text = primaryButtonText,
             onClick = {
                 searchStarted = true
-                onJoinQueue(displayName.ifBlank { null })
+                onJoinQueue()
             },
             enabled = primaryButtonEnabled,
             modifier = Modifier.fillMaxWidth()

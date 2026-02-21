@@ -54,8 +54,6 @@ export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetr
       <ArcadeBackButton onClick={onBack} />
       <NeonTitle text={stats?.displayName ?? "Profile"} />
 
-      {isLoading ? <div className="text-dim">Loading stats...</div> : null}
-
       {error ? (
         <div className="card warning" style={{ display: "grid", gap: 10 }}>
           <div>{error}</div>

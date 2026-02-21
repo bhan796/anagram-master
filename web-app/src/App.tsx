@@ -196,7 +196,7 @@ export const App = () => {
       <MatchmakingScreen
         state={online.state}
         onBack={() => setRoute("home")}
-        onJoinQueue={(displayName) => online.actions.startQueue(displayName)}
+        onJoinQueue={online.actions.startQueue}
         onCancelQueue={online.actions.cancelQueue}
         onRetryConnection={online.actions.retryConnect}
         onMatchReady={() => setRoute("online_match")}

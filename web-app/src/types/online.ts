@@ -71,6 +71,7 @@ export interface MatchStatePayload {
   scrambled: string | null;
   roundResults: RoundResultSnapshot[];
   winnerPlayerId: string | null;
+  matchEndReason?: "completed" | "forfeit_disconnect" | "forfeit_manual";
 }
 
 export interface OnlineUiState {

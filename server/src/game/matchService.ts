@@ -76,10 +76,6 @@ export class MatchService {
     player.socketId = socketId;
     player.connected = true;
 
-    if (requestedDisplayName?.trim()) {
-      player.displayName = requestedDisplayName.trim();
-    }
-
     this.players.set(playerId, player);
     this.reconcilePlayerMatch(player);
 
@@ -165,6 +161,7 @@ export class MatchService {
     match.phase = "finished";
     match.phaseEndsAtMs = null;
     match.winnerPlayerId = winnerPlayerId;
+    match.endReason = reason === "disconnect" ? "forfeit_disconnect" : "forfeit_manual";
     match.updatedAtMs = this.options.now();
 
     for (const id of match.players) {
@@ -313,6 +310,9 @@ export class MatchService {
       roundResults: match.roundResults,
       winnerPlayerId: match.winnerPlayerId
     };
+    if (match.endReason) {
+      payload.matchEndReason = match.endReason;
+    }
 
     if (match.liveRound.type === "letters") {
       payload.letters = [...match.liveRound.letters];
@@ -413,6 +413,7 @@ export class MatchService {
         [playerBId]: 0
       },
       winnerPlayerId: null,
+      endReason: null,
       updatedAtMs: now
     };
 
@@ -606,6 +607,7 @@ export class MatchService {
       const scoreA = match.scores[playerA];
       const scoreB = match.scores[playerB];
       match.winnerPlayerId = scoreA === scoreB ? null : scoreA > scoreB ? playerA : playerB;
+      match.endReason = "completed";
 
       for (const playerId of match.players) {
         const player = this.players.get(playerId);

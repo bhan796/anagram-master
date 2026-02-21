@@ -50,7 +50,8 @@ object SocketPayloadParser {
             letters = obj.optJSONArray("letters")?.toStringList().orEmpty(),
             scrambled = obj.optStringOrNull("scrambled"),
             roundResults = roundResults,
-            winnerPlayerId = obj.optStringOrNull("winnerPlayerId")
+            winnerPlayerId = obj.optStringOrNull("winnerPlayerId"),
+            matchEndReason = obj.optStringOrNull("matchEndReason")
         )
     }
 

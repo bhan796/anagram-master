@@ -5,14 +5,13 @@ import { ArcadeBackButton, ArcadeButton, ArcadeScaffold, NeonTitle } from "../co
 interface MatchmakingScreenProps {
   state: OnlineUiState;
   onBack: () => void;
-  onJoinQueue: (displayName?: string) => void;
+  onJoinQueue: () => void;
   onCancelQueue: () => void;
   onRetryConnection: () => void;
   onMatchReady: () => void;
 }
 
 export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, onRetryConnection, onMatchReady }: MatchmakingScreenProps) => {
-  const [displayName, setDisplayName] = useState(state.displayName ?? "");
   const [searchStarted, setSearchStarted] = useState(false);
   const [dots, setDots] = useState(1);
   const hasActiveMatch = Boolean(state.matchState && state.matchState.phase !== "finished");
@@ -51,21 +50,20 @@ export const MatchmakingScreen = ({ state, onBack, onJoinQueue, onCancelQueue, o
       <NeonTitle text="Search for opponents..." />
 
       <label className="text-dim" htmlFor="display-name">
-        Display Name (optional)
+        Display Name
       </label>
       <input
         id="display-name"
         className="input"
-        value={displayName}
-        onChange={(event) => setDisplayName(event.target.value)}
-        placeholder="Guest name"
+        value={state.displayName ?? "Assigned automatically"}
+        readOnly
       />
 
       <ArcadeButton
         text={buttonText}
         onClick={() => {
           setSearchStarted(true);
-          onJoinQueue(displayName || undefined);
+          onJoinQueue();
         }}
         disabled={!primaryEnabled}
       />

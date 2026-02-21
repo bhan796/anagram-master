@@ -52,7 +52,11 @@ object OnlineMatchReducer {
             updatedMatch?.phase == MatchPhase.LETTERS_SOLVING -> "Submit your best word before time expires"
             updatedMatch?.phase == MatchPhase.CONUNDRUM_SOLVING -> "Solve the conundrum"
             updatedMatch?.phase == MatchPhase.ROUND_RESULT -> "Round result"
-            updatedMatch?.phase == MatchPhase.FINISHED -> "Match finished"
+            updatedMatch?.phase == MatchPhase.FINISHED -> when (updatedMatch.matchEndReason) {
+                "forfeit_disconnect" -> "Match ended: opponent disconnected."
+                "forfeit_manual" -> "Match ended: opponent left the game."
+                else -> "Match finished"
+            }
             else -> ""
         }
 

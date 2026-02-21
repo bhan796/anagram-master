@@ -93,7 +93,8 @@ const reduceOnlineState = (
   const resolvedPlayerId = session?.playerId ?? previous.playerId;
   const me = updatedMatch?.players.find((player) => player.playerId === resolvedPlayerId) ?? null;
   const opponent = updatedMatch?.players.find((player) => player.playerId !== resolvedPlayerId) ?? null;
-  const isInMatchmaking = (matchmaking?.state ?? previous.queueState) === "searching";
+  const queueState = updatedMatch ? "idle" : (matchmaking?.state ?? previous.queueState);
+  const isInMatchmaking = queueState === "searching";
 
   const statusMessage = (() => {
     if (connectionState === "reconnecting") return "Reconnecting...";
@@ -112,7 +113,11 @@ const reduceOnlineState = (
       case "round_result":
         return "Round result";
       case "finished":
-        return "Match finished";
+        return updatedMatch.matchEndReason === "forfeit_disconnect"
+          ? "Match ended: opponent disconnected."
+          : updatedMatch.matchEndReason === "forfeit_manual"
+            ? "Match ended: opponent left the game."
+            : "Match finished";
       default:
         return "";
     }
@@ -124,7 +129,7 @@ const reduceOnlineState = (
     connectionError: connectionError ?? previous.connectionError,
     playerId: resolvedPlayerId,
     displayName: session?.displayName ?? previous.displayName,
-    queueState: matchmaking?.state ?? previous.queueState,
+    queueState,
     queueSize: matchmaking?.queueSize ?? previous.queueSize,
     isInMatchmaking,
     matchState: updatedMatch,
@@ -158,10 +163,8 @@ export const useOnlineMatch = () => {
       setState((previous) => reduceOnlineState(previous, { connectionState: "connected", connectionError: null, clockOffsetMs }));
 
       const playerId = localStorage.getItem(PLAYER_ID_KEY);
-      const displayName = localStorage.getItem(DISPLAY_NAME_KEY);
       const identifyPayload: Record<string, string> = {};
       if (playerId) identifyPayload.playerId = playerId;
-      if (displayName) identifyPayload.displayName = displayName;
       socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
 
       const lastMatch = localStorage.getItem(MATCH_ID_KEY);
@@ -258,19 +261,15 @@ export const useOnlineMatch = () => {
     setState((previous) => ({ ...previous, conundrumGuessInput: value }));
   }, []);
 
-  const startQueue = useCallback((displayName?: string) => {
+  const startQueue = useCallback(() => {
     const socket = socketRef.current;
     if (!socket) return;
 
     const identifyPayload: Record<string, string> = {};
     if (state.playerId) identifyPayload.playerId = state.playerId;
-    if (displayName?.trim()) {
-      identifyPayload.displayName = displayName.trim();
-      localStorage.setItem(DISPLAY_NAME_KEY, displayName.trim());
-    }
     socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
     socket.emit(SocketEventNames.QUEUE_JOIN);
-  }, [state.matchState, state.playerId]);
+  }, [state.playerId]);
 
   const cancelQueue = useCallback(() => {
     socketRef.current?.emit(SocketEventNames.QUEUE_LEAVE);
