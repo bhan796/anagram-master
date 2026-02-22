@@ -68,6 +68,7 @@ export const createSocketServer = (
     socket.on(SocketEvents.sessionIdentify, async (payload: { playerId?: string; displayName?: string; accessToken?: string } = {}) => {
       let authenticatedUserId: string | null = null;
       let resolvedPlayerId = payload.playerId;
+      let persistedDisplayName: string | null = null;
       if (payload.accessToken) {
         try {
           const decoded = verifyAccessToken(payload.accessToken);
@@ -90,7 +91,31 @@ export const createSocketServer = (
         }
       }
 
-      const player = service.connectPlayer(socket.id, resolvedPlayerId, payload.displayName, authenticatedUserId);
+      if (resolvedPlayerId) {
+        const profile = await authService.getPlayerProfile(resolvedPlayerId);
+        persistedDisplayName = profile?.displayName ?? null;
+      }
+
+      const player = service.connectPlayer(
+        socket.id,
+        resolvedPlayerId,
+        payload.displayName ?? persistedDisplayName ?? undefined,
+        authenticatedUserId
+      );
+
+      const persistedStats = matchHistoryStore.getPersistedPlayerProfile(player.playerId);
+      if (persistedStats) {
+        service.hydratePlayerProfile(player.playerId, {
+          displayName: persistedStats.displayName,
+          rating: persistedStats.rating,
+          peakRating: persistedStats.peakRating,
+          rankedGames: persistedStats.rankedGames,
+          rankedWins: persistedStats.rankedWins,
+          rankedLosses: persistedStats.rankedLosses,
+          rankedDraws: persistedStats.rankedDraws
+        });
+      }
+
       playerId = player.playerId;
       presenceStore.markOnline(player.playerId);
       matchHistoryStore.touchPlayer(player);

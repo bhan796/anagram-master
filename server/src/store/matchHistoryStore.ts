@@ -26,6 +26,18 @@ interface PersistedShape {
   >;
 }
 
+export interface PersistedPlayerProfile {
+  playerId: string;
+  displayName: string;
+  rating: number;
+  peakRating: number;
+  rankedGames: number;
+  rankedWins: number;
+  rankedLosses: number;
+  rankedDraws: number;
+  updatedAtMs: number;
+}
+
 export interface PlayerStats {
   playerId: string;
   displayName: string;
@@ -65,20 +77,7 @@ const REDIS_KEY = "anagram:history:v1";
 export class MatchHistoryStore {
   private readonly filePath: string;
   private readonly matches: FinishedMatchRecord[] = [];
-  private readonly players = new Map<
-    string,
-    {
-      playerId: string;
-      displayName: string;
-      rating: number;
-      peakRating: number;
-      rankedGames: number;
-      rankedWins: number;
-      rankedLosses: number;
-      rankedDraws: number;
-      updatedAtMs: number;
-    }
-  >();
+  private readonly players = new Map<string, PersistedPlayerProfile>();
   private redis: Redis | null = null;
 
   constructor(filePath = defaultPath) {
@@ -134,6 +133,11 @@ export class MatchHistoryStore {
     if (!current) return;
     this.players.set(playerId, { ...current, displayName, updatedAtMs: Date.now() });
     this.persist();
+  }
+
+  getPersistedPlayerProfile(playerId: string): PersistedPlayerProfile | null {
+    const profile = this.players.get(playerId);
+    return profile ?? null;
   }
 
   getPlayerStats(playerId: string): PlayerStats | null {

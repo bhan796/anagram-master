@@ -317,6 +317,18 @@ export class AuthService {
     return player?.id ?? null;
   }
 
+  async getPlayerProfile(playerId: string): Promise<{ displayName: string | null; userId: string | null } | null> {
+    const player = await prisma.player.findUnique({
+      where: { id: playerId },
+      select: { displayName: true, userId: true }
+    });
+    if (!player) return null;
+    return {
+      displayName: player.displayName ?? null,
+      userId: player.userId ?? null
+    };
+  }
+
   async upsertPlayerIdentity(playerId: string, displayName: string | null, userId: string | null): Promise<void> {
     await prisma.player.upsert({
       where: { id: playerId },

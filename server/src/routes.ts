@@ -135,9 +135,10 @@ export const createApiRouter = (
     const stats = matchHistoryStore.getPlayerStats(req.params.playerId);
     if (!stats) {
       const runtimePlayer = matchService.getPlayer(req.params.playerId);
+      const persistedProfile = await authService.getPlayerProfile(req.params.playerId);
       res.json({
         playerId: req.params.playerId,
-        displayName: runtimePlayer?.displayName ?? "Guest",
+        displayName: runtimePlayer?.displayName ?? persistedProfile?.displayName ?? "Guest",
         matchesPlayed: 0,
         wins: 0,
         losses: 0,
@@ -165,7 +166,7 @@ export const createApiRouter = (
     });
   });
 
-  router.post("/profiles/:playerId/display-name", (req: Request, res: Response) => {
+  router.post("/profiles/:playerId/display-name", async (req: Request, res: Response) => {
     const nextDisplayName = String(req.body?.displayName ?? "");
     const result = matchService.updateDisplayName(req.params.playerId, nextDisplayName);
     if (!result.ok) {
@@ -176,6 +177,8 @@ export const createApiRouter = (
     }
 
     matchHistoryStore.updateDisplayName(req.params.playerId, result.displayName ?? nextDisplayName);
+    const ownerUserId = await authService.resolveUserIdForPlayer(req.params.playerId);
+    await authService.upsertPlayerIdentity(req.params.playerId, result.displayName ?? nextDisplayName, ownerUserId);
 
     res.json({
       playerId: req.params.playerId,

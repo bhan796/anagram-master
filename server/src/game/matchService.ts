@@ -103,6 +103,32 @@ export class MatchService {
     return player;
   }
 
+  hydratePlayerProfile(
+    playerId: string,
+    profile: {
+      displayName?: string;
+      rating: number;
+      peakRating: number;
+      rankedGames: number;
+      rankedWins: number;
+      rankedLosses: number;
+      rankedDraws: number;
+    }
+  ): void {
+    const player = this.players.get(playerId);
+    if (!player) return;
+
+    if (profile.displayName && profile.displayName.trim().length > 0) {
+      player.displayName = profile.displayName.trim();
+    }
+    player.rating = profile.rating;
+    player.peakRating = Math.max(profile.peakRating, profile.rating);
+    player.rankedGames = profile.rankedGames;
+    player.rankedWins = profile.rankedWins;
+    player.rankedLosses = profile.rankedLosses;
+    player.rankedDraws = profile.rankedDraws;
+  }
+
   updateDisplayName(playerId: string, nextDisplayName: string): { ok: boolean; code?: string; displayName?: string } {
     const player = this.players.get(playerId);
     if (!player) return { ok: false, code: "UNKNOWN_PLAYER" };
