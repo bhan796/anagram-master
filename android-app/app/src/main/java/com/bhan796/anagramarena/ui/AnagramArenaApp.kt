@@ -3,13 +3,12 @@ package com.bhan796.anagramarena.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -19,6 +18,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -252,11 +256,55 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                     .clickable { settingsViewModel.setMasterMuted(!settings.masterMuted) },
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = if (settings.masterMuted) "??" else "??",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = if (settings.masterMuted) ColorRed else ColorCyan
-                )
+                Canvas(modifier = Modifier.size(sdp(26.dp))) {
+                    val iconColor = if (settings.masterMuted) ColorRed else ColorCyan
+                    val bodyPath = Path().apply {
+                        moveTo(size.width * 0.15f, size.height * 0.40f)
+                        lineTo(size.width * 0.34f, size.height * 0.40f)
+                        lineTo(size.width * 0.54f, size.height * 0.24f)
+                        lineTo(size.width * 0.54f, size.height * 0.76f)
+                        lineTo(size.width * 0.34f, size.height * 0.60f)
+                        lineTo(size.width * 0.15f, size.height * 0.60f)
+                        close()
+                    }
+                    drawPath(path = bodyPath, color = iconColor)
+
+                    if (settings.masterMuted) {
+                        drawLine(
+                            color = iconColor,
+                            start = Offset(size.width * 0.62f, size.height * 0.30f),
+                            end = Offset(size.width * 0.90f, size.height * 0.70f),
+                            strokeWidth = size.minDimension * 0.08f,
+                            cap = StrokeCap.Round
+                        )
+                        drawLine(
+                            color = iconColor,
+                            start = Offset(size.width * 0.90f, size.height * 0.30f),
+                            end = Offset(size.width * 0.62f, size.height * 0.70f),
+                            strokeWidth = size.minDimension * 0.08f,
+                            cap = StrokeCap.Round
+                        )
+                    } else {
+                        drawArc(
+                            color = iconColor,
+                            startAngle = -40f,
+                            sweepAngle = 80f,
+                            useCenter = false,
+                            topLeft = Offset(size.width * 0.50f, size.height * 0.22f),
+                            size = Size(size.width * 0.34f, size.height * 0.56f),
+                            style = Stroke(width = size.minDimension * 0.07f, cap = StrokeCap.Round)
+                        )
+                        drawArc(
+                            color = iconColor,
+                            startAngle = -40f,
+                            sweepAngle = 80f,
+                            useCenter = false,
+                            topLeft = Offset(size.width * 0.58f, size.height * 0.10f),
+                            size = Size(size.width * 0.40f, size.height * 0.80f),
+                            style = Stroke(width = size.minDimension * 0.07f, cap = StrokeCap.Round)
+                        )
+                    }
+                }
             }
         }
     }
