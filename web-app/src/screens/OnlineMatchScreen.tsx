@@ -249,19 +249,6 @@ export const OnlineMatchScreen = ({
           {match.phase === "conundrum_solving" ? (
             <>
               <NeonTitle text="Conundrum" />
-              <div className="card" style={{ textAlign: "center", borderColor: "rgba(0,245,255,.45)" }}>
-                <div
-                  className="headline"
-                  style={{
-                    color: "var(--gold)",
-                    letterSpacing: "0.5em",
-                    fontSize: "clamp(18px, 5vw, 28px)",
-                    lineHeight: 1.5
-                  }}
-                >
-                  {match.scrambled?.toUpperCase()}
-                </div>
-              </div>
               <TapLetterComposer
                 letters={(match.scrambled ?? "").toUpperCase().split("")}
                 value={state.conundrumGuessInput.toUpperCase()}
