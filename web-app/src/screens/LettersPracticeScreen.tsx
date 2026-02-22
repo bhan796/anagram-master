@@ -9,6 +9,7 @@ import {
   WordTiles
 } from "../components/ArcadeComponents";
 import { TapLetterComposer } from "../components/TapLetterComposer";
+import * as SoundManager from "../sound/SoundManager";
 import {
   allowedPickKinds,
   canConstructFromLetters,
@@ -150,6 +151,15 @@ export const LettersPracticeScreen = ({ timerEnabled, dictionary, dictionaryErro
     setResult(null);
   };
 
+  useEffect(() => {
+    if (!result) return;
+    if (result.valid) {
+      void SoundManager.playWordValid();
+    } else {
+      void SoundManager.playWordInvalid();
+    }
+  }, [result?.valid]);
+
   return (
     <ArcadeScaffold>
       <ArcadeBackButton onClick={onBack} />
@@ -171,8 +181,22 @@ export const LettersPracticeScreen = ({ timerEnabled, dictionary, dictionaryErro
           <div className="text-dim">{letters.length}/9 selected</div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <ArcadeButton text="Vowel" onClick={() => pick("vowel")} disabled={!allowedKinds.has("vowel")} />
-            <ArcadeButton text="Consonant" onClick={() => pick("consonant")} disabled={!allowedKinds.has("consonant")} />
+            <ArcadeButton
+              text="Vowel"
+              onClick={() => {
+                void SoundManager.playTilePlace();
+                pick("vowel");
+              }}
+              disabled={!allowedKinds.has("vowel")}
+            />
+            <ArcadeButton
+              text="Consonant"
+              onClick={() => {
+                void SoundManager.playTilePlace();
+                pick("consonant");
+              }}
+              disabled={!allowedKinds.has("consonant")}
+            />
           </div>
         </>
       ) : null}
@@ -180,8 +204,22 @@ export const LettersPracticeScreen = ({ timerEnabled, dictionary, dictionaryErro
       {phase === "solve" ? (
         <>
           {timerEnabled ? <TimerBar secondsRemaining={secondsRemaining} totalSeconds={SOLVE_SECONDS} /> : null}
-          <TapLetterComposer letters={letters} value={wordInput} onValueChange={setWordInput} onSubmit={submit} />
-          <ArcadeButton text="Submit Word" onClick={submit} />
+          <TapLetterComposer
+            letters={letters}
+            value={wordInput}
+            onValueChange={setWordInput}
+            onSubmit={() => {
+              void SoundManager.playWordSubmit();
+              submit();
+            }}
+          />
+          <ArcadeButton
+            text="Submit Word"
+            onClick={() => {
+              void SoundManager.playWordSubmit();
+              submit();
+            }}
+          />
         </>
       ) : null}
 

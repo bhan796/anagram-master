@@ -11,6 +11,7 @@ import { HowToPlayScreen } from "./screens/HowToPlayScreen";
 import { MatchFoundScreen } from "./screens/MatchFoundScreen";
 import { loadConundrums, loadDictionary } from "./logic/loaders";
 import { useOnlineMatch } from "./hooks/useOnlineMatch";
+import * as SoundManager from "./sound/SoundManager";
 
 import type { ConundrumEntry } from "./logic/gameRules";
 
@@ -126,7 +127,12 @@ export const App = () => {
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    SoundManager.setSoundEnabled(settings.soundEnabled);
   }, [settings]);
+
+  useEffect(() => {
+    void SoundManager.startMenuMusic();
+  }, []);
 
   useEffect(() => {
     loadDictionary()
@@ -362,7 +368,14 @@ export const App = () => {
       vibrationEnabled={settings.vibrationEnabled}
       onBack={() => setRoute("home")}
       onTimerToggle={(value) => setSettings((previous) => ({ ...previous, timerEnabled: value }))}
-      onSoundToggle={(value) => setSettings((previous) => ({ ...previous, soundEnabled: value }))}
+      onSoundToggle={(value) => {
+        if (!value) {
+          SoundManager.stopMusic();
+        } else {
+          void SoundManager.startMenuMusic();
+        }
+        setSettings((previous) => ({ ...previous, soundEnabled: value }));
+      }}
       onVibrationToggle={(value) => setSettings((previous) => ({ ...previous, vibrationEnabled: value }))}
     />
   );

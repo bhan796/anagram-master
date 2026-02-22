@@ -1,4 +1,5 @@
 import { ArcadeButton, ArcadeScaffold, TileLogo } from "../components/ArcadeComponents";
+import * as SoundManager from "../sound/SoundManager";
 
 interface HomeScreenProps {
   onPlayOnline: () => void;
@@ -14,11 +15,43 @@ export const HomeScreen = ({ onPlayOnline, onPracticeMode, onProfile, onSettings
     <div style={{ flex: 1 }} />
     <TileLogo />
     <div style={{ height: 28 }} />
-    <ArcadeButton text="Play Online" onClick={onPlayOnline} />
-    <ArcadeButton text="Practice Mode" onClick={onPracticeMode} />
-    <ArcadeButton text="How To Play" onClick={onHowToPlay} />
-    <ArcadeButton text="Profile / Stats" onClick={onProfile} accent="gold" />
-    <ArcadeButton text="Settings" onClick={onSettings} accent="magenta" />
+    <ArcadeButton
+      text="Play Online"
+      onClick={() => {
+        void SoundManager.playClick();
+        onPlayOnline();
+      }}
+    />
+    <ArcadeButton
+      text="Practice Mode"
+      onClick={() => {
+        void SoundManager.playClick();
+        onPracticeMode();
+      }}
+    />
+    <ArcadeButton
+      text="How To Play"
+      onClick={() => {
+        void SoundManager.playClick();
+        onHowToPlay();
+      }}
+    />
+    <ArcadeButton
+      text="Profile / Stats"
+      onClick={() => {
+        void SoundManager.playClick();
+        onProfile();
+      }}
+      accent="gold"
+    />
+    <ArcadeButton
+      text="Settings"
+      onClick={() => {
+        void SoundManager.playClick();
+        onSettings();
+      }}
+      accent="magenta"
+    />
     <div
       style={{
         color: "var(--white)",

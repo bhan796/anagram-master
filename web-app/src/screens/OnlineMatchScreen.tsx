@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MatchStatePayload, OnlineUiState } from "../types/online";
 import {
   ArcadeButton,
@@ -11,6 +11,7 @@ import {
   WordTiles
 } from "../components/ArcadeComponents";
 import { TapLetterComposer } from "../components/TapLetterComposer";
+import * as SoundManager from "../sound/SoundManager";
 
 interface OnlineMatchScreenProps {
   state: OnlineUiState;
@@ -85,8 +86,16 @@ export const OnlineMatchScreen = ({
   onBackToHome
 }: OnlineMatchScreenProps) => {
   const match = state.matchState;
+  const previousPhaseRef = useRef<MatchStatePayload["phase"] | undefined>(undefined);
   const isFinished = match?.phase === "finished";
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
+  useEffect(() => {
+    void SoundManager.startMatchMusic();
+    return () => {
+      SoundManager.stopMusic();
+    };
+  }, []);
 
   useEffect(() => {
     if (isFinished) {
@@ -127,6 +136,26 @@ export const OnlineMatchScreen = ({
     }, 20);
     return () => window.clearInterval(timer);
   }, [match, myDelta]);
+
+  useEffect(() => {
+    const phase = state.matchState?.phase;
+    if (!phase || phase === previousPhaseRef.current) return;
+
+    if (phase === "round_result") {
+      void SoundManager.playRoundResult();
+    }
+
+    if (phase === "finished") {
+      const didWin = state.matchState?.winnerPlayerId === state.playerId;
+      if (didWin) {
+        void SoundManager.playWin();
+      } else {
+        void SoundManager.playLose();
+      }
+    }
+
+    previousPhaseRef.current = phase;
+  }, [state.matchState?.phase, state.matchState?.winnerPlayerId, state.playerId]);
 
   return (
     <ArcadeScaffold>
@@ -181,10 +210,20 @@ export const OnlineMatchScreen = ({
               <div className="headline">{state.isMyTurnToPick ? "Your turn to pick" : "Opponent is picking"}</div>
               <LetterSlots letters={match.letters} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <ArcadeButton text="Vowel" onClick={onPickVowel} disabled={!state.isMyTurnToPick || state.connectionState === "reconnecting"} />
+                <ArcadeButton
+                  text="Vowel"
+                  onClick={() => {
+                    void SoundManager.playTilePlace();
+                    onPickVowel();
+                  }}
+                  disabled={!state.isMyTurnToPick || state.connectionState === "reconnecting"}
+                />
                 <ArcadeButton
                   text="Consonant"
-                  onClick={onPickConsonant}
+                  onClick={() => {
+                    void SoundManager.playTilePlace();
+                    onPickConsonant();
+                  }}
                   disabled={!state.isMyTurnToPick || state.connectionState === "reconnecting"}
                 />
               </div>
@@ -198,9 +237,19 @@ export const OnlineMatchScreen = ({
                 value={state.wordInput}
                 onValueChange={onWordChange}
                 disabled={state.hasSubmittedWord}
-                onSubmit={onSubmitWord}
+                onSubmit={() => {
+                  void SoundManager.playWordSubmit();
+                  onSubmitWord();
+                }}
               />
-              <ArcadeButton text={state.hasSubmittedWord ? "Submitted" : "Submit Word"} onClick={onSubmitWord} disabled={state.hasSubmittedWord} />
+              <ArcadeButton
+                text={state.hasSubmittedWord ? "Submitted" : "Submit Word"}
+                onClick={() => {
+                  void SoundManager.playWordSubmit();
+                  onSubmitWord();
+                }}
+                disabled={state.hasSubmittedWord}
+              />
             </>
           ) : null}
 
