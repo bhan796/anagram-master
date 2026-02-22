@@ -23,7 +23,7 @@ import com.bhan796.anagramarena.ui.theme.*
 
 // -- Glowing neon text title -------------------------------------------------
 @Composable
-fun NeonTitle(text: String, modifier: Modifier = Modifier) {
+fun NeonTitle(text: String, modifier: Modifier = Modifier, color: Color = ColorCyan) {
     val infiniteTransition = rememberInfiniteTransition(label = "neon")
     val alpha by infiniteTransition.animateFloat(
         initialValue = 0.7f, targetValue = 1f,
@@ -40,7 +40,7 @@ fun NeonTitle(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = scaledStyle,
-        color = ColorCyan.copy(alpha = alpha),
+        color = color.copy(alpha = alpha),
         textAlign = TextAlign.Center,
         modifier = modifier
     )

@@ -17,6 +17,7 @@ import com.bhan796.anagramarena.ui.components.NeonDivider
 import com.bhan796.anagramarena.ui.components.NeonTitle
 import com.bhan796.anagramarena.ui.theme.ColorBackground
 import com.bhan796.anagramarena.ui.theme.ColorCyan
+import com.bhan796.anagramarena.ui.theme.ColorMagenta
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.ui.theme.ColorWhite
 import com.bhan796.anagramarena.viewmodel.PracticeSettingsState
@@ -32,12 +33,12 @@ fun SettingsScreen(
 ) {
     ArcadeScaffold(contentPadding = contentPadding) {
         ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
-        NeonTitle("SETTINGS")
+        NeonTitle("SETTINGS", color = ColorMagenta)
 
         SettingToggle("Practice Timer", state.timerEnabled, onTimerToggle)
-        NeonDivider()
+        NeonDivider(color = ColorMagenta.copy(alpha = 0.35f))
         SettingToggle("Sound Effects (placeholder)", state.soundEnabled, onSoundToggle)
-        NeonDivider()
+        NeonDivider(color = ColorMagenta.copy(alpha = 0.35f))
         SettingToggle("Vibration (placeholder)", state.vibrationEnabled, onVibrationToggle)
     }
 }
@@ -55,7 +56,7 @@ private fun SettingToggle(label: String, checked: Boolean, onChange: (Boolean) -
             onCheckedChange = onChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = ColorBackground,
-                checkedTrackColor = ColorCyan,
+                checkedTrackColor = ColorMagenta,
                 uncheckedTrackColor = ColorSurfaceVariant
             )
         )

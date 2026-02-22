@@ -198,7 +198,6 @@ fun OnlineMatchScreen(
                 val selectableLetters = match.letters.mapNotNull { it.firstOrNull() }
                 val selectedIndices = remember(match.roundNumber, match.phase) { mutableStateListOf<Int>() }
 
-                Text("Build your longest valid word", style = MaterialTheme.typography.headlineSmall)
                 WordTargetRow(letters = selectedIndices.map { selectableLetters[it] })
                 SelectableLetterSlots(
                     letters = match.letters,
