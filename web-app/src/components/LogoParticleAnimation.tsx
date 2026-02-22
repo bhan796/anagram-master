@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { TileLogo } from "./ArcadeComponents";
 import * as SoundManager from "../sound/SoundManager";
 
@@ -210,15 +210,23 @@ export const LogoParticleAnimation = ({ onComplete }: { onComplete?: () => void 
   const color = useRef<string[]>([]);
   const count = useRef(0);
   const logoBounds = useRef({ left: 0, top: 0, width: 0, height: 0 });
+  const onCompleteRef = useRef(onComplete);
 
   const [canvasOpacity, setCanvasOpacity] = useState(1);
   const [tileLogoOpacity, setTileLogoOpacity] = useState(0);
   const [showTileLogo, setShowTileLogo] = useState(false);
 
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     const wrapper = wrapperRef.current;
-    if (!canvas || !wrapper) return;
+    if (!canvas || !wrapper) {
+      onCompleteRef.current?.();
+      return;
+    }
 
     const cssW = Math.max(wrapper.clientWidth || 320, 320);
     const cssH = 120;
@@ -229,7 +237,10 @@ export const LogoParticleAnimation = ({ onComplete }: { onComplete?: () => void 
     canvas.style.height = `${cssH}px`;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      onCompleteRef.current?.();
+      return;
+    }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
 
@@ -348,7 +359,7 @@ export const LogoParticleAnimation = ({ onComplete }: { onComplete?: () => void 
           setCanvasOpacity(0);
           setTileLogoOpacity(1);
         });
-        completeTimeoutRef.current = window.setTimeout(() => onComplete?.(), 320);
+        completeTimeoutRef.current = window.setTimeout(() => onCompleteRef.current?.(), 320);
       }
 
       if (elapsed < 2300) {
@@ -361,7 +372,7 @@ export const LogoParticleAnimation = ({ onComplete }: { onComplete?: () => void 
       cancelAnimationFrame(rafRef.current);
       window.clearTimeout(completeTimeoutRef.current);
     };
-  }, [onComplete]);
+  }, []);
 
   return (
     <div ref={wrapperRef} style={{ position: "relative", width: "100%", height: 120 }}>

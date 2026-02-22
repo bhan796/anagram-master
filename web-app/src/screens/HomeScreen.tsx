@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArcadeButton, ArcadeScaffold } from "../components/ArcadeComponents";
 import { LogoParticleAnimation } from "../components/LogoParticleAnimation";
 import * as SoundManager from "../sound/SoundManager";
@@ -14,6 +14,13 @@ interface HomeScreenProps {
 
 export const HomeScreen = ({ onPlayOnline, onPracticeMode, onProfile, onSettings, onHowToPlay, playersOnline }: HomeScreenProps) => {
   const [logoComplete, setLogoComplete] = useState(false);
+  const handleLogoComplete = useCallback(() => setLogoComplete(true), []);
+
+  useEffect(() => {
+    if (logoComplete) return;
+    const fallback = window.setTimeout(() => setLogoComplete(true), 3200);
+    return () => window.clearTimeout(fallback);
+  }, [logoComplete]);
 
   const animatedButtonStyle = (delayMs: number) => ({
     opacity: logoComplete ? 1 : 0,
@@ -24,7 +31,7 @@ export const HomeScreen = ({ onPlayOnline, onPracticeMode, onProfile, onSettings
   return (
     <ArcadeScaffold>
       <div style={{ flex: 1 }} />
-      <LogoParticleAnimation onComplete={() => setLogoComplete(true)} />
+      <LogoParticleAnimation onComplete={handleLogoComplete} />
       <div style={{ height: 28 }} />
 
       <div style={animatedButtonStyle(0)}>
