@@ -7,9 +7,9 @@ interface ArcadeButtonProps {
   accent?: "cyan" | "gold" | "magenta";
 }
 
-export const ArcadeScaffold = ({ children }: { children: ReactNode }) => (
+export const ArcadeScaffold = ({ children, className }: { children: ReactNode; className?: string }) => (
   <div className="app-shell">
-    <div className="arcade-scaffold">{children}</div>
+    <div className={`arcade-scaffold ${className ?? ""}`.trim()}>{children}</div>
   </div>
 );
 

@@ -181,8 +181,6 @@ export const OnlineMatchScreen = ({
 
           {match.phase === "letters_solving" ? (
             <>
-              <div className="headline">Build your longest valid word</div>
-              <LetterSlots letters={match.letters} />
               <TapLetterComposer
                 letters={match.letters}
                 value={state.wordInput}

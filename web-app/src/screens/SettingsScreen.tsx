@@ -26,7 +26,7 @@ export const SettingsScreen = ({
   ];
 
   return (
-    <ArcadeScaffold>
+    <ArcadeScaffold className="accent-magenta">
       <ArcadeBackButton onClick={onBack} />
       <NeonTitle text="Settings" />
 
@@ -38,7 +38,7 @@ export const SettingsScreen = ({
               <button
                 type="button"
                 className="arcade-button"
-                style={{ width: 140 }}
+                style={{ width: 140, borderColor: "var(--magenta)", color: "var(--magenta)" }}
                 onClick={() => row.onToggle(!row.value)}
               >
                 {row.value ? "ON" : "OFF"}

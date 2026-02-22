@@ -27,6 +27,8 @@ input {
 }
 
 .arcade-scaffold {
+  --accent: var(--cyan);
+  --accent-rgb: 0 245 255;
   width: min(820px, 100%);
   margin: 0 auto;
   min-height: 100vh;
@@ -36,11 +38,21 @@ input {
   gap: var(--space-3);
 }
 
+.arcade-scaffold.accent-gold {
+  --accent: var(--gold);
+  --accent-rgb: 255 215 0;
+}
+
+.arcade-scaffold.accent-magenta {
+  --accent: var(--magenta);
+  --accent-rgb: 255 0 204;
+}
+
 .neon-title {
   font-family: var(--font-pixel);
   font-size: var(--text-display);
   letter-spacing: 0.12em;
-  color: var(--cyan);
+  color: var(--accent);
   text-align: center;
   animation: neonPulse 0.9s ease-in-out infinite alternate;
   line-height: 1.5;
@@ -54,10 +66,10 @@ input {
 
 .arcade-button {
   width: 100%;
-  border: 1.5px solid var(--cyan);
+  border: 1.5px solid var(--accent);
   border-radius: 4px;
-  background: linear-gradient(90deg, rgb(0 245 255 / 15%), rgb(0 245 255 / 5%));
-  color: var(--cyan);
+  background: linear-gradient(90deg, rgb(var(--accent-rgb) / 15%), rgb(var(--accent-rgb) / 5%));
+  color: var(--accent);
   padding: 14px 16px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -95,7 +107,7 @@ input {
 
 .card {
   background: var(--surface-variant);
-  border: 1px solid rgb(0 245 255 / 35%);
+  border: 1px solid rgb(var(--accent-rgb) / 35%);
   border-radius: 6px;
   padding: var(--space-3);
 }
@@ -177,7 +189,7 @@ input {
 .input {
   width: 100%;
   background: transparent;
-  border: 1px solid rgb(0 245 255 / 65%);
+  border: 1px solid rgb(var(--accent-rgb) / 65%);
   color: var(--white);
   border-radius: 4px;
   padding: 14px;
