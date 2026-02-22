@@ -12,9 +12,9 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 class ProfileApiService(private val baseUrl: String) {
-    suspend fun fetchPlayerStats(playerId: String): Result<PlayerStats> = withContext(Dispatchers.IO) {
+    suspend fun fetchPlayerStats(playerId: String, accessToken: String? = null): Result<PlayerStats> = withContext(Dispatchers.IO) {
         runCatching {
-            val response = getJson("/api/profiles/$playerId/stats")
+            val response = getJson("/api/profiles/$playerId/stats", accessToken)
             PlayerStats(
                 playerId = response.getString("playerId"),
                 displayName = response.getString("displayName"),
@@ -36,9 +36,9 @@ class ProfileApiService(private val baseUrl: String) {
         }
     }
 
-    suspend fun fetchMatchHistory(playerId: String): Result<MatchHistoryResponse> = withContext(Dispatchers.IO) {
+    suspend fun fetchMatchHistory(playerId: String, accessToken: String? = null): Result<MatchHistoryResponse> = withContext(Dispatchers.IO) {
         runCatching {
-            val response = getJson("/api/profiles/$playerId/matches")
+            val response = getJson("/api/profiles/$playerId/matches", accessToken)
             MatchHistoryResponse(
                 playerId = response.getString("playerId"),
                 count = response.getInt("count"),
@@ -47,12 +47,15 @@ class ProfileApiService(private val baseUrl: String) {
         }
     }
 
-    private fun getJson(path: String): JSONObject {
+    private fun getJson(path: String, accessToken: String? = null): JSONObject {
         val url = URL(baseUrl.trimEnd('/') + path)
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = 10000
             readTimeout = 10000
+            if (!accessToken.isNullOrBlank()) {
+                setRequestProperty("Authorization", "Bearer $accessToken")
+            }
         }
 
         val body = connection.inputStream.bufferedReader().use { it.readText() }
@@ -80,9 +83,9 @@ class ProfileApiService(private val baseUrl: String) {
         }
     }
 
-    suspend fun fetchLeaderboard(limit: Int = 20): Result<List<LeaderboardEntry>> = withContext(Dispatchers.IO) {
+    suspend fun fetchLeaderboard(limit: Int = 20, accessToken: String? = null): Result<List<LeaderboardEntry>> = withContext(Dispatchers.IO) {
         runCatching {
-            val response = getJson("/api/leaderboard?limit=$limit")
+            val response = getJson("/api/leaderboard?limit=$limit", accessToken)
             val entries = response.optJSONArray("entries") ?: org.json.JSONArray()
             (0 until entries.length()).map { index ->
                 val item = entries.getJSONObject(index)
@@ -107,9 +110,9 @@ class ProfileApiService(private val baseUrl: String) {
         }
     }
 
-    suspend fun updateDisplayName(playerId: String, displayName: String): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun updateDisplayName(playerId: String, displayName: String, accessToken: String? = null): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            val response = postJson("/api/profiles/$playerId/display-name", JSONObject().put("displayName", displayName))
+            val response = postJson("/api/profiles/$playerId/display-name", JSONObject().put("displayName", displayName), accessToken)
             response.getString("displayName")
         }
     }
@@ -125,7 +128,7 @@ class ProfileApiService(private val baseUrl: String) {
         }
     }
 
-    private fun postJson(path: String, payload: JSONObject): JSONObject {
+    private fun postJson(path: String, payload: JSONObject, accessToken: String? = null): JSONObject {
         val url = URL(baseUrl.trimEnd('/') + path)
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
@@ -133,6 +136,9 @@ class ProfileApiService(private val baseUrl: String) {
             readTimeout = 10000
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
+            if (!accessToken.isNullOrBlank()) {
+                setRequestProperty("Authorization", "Bearer $accessToken")
+            }
         }
 
         connection.outputStream.bufferedWriter().use { writer ->

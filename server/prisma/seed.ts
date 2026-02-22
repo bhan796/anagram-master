@@ -2,7 +2,7 @@ import { prisma } from "../src/config/prisma.js";
 
 const main = async (): Promise<void> => {
   await prisma.player.create({
-    data: { name: "Seed Player" }
+    data: { displayName: "Seed Player" }
   });
 };
 

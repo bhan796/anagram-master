@@ -12,6 +12,7 @@ export type MatchMode = "casual" | "ranked";
 export interface PlayerRuntime {
   playerId: string;
   displayName: string;
+  userId: string | null;
   socketId: string | null;
   connected: boolean;
   matchId: string | null;

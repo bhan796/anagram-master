@@ -5,8 +5,10 @@ import com.bhan796.anagramarena.BuildConfig
 import com.bhan796.anagram.core.model.Conundrum
 import com.bhan796.anagram.core.validation.DictionaryProvider
 import com.bhan796.anagramarena.network.ProfileApiService
+import com.bhan796.anagramarena.network.AuthApiService
 import com.bhan796.anagramarena.network.SocketIoMultiplayerClient
 import com.bhan796.anagramarena.repository.AndroidLogTelemetryLogger
+import com.bhan796.anagramarena.repository.AuthRepository
 import com.bhan796.anagramarena.repository.OnlineMatchRepository
 import com.bhan796.anagramarena.repository.ProfileRepository
 import com.bhan796.anagramarena.storage.AppSettingsStore
@@ -120,6 +122,7 @@ data class AppDependencies(
     val dictionaryProvider: AssetDictionaryProvider,
     val conundrumProvider: ConundrumProvider,
     val onlineMatchRepository: OnlineMatchRepository,
+    val authRepository: AuthRepository,
     val profileRepository: ProfileRepository,
     val sessionStore: SessionStore,
     val settingsStore: AppSettingsStore
@@ -132,6 +135,7 @@ data class AppDependencies(
             val socketClient = SocketIoMultiplayerClient()
             val telemetryLogger = AndroidLogTelemetryLogger()
             val profileApiService = ProfileApiService(BuildConfig.BACKEND_BASE_URL)
+            val authApiService = AuthApiService(BuildConfig.BACKEND_BASE_URL)
 
             return AppDependencies(
                 dictionaryProvider = AssetDictionaryProvider(appContext),
@@ -142,6 +146,7 @@ data class AppDependencies(
                     backendUrl = BuildConfig.BACKEND_BASE_URL,
                     telemetry = telemetryLogger
                 ),
+                authRepository = AuthRepository(authApiService, sessionStore),
                 profileRepository = ProfileRepository(profileApiService),
                 sessionStore = sessionStore,
                 settingsStore = settingsStore

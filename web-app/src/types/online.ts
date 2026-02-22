@@ -13,6 +13,7 @@ export interface SessionIdentifyPayload {
   displayName: string;
   rating?: number;
   rankTier?: string;
+  isAuthenticated?: boolean;
   serverNowMs: number;
 }
 
@@ -85,6 +86,7 @@ export interface OnlineUiState {
   connectionState: "disconnected" | "connecting" | "connected" | "reconnecting" | "failed";
   playerId: string | null;
   displayName: string | null;
+  isAuthenticated: boolean;
   playerRating: number;
   playerRankTier: string;
   queueState: string;
@@ -110,6 +112,7 @@ export const initialOnlineUiState: OnlineUiState = {
   connectionState: "disconnected",
   playerId: null,
   displayName: null,
+  isAuthenticated: false,
   playerRating: 1000,
   playerRankTier: "silver",
   queueState: "idle",

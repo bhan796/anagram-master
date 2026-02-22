@@ -77,6 +77,10 @@ class OnlineMatchViewModel(
             _state.value = _state.value.copy(localValidationMessage = "You are already in an active match.")
             return
         }
+        if (mode == "ranked" && !_state.value.isAuthenticated) {
+            _state.value = _state.value.copy(localValidationMessage = "Sign in to play ranked mode.")
+            return
+        }
         telemetry.log("queue_start")
         repository.identify(null)
         repository.joinQueue(mode)
@@ -140,7 +144,8 @@ class OnlineMatchViewModel(
     }
 
     fun queuePlayAgain() {
-        val mode = _state.value.matchState?.mode ?: "casual"
+        val requestedMode = _state.value.matchState?.mode ?: "casual"
+        val mode = if (requestedMode == "ranked" && !_state.value.isAuthenticated) "casual" else requestedMode
         if (_state.value.matchState?.phase == MatchPhase.FINISHED) {
             _state.value = _state.value.copy(
                 matchId = null,

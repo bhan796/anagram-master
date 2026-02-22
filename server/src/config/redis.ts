@@ -3,6 +3,7 @@ import { loadEnv } from "./env.js";
 import { logger } from "./logger.js";
 
 let redisClient: Redis | null = null;
+let redisConnected = false;
 
 export const getRedis = (): Redis => {
   if (!redisClient) {
@@ -18,4 +19,13 @@ export const getRedis = (): Redis => {
   }
 
   return redisClient;
+};
+
+export const ensureRedisConnected = async (): Promise<Redis> => {
+  const client = getRedis();
+  if (!redisConnected) {
+    await client.connect();
+    redisConnected = true;
+  }
+  return client;
 };

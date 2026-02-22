@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 
 data class ProfileUiState(
     val playerId: String? = null,
+    val isAuthenticated: Boolean = false,
     val isLoading: Boolean = false,
     val stats: PlayerStats? = null,
     val history: MatchHistoryResponse? = null,
@@ -29,7 +30,12 @@ class ProfileViewModel(
     private val repository: ProfileRepository,
     private val sessionStore: SessionStore
 ) : ViewModel() {
-    private val _state = MutableStateFlow(ProfileUiState(playerId = sessionStore.playerId))
+    private val _state = MutableStateFlow(
+        ProfileUiState(
+            playerId = sessionStore.playerId,
+            isAuthenticated = !sessionStore.accessToken.isNullOrBlank()
+        )
+    )
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
 
     fun refresh() {
@@ -41,12 +47,14 @@ class ProfileViewModel(
             return
         }
 
-        _state.update { it.copy(isLoading = true, errorMessage = null, playerId = playerId) }
+        val accessToken = sessionStore.accessToken
+        val isAuthenticated = !accessToken.isNullOrBlank()
+        _state.update { it.copy(isLoading = true, errorMessage = null, playerId = playerId, isAuthenticated = isAuthenticated) }
 
         viewModelScope.launch {
-            val statsResult = repository.loadStats(playerId)
-            val historyResult = repository.loadHistory(playerId)
-            val leaderboardResult = repository.loadLeaderboard(20)
+            val statsResult = repository.loadStats(playerId, accessToken)
+            val historyResult = repository.loadHistory(playerId, accessToken)
+            val leaderboardResult = if (isAuthenticated) repository.loadLeaderboard(20, accessToken) else Result.success(emptyList())
 
             val error = statsResult.exceptionOrNull()?.message ?: historyResult.exceptionOrNull()?.message
             _state.update {
@@ -64,10 +72,11 @@ class ProfileViewModel(
 
     fun updateDisplayName(nextDisplayName: String) {
         val playerId = sessionStore.playerId ?: return
+        val accessToken = sessionStore.accessToken
         _state.update { it.copy(isSavingDisplayName = true, displayNameUpdateError = null) }
 
         viewModelScope.launch {
-            val result = repository.updateDisplayName(playerId, nextDisplayName)
+            val result = repository.updateDisplayName(playerId, nextDisplayName, accessToken)
             if (result.isSuccess) {
                 refresh()
             } else {

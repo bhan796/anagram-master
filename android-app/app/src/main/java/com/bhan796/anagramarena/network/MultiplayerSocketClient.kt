@@ -25,7 +25,7 @@ interface MultiplayerSocketClient {
     fun connect(baseUrl: String)
     fun disconnect()
 
-    fun identify(playerId: String?, displayName: String?)
+    fun identify(playerId: String?, displayName: String?, accessToken: String?)
     fun joinQueue(mode: String = "casual")
     fun leaveQueue()
     fun resumeMatch(matchId: String)

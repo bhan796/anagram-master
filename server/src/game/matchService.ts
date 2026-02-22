@@ -68,7 +68,7 @@ export class MatchService {
     };
   }
 
-  connectPlayer(socketId: string, requestedPlayerId?: string, requestedDisplayName?: string): PlayerRuntime {
+  connectPlayer(socketId: string, requestedPlayerId?: string, requestedDisplayName?: string, userId?: string | null): PlayerRuntime {
     const now = this.options.now();
     const playerId = requestedPlayerId && this.players.has(requestedPlayerId) ? requestedPlayerId : randomUUID();
 
@@ -77,6 +77,7 @@ export class MatchService {
       existing ?? {
         playerId,
         displayName: requestedDisplayName?.trim() || createGuestName(),
+        userId: userId ?? null,
         socketId,
         connected: true,
         matchId: null,
@@ -92,6 +93,9 @@ export class MatchService {
 
     player.socketId = socketId;
     player.connected = true;
+    if (userId) {
+      player.userId = userId;
+    }
 
     this.players.set(playerId, player);
     this.reconcilePlayerMatch(player);
@@ -140,6 +144,7 @@ export class MatchService {
   joinQueue(playerId: string, mode: MatchMode = "casual"): { ok: boolean; code?: string; queueSize?: number } {
     const player = this.players.get(playerId);
     if (!player) return { ok: false, code: "UNKNOWN_PLAYER" };
+    if (mode === "ranked" && !player.userId) return { ok: false, code: "AUTH_REQUIRED_RANKED" };
 
     this.reconcilePlayerMatch(player);
     if (player.matchId) return { ok: false, code: "ALREADY_IN_MATCH" };

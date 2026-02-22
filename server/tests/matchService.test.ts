@@ -233,8 +233,8 @@ describe("MatchService", () => {
     const scheduler = new FakeScheduler();
     const service = makeService(scheduler);
 
-    const p1 = service.connectPlayer("socket-1", undefined, "One").playerId;
-    const p2 = service.connectPlayer("socket-2", undefined, "Two").playerId;
+    const p1 = service.connectPlayer("socket-1", undefined, "One", "user-one").playerId;
+    const p2 = service.connectPlayer("socket-2", undefined, "Two", "user-two").playerId;
     const p3 = service.connectPlayer("socket-3", undefined, "Three").playerId;
 
     expect(service.joinQueue(p1).ok).toBe(true);
@@ -257,8 +257,8 @@ describe("MatchService", () => {
     const scheduler = new FakeScheduler();
     const service = makeService(scheduler);
 
-    const p1 = service.connectPlayer("socket-1", undefined, "One").playerId;
-    const p2 = service.connectPlayer("socket-2", undefined, "Two").playerId;
+    const p1 = service.connectPlayer("socket-1", undefined, "One", "user-one").playerId;
+    const p2 = service.connectPlayer("socket-2", undefined, "Two", "user-two").playerId;
     const p3 = service.connectPlayer("socket-3", undefined, "Three").playerId;
 
     // Simulate queue corruption with duplicate same player id.
@@ -279,8 +279,8 @@ describe("MatchService", () => {
   it("applies ranked Elo updates for ranked matches only", () => {
     const scheduler = new FakeScheduler();
     const service = makeService(scheduler);
-    const p1 = service.connectPlayer("socket-1", undefined, "One").playerId;
-    const p2 = service.connectPlayer("socket-2", undefined, "Two").playerId;
+    const p1 = service.connectPlayer("socket-1", undefined, "One", "user-one").playerId;
+    const p2 = service.connectPlayer("socket-2", undefined, "Two", "user-two").playerId;
 
     expect(service.joinQueue(p1, "ranked").ok).toBe(true);
     expect(service.joinQueue(p2, "ranked").ok).toBe(true);

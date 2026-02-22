@@ -97,7 +97,7 @@ class OnlineMatchRepository(
     }
 
     fun identify(displayName: String? = sessionStore.displayName) {
-        socketClient.identify(sessionStore.playerId, displayName)
+        socketClient.identify(sessionStore.playerId, displayName, sessionStore.accessToken)
     }
 
     fun joinQueue(mode: String = "casual") {

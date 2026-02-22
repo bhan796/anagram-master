@@ -18,6 +18,7 @@ enum class RoundType {
 data class SessionIdentifyPayload(
     val playerId: String,
     val displayName: String,
+    val isAuthenticated: Boolean = false,
     val serverNowMs: Long
 )
 

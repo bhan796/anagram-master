@@ -8,6 +8,7 @@ object SocketPayloadParser {
         return SessionIdentifyPayload(
             playerId = obj.optString("playerId"),
             displayName = obj.optString("displayName"),
+            isAuthenticated = obj.optBoolean("isAuthenticated", false),
             serverNowMs = obj.optLong("serverNowMs")
         )
     }

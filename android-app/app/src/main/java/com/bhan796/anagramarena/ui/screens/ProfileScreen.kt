@@ -41,6 +41,7 @@ import com.bhan796.anagramarena.viewmodel.ProfileViewModel
 fun ProfileScreen(
     contentPadding: PaddingValues,
     onBack: () -> Unit,
+    isAuthenticated: Boolean,
     viewModel: ProfileViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -116,7 +117,10 @@ fun ProfileScreen(
             NeonDivider()
             StatRow("Peak Rating", stats.peakRating.toString())
             NeonDivider()
-            StatRow("Ranked W-L-D", "${stats.rankedWins}-${stats.rankedLosses}-${stats.rankedDraws}")
+            if (isAuthenticated) {
+                StatRow("Ranked W-L-D", "${stats.rankedWins}-${stats.rankedLosses}-${stats.rankedDraws}")
+                NeonDivider()
+            }
             RankBadge(tier = stats.rankTier)
         }
 

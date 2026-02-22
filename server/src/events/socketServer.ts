@@ -3,6 +3,8 @@ import { Server } from "socket.io";
 import { createOriginChecker } from "../config/cors.js";
 import { loadEnv } from "../config/env.js";
 import { logger } from "../config/logger.js";
+import { AuthService } from "../auth/authService.js";
+import { verifyAccessToken } from "../auth/jwt.js";
 import { loadConundrums, loadDictionarySet } from "../game/data.js";
 import { MatchService } from "../game/matchService.js";
 import { ratingToTier } from "../game/ranking.js";
@@ -14,7 +16,8 @@ import { SocketEvents, toActionError } from "./contracts.js";
 export const createSocketServer = (
   httpServer: HttpServer,
   matchHistoryStore: MatchHistoryStore,
-  presenceStore: PresenceStore
+  presenceStore: PresenceStore,
+  authService: AuthService
 ): { io: Server; matchService: MatchService } => {
   const env = loadEnv();
   const isAllowedOrigin = createOriginChecker(env.CLIENT_ORIGIN);
@@ -62,17 +65,29 @@ export const createSocketServer = (
 
     let playerId: string | null = null;
 
-    socket.on(SocketEvents.sessionIdentify, (payload: { playerId?: string; displayName?: string } = {}) => {
-      const player = service.connectPlayer(socket.id, payload.playerId, payload.displayName);
+    socket.on(SocketEvents.sessionIdentify, async (payload: { playerId?: string; displayName?: string; accessToken?: string } = {}) => {
+      let authenticatedUserId: string | null = null;
+      if (payload.accessToken) {
+        try {
+          const decoded = verifyAccessToken(payload.accessToken);
+          authenticatedUserId = decoded.sub;
+        } catch {
+          authenticatedUserId = null;
+        }
+      }
+
+      const player = service.connectPlayer(socket.id, payload.playerId, payload.displayName, authenticatedUserId);
       playerId = player.playerId;
       presenceStore.markOnline(player.playerId);
       matchHistoryStore.touchPlayer(player);
+      await authService.upsertPlayerIdentity(player.playerId, player.displayName, player.userId);
 
       socket.emit(SocketEvents.sessionIdentify, {
         playerId: player.playerId,
         displayName: player.displayName,
         rating: player.rating,
         rankTier: ratingToTier(player.rating),
+        isAuthenticated: Boolean(player.userId),
         serverNowMs: Date.now()
       });
 

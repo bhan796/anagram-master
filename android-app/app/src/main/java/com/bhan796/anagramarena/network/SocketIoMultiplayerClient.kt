@@ -95,10 +95,11 @@ class SocketIoMultiplayerClient : MultiplayerSocketClient {
         socket = null
     }
 
-    override fun identify(playerId: String?, displayName: String?) {
+    override fun identify(playerId: String?, displayName: String?, accessToken: String?) {
         emit(SocketEventNames.SESSION_IDENTIFY) {
             if (!playerId.isNullOrBlank()) put("playerId", playerId)
             if (!displayName.isNullOrBlank()) put("displayName", displayName)
+            if (!accessToken.isNullOrBlank()) put("accessToken", accessToken)
         }
     }
 

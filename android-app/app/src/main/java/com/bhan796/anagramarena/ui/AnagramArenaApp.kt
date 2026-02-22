@@ -32,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import com.bhan796.anagramarena.audio.SoundManager
 import com.bhan796.anagramarena.data.AppDependencies
 import com.bhan796.anagramarena.ui.screens.ConundrumPracticeScreen
+import com.bhan796.anagramarena.ui.screens.AuthScreen
 import com.bhan796.anagramarena.ui.screens.HomeScreen
 import com.bhan796.anagramarena.ui.screens.HowToPlayScreen
 import com.bhan796.anagramarena.ui.screens.LettersPracticeScreen
@@ -47,6 +48,7 @@ import com.bhan796.anagramarena.ui.theme.ColorRed
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.ui.theme.sdp
 import com.bhan796.anagramarena.viewmodel.HomeStatusViewModel
+import com.bhan796.anagramarena.viewmodel.AuthViewModel
 import com.bhan796.anagramarena.viewmodel.OnlineMatchViewModel
 import com.bhan796.anagramarena.viewmodel.PracticeSettingsViewModel
 import com.bhan796.anagramarena.viewmodel.ProfileViewModel
@@ -54,6 +56,7 @@ import com.bhan796.anagramarena.viewmodel.ProfileViewModel
 private object Routes {
     const val HOME = "home"
     const val PRACTICE = "practice"
+    const val AUTH = "auth"
     const val LETTERS = "practice_letters"
     const val CONUNDRUM = "practice_conundrum"
     const val ONLINE_MATCHMAKING = "online_matchmaking"
@@ -79,13 +82,17 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModel.factory(dependencies.profileRepository, dependencies.sessionStore)
     )
+    val authViewModel: AuthViewModel = viewModel(
+        factory = AuthViewModel.factory(dependencies.authRepository, dependencies.sessionStore)
+    )
     val homeStatusViewModel: HomeStatusViewModel = viewModel(
-        factory = HomeStatusViewModel.factory(dependencies.profileRepository)
+        factory = HomeStatusViewModel.factory(dependencies.profileRepository, dependencies.sessionStore)
     )
 
     val settings by settingsViewModel.state.collectAsState()
     val onlineState by onlineMatchViewModel.state.collectAsState()
     val homeStatus by homeStatusViewModel.state.collectAsState()
+    val authState by authViewModel.state.collectAsState()
     var playHomeIntro by rememberSaveable { mutableStateOf(true) }
 
     LaunchedEffect(settings) {
@@ -124,6 +131,36 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                         onSettings = { navController.navigate(Routes.SETTINGS) },
                         playIntro = playHomeIntro,
                         onIntroComplete = { playHomeIntro = false }
+                    )
+                }
+
+                composable(Routes.AUTH) {
+                    LaunchedEffect(authState.status) {
+                        if (authState.status == "authenticated") {
+                            onlineMatchViewModel.retryConnect()
+                            navController.navigate(Routes.ONLINE_MATCHMAKING) {
+                                popUpTo(Routes.AUTH) { inclusive = true }
+                            }
+                        }
+                    }
+                    AuthScreen(
+                        contentPadding = innerPadding,
+                        isSubmitting = authState.loading,
+                        error = authState.error,
+                        onBack = { navController.popBackStack() },
+                        onLogin = { email, password ->
+                            authViewModel.login(email, password)
+                        },
+                        onRegister = { email, password ->
+                            authViewModel.register(email, password)
+                        },
+                        onContinueGuest = {
+                            authViewModel.continueAsGuest()
+                            onlineMatchViewModel.retryConnect()
+                            navController.navigate(Routes.ONLINE_MATCHMAKING) {
+                                popUpTo(Routes.AUTH) { inclusive = true }
+                            }
+                        }
                     )
                 }
 
@@ -166,11 +203,13 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                         contentPadding = innerPadding,
                         onlineState = onlineState,
                         leaderboard = homeStatus.leaderboard,
+                        isAuthenticated = authState.status == "authenticated",
                         onBack = { navController.popBackStack() },
                         onJoinQueue = onlineMatchViewModel::startQueue,
                         onCancelQueue = onlineMatchViewModel::cancelQueue,
                         onRetryConnection = onlineMatchViewModel::retryConnect,
-                        onMatchReady = { navController.navigate(Routes.ONLINE_MATCH_FOUND) }
+                        onMatchReady = { navController.navigate(Routes.ONLINE_MATCH_FOUND) },
+                        onRequireAuth = { navController.navigate(Routes.AUTH) }
                     )
                 }
 
@@ -206,7 +245,12 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                 }
 
                 composable(Routes.PROFILE) {
-                    ProfileScreen(contentPadding = innerPadding, onBack = { navController.popBackStack() }, viewModel = profileViewModel)
+                    ProfileScreen(
+                        contentPadding = innerPadding,
+                        onBack = { navController.popBackStack() },
+                        isAuthenticated = authState.status == "authenticated",
+                        viewModel = profileViewModel
+                    )
                 }
 
                 composable(Routes.SETTINGS) {

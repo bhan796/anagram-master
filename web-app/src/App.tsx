@@ -9,6 +9,7 @@ import { ProfileScreen } from "./screens/ProfileScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { HowToPlayScreen } from "./screens/HowToPlayScreen";
 import { MatchFoundScreen } from "./screens/MatchFoundScreen";
+import { AuthScreen } from "./screens/AuthScreen";
 import { loadConundrums, loadDictionary } from "./logic/loaders";
 import { useOnlineMatch } from "./hooks/useOnlineMatch";
 import * as SoundManager from "./sound/SoundManager";
@@ -17,6 +18,7 @@ import type { ConundrumEntry } from "./logic/gameRules";
 
 type Route =
   | "home"
+  | "auth"
   | "practice"
   | "practice_letters"
   | "practice_conundrum"
@@ -70,7 +72,26 @@ interface MatchHistoryItem {
   ratingChanges?: Record<string, number>;
 }
 
+interface AuthSessionPair {
+  accessToken: string;
+  refreshToken: string;
+  expiresInSeconds: number;
+  refreshExpiresInSeconds: number;
+}
+
+interface AuthState {
+  status: "guest" | "authenticated";
+  userId: string | null;
+  email: string | null;
+  loading: boolean;
+  error: string | null;
+}
+
 const SETTINGS_KEY = "anagram.web.settings";
+const ACCESS_TOKEN_KEY = "anagram.auth.accessToken";
+const REFRESH_TOKEN_KEY = "anagram.auth.refreshToken";
+const AUTH_USER_ID_KEY = "anagram.auth.userId";
+const AUTH_EMAIL_KEY = "anagram.auth.email";
 
 const parseStoredSettings = (): SettingsState => {
   try {
@@ -116,6 +137,13 @@ export const App = () => {
   const [route, setRoute] = useState<Route>("home");
   const [settings, setSettings] = useState<SettingsState>(() => parseStoredSettings());
   const [homeIntroSeen, setHomeIntroSeen] = useState(false);
+  const [auth, setAuth] = useState<AuthState>(() => ({
+    status: localStorage.getItem(ACCESS_TOKEN_KEY) ? "authenticated" : "guest",
+    userId: localStorage.getItem(AUTH_USER_ID_KEY),
+    email: localStorage.getItem(AUTH_EMAIL_KEY),
+    loading: false,
+    error: null
+  }));
 
   const [dictionary, setDictionary] = useState<Set<string> | null>(null);
   const [dictionaryError, setDictionaryError] = useState<string | null>(null);
@@ -142,12 +170,109 @@ export const App = () => {
 
   const online = useOnlineMatch();
 
+  const storeAuthSession = (session: AuthSessionPair, userId: string, email: string) => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, session.accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, session.refreshToken);
+    localStorage.setItem(AUTH_USER_ID_KEY, userId);
+    localStorage.setItem(AUTH_EMAIL_KEY, email);
+    setAuth({ status: "authenticated", userId, email, loading: false, error: null });
+  };
+
+  const clearAuthSession = () => {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_ID_KEY);
+    localStorage.removeItem(AUTH_EMAIL_KEY);
+    setAuth({ status: "guest", userId: null, email: null, loading: false, error: null });
+  };
+
+  const refreshAuthSession = async (): Promise<string | null> => {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+      clearAuthSession();
+      return null;
+    }
+
+    try {
+      const refreshRes = await fetch(`${apiBaseUrl}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken })
+      });
+      if (!refreshRes.ok) {
+        clearAuthSession();
+        return null;
+      }
+
+      const payload = (await refreshRes.json()) as { session: AuthSessionPair };
+      localStorage.setItem(ACCESS_TOKEN_KEY, payload.session.accessToken);
+      localStorage.setItem(REFRESH_TOKEN_KEY, payload.session.refreshToken);
+      return payload.session.accessToken;
+    } catch {
+      clearAuthSession();
+      return null;
+    }
+  };
+
+  const fetchWithAuth = async (path: string, init: RequestInit = {}): Promise<Response> => {
+    const attach = (token: string): RequestInit => ({
+      ...init,
+      headers: {
+        ...(init.headers ?? {}),
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    let accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!accessToken) {
+      accessToken = await refreshAuthSession();
+      if (!accessToken) throw new Error("Authentication required.");
+    }
+
+    let response = await fetch(`${apiBaseUrl}${path}`, attach(accessToken));
+    if (response.status !== 401) return response;
+
+    const refreshed = await refreshAuthSession();
+    if (!refreshed) return response;
+    response = await fetch(`${apiBaseUrl}${path}`, attach(refreshed));
+    return response;
+  };
+
   useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     SoundManager.setSoundEnabled(settings.soundEnabled);
     SoundManager.setMasterMuted(settings.masterMuted);
     SoundManager.setSfxVolume(settings.sfxVolume);
   }, [settings]);
+
+  useEffect(() => {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+      clearAuthSession();
+      return;
+    }
+
+    let cancelled = false;
+    const bootstrap = async () => {
+      try {
+        const meRes = await fetchWithAuth("/api/auth/me");
+        if (meRes.ok) {
+          const me = (await meRes.json()) as { userId: string; email: string };
+          if (!cancelled) {
+            setAuth({ status: "authenticated", userId: me.userId, email: me.email, loading: false, error: null });
+          }
+          return;
+        }
+      } catch {
+        if (!cancelled) clearAuthSession();
+      }
+    };
+
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const renderWithMute = (screen: ReactElement) => (
     <>
@@ -160,7 +285,7 @@ export const App = () => {
         title={settings.masterMuted ? "Unmute" : "Mute"}
       >
         <span className="arcade-mute-icon" aria-hidden>
-          {settings.masterMuted ? "🔇" : "🔊"}
+          {settings.masterMuted ? "MUTE" : "SOUND"}
         </span>
       </button>
     </>
@@ -188,7 +313,9 @@ export const App = () => {
 
       try {
         const [statsRes, historyRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/api/profiles/${online.state.playerId}/stats`),
+          auth.status === "authenticated"
+            ? fetchWithAuth(`/api/profiles/${online.state.playerId}/stats`)
+            : fetch(`${apiBaseUrl}/api/profiles/${online.state.playerId}/stats`),
           fetch(`${apiBaseUrl}/api/profiles/${online.state.playerId}/matches`)
         ]);
 
@@ -207,7 +334,7 @@ export const App = () => {
         setProfileLoading(false);
       }
     },
-    [online.state.playerId]
+    [auth.status, online.state.playerId]
   );
 
   const updateDisplayName = useMemo(
@@ -233,6 +360,57 @@ export const App = () => {
     [online.actions, online.state.playerId, loadProfile]
   );
 
+  const authenticate = useMemo(
+    () =>
+      async (mode: "login" | "register", email: string, password: string) => {
+        setAuth((previous) => ({ ...previous, loading: true, error: null }));
+        try {
+          const endpoint = mode === "login" ? "login" : "register";
+          const response = await fetch(`${apiBaseUrl}/api/auth/${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email,
+              password,
+              playerId: online.state.playerId ?? undefined
+            })
+          });
+          if (!response.ok) {
+            const payload = (await response.json().catch(() => ({}))) as { message?: string };
+            throw new Error(payload.message ?? "Authentication failed.");
+          }
+          const payload = (await response.json()) as { userId: string; email: string; session: AuthSessionPair };
+          storeAuthSession(payload.session, payload.userId, payload.email);
+          online.actions.refreshSession();
+          setRoute("online_matchmaking");
+        } catch (error) {
+          setAuth((previous) => ({
+            ...previous,
+            loading: false,
+            error: error instanceof Error ? error.message : "Authentication failed."
+          }));
+        }
+      },
+    [online.actions, online.state.playerId]
+  );
+
+  const logout = useMemo(
+    () => async () => {
+      const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+      if (refreshToken) {
+        await fetch(`${apiBaseUrl}/api/auth/logout`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken })
+        }).catch(() => undefined);
+      }
+      clearAuthSession();
+      online.actions.refreshSession();
+      setRoute("home");
+    },
+    [online.actions]
+  );
+
   useEffect(() => {
     let cancelled = false;
     const pullPresence = async () => {
@@ -255,10 +433,14 @@ export const App = () => {
   }, []);
 
   useEffect(() => {
+    if (auth.status !== "authenticated") {
+      setLeaderboard([]);
+      return;
+    }
     let cancelled = false;
     const pullLeaderboard = async () => {
       try {
-        const response = await fetch(`${apiBaseUrl}/api/leaderboard?limit=20`);
+        const response = await fetchWithAuth("/api/leaderboard?limit=20");
         if (!response.ok) return;
         const payload = (await response.json()) as { entries?: typeof leaderboard };
         if (!cancelled) setLeaderboard(payload.entries ?? []);
@@ -273,7 +455,7 @@ export const App = () => {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [auth.status]);
 
   useEffect(() => {
     if (route === "profile") {
@@ -302,6 +484,23 @@ export const App = () => {
         playersOnline={playersOnline}
         playIntro={!homeIntroSeen}
         onIntroComplete={() => setHomeIntroSeen(true)}
+      />
+    );
+  }
+
+  if (route === "auth") {
+    return renderWithMute(
+      <AuthScreen
+        isSubmitting={auth.loading}
+        error={auth.error}
+        onBack={() => setRoute("online_matchmaking")}
+        onLogin={async (email, password) => authenticate("login", email, password)}
+        onRegister={async (email, password) => authenticate("register", email, password)}
+        onContinueGuest={() => {
+          clearAuthSession();
+          online.actions.refreshSession();
+          setRoute("online_matchmaking");
+        }}
       />
     );
   }
@@ -349,6 +548,8 @@ export const App = () => {
       <MatchmakingScreen
         state={online.state}
         leaderboard={leaderboard}
+        isAuthenticated={auth.status === "authenticated"}
+        onRequireAuth={() => setRoute("auth")}
         onBack={() => setRoute("home")}
         onJoinQueue={online.actions.startQueue}
         onCancelQueue={online.actions.cancelQueue}
@@ -398,6 +599,7 @@ export const App = () => {
         onBack={() => setRoute("home")}
         onRetry={() => void loadProfile()}
         onUpdateDisplayName={updateDisplayName}
+        isAuthenticated={auth.status === "authenticated"}
       />
     );
   }
@@ -414,3 +616,4 @@ export const App = () => {
     />
   );
 };
+

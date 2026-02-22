@@ -19,6 +19,8 @@ interface MatchmakingScreenProps {
   onCancelQueue: () => void;
   onRetryConnection: () => void;
   onMatchReady: () => void;
+  isAuthenticated: boolean;
+  onRequireAuth: () => void;
 }
 
 export const MatchmakingScreen = ({
@@ -28,7 +30,9 @@ export const MatchmakingScreen = ({
   onJoinQueue,
   onCancelQueue,
   onRetryConnection,
-  onMatchReady
+  onMatchReady,
+  isAuthenticated,
+  onRequireAuth
 }: MatchmakingScreenProps) => {
   const navigatedToMatchRef = useRef(false);
   const [dots, setDots] = useState(1);
@@ -98,8 +102,14 @@ export const MatchmakingScreen = ({
         <button
           type="button"
           className={`mode-select-btn ${selectedMode === "ranked" ? "selected" : "unselected"}`}
-          onClick={() => setSelectedMode("ranked")}
-          disabled={isSearching || state.isInMatchmaking || hasActiveMatch}
+          onClick={() => {
+            if (!isAuthenticated) {
+              onRequireAuth();
+              return;
+            }
+            setSelectedMode("ranked");
+          }}
+          disabled={isSearching || state.isInMatchmaking || hasActiveMatch || !isAuthenticated}
         >
           Ranked
         </button>
@@ -108,30 +118,38 @@ export const MatchmakingScreen = ({
       <ArcadeButton
         text={buttonText}
         onClick={() => {
+          if (selectedMode === "ranked" && !isAuthenticated) {
+            onRequireAuth();
+            return;
+          }
           onJoinQueue(selectedMode);
         }}
         disabled={!primaryEnabled || hasActiveMatch}
       />
 
-      <div className="card" style={{ display: "grid", gap: 8 }}>
-        <div className="headline" style={{ fontSize: "clamp(10px, 1.2vw, 12px)" }}>
-          Leaderboard
+      {isAuthenticated ? (
+        <div className="card" style={{ display: "grid", gap: 8 }}>
+          <div className="headline" style={{ fontSize: "clamp(10px, 1.2vw, 12px)" }}>
+            Leaderboard
+          </div>
+          {leaderboard.length === 0 ? (
+            <div className="text-dim">No ranked matches yet.</div>
+          ) : (
+            leaderboard.slice(0, 8).map((entry, index) => (
+              <div key={entry.playerId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span className="text-dim">
+                  #{index + 1} {entry.displayName}
+                </span>
+                <span className="label" style={{ color: "var(--green)" }}>
+                  {entry.rating}
+                </span>
+              </div>
+            ))
+          )}
         </div>
-        {leaderboard.length === 0 ? (
-          <div className="text-dim">No ranked matches yet.</div>
-        ) : (
-          leaderboard.slice(0, 8).map((entry, index) => (
-            <div key={entry.playerId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <span className="text-dim">
-                #{index + 1} {entry.displayName}
-              </span>
-              <span className="label" style={{ color: "var(--green)" }}>
-                {entry.rating}
-              </span>
-            </div>
-          ))
-        )}
-      </div>
+      ) : (
+        <div className="card text-dim">Sign in to unlock Ranked mode and Leaderboard.</div>
+      )}
 
       {isSearching && state.isInMatchmaking && !hasActiveMatch ? (
         <ArcadeButton

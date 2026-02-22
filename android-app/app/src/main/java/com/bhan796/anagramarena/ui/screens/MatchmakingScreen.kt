@@ -45,11 +45,13 @@ fun MatchmakingScreen(
     contentPadding: PaddingValues,
     onlineState: OnlineUiState,
     leaderboard: List<LeaderboardEntry>,
+    isAuthenticated: Boolean,
     onBack: () -> Unit,
     onJoinQueue: (String) -> Unit,
     onCancelQueue: () -> Unit,
     onRetryConnection: () -> Unit,
-    onMatchReady: () -> Unit
+    onMatchReady: () -> Unit,
+    onRequireAuth: () -> Unit
 ) {
     var hasNavigatedToMatch by remember { mutableStateOf(false) }
     var selectedMode by remember { mutableStateOf("casual") }
@@ -116,8 +118,14 @@ fun MatchmakingScreen(
             ModeOptionButton(
                 text = "RANKED",
                 selected = selectedMode == "ranked",
-                enabled = !isSearching && !onlineState.isInMatchmaking && !hasExistingMatch,
-                onClick = { selectedMode = "ranked" },
+                enabled = !isSearching && !onlineState.isInMatchmaking && !hasExistingMatch && isAuthenticated,
+                onClick = {
+                    if (!isAuthenticated) {
+                        onRequireAuth()
+                    } else {
+                        selectedMode = "ranked"
+                    }
+                },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -125,31 +133,47 @@ fun MatchmakingScreen(
         ArcadeButton(
             text = primaryButtonText,
             onClick = {
+                if (selectedMode == "ranked" && !isAuthenticated) {
+                    onRequireAuth()
+                    return@ArcadeButton
+                }
                 onJoinQueue(selectedMode)
             },
             enabled = primaryButtonEnabled && !hasExistingMatch,
             modifier = Modifier.fillMaxWidth()
         )
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
-                .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
-                .padding(sdp(12.dp))
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
-                Text("LEADERBOARD", style = MaterialTheme.typography.labelLarge, color = ColorWhite)
-                if (leaderboard.isEmpty()) {
-                    Text("No ranked matches yet.", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
-                } else {
-                    leaderboard.take(8).forEachIndexed { index, entry ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("#${index + 1} ${entry.displayName}", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
-                            Text(entry.rating.toString(), style = MaterialTheme.typography.labelLarge, color = com.bhan796.anagramarena.ui.theme.ColorGreen)
+        if (isAuthenticated) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                    .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+                    .padding(sdp(12.dp))
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
+                    Text("LEADERBOARD", style = MaterialTheme.typography.labelLarge, color = ColorWhite)
+                    if (leaderboard.isEmpty()) {
+                        Text("No ranked matches yet.", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
+                    } else {
+                        leaderboard.take(8).forEachIndexed { index, entry ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("#${index + 1} ${entry.displayName}", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
+                                Text(entry.rating.toString(), style = MaterialTheme.typography.labelLarge, color = com.bhan796.anagramarena.ui.theme.ColorGreen)
+                            }
                         }
                     }
                 }
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                    .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+                    .padding(sdp(12.dp))
+            ) {
+                Text("Sign in to unlock Ranked mode and Leaderboard.", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
             }
         }
 

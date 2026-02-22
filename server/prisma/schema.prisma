@@ -8,8 +8,37 @@ datasource db {
 }
 
 model Player {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  name      String?
+  id           String        @id @default(cuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  displayName String?
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  authSessions AuthSession[]
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  players      Player[]
+  authSessions AuthSession[]
+}
+
+model AuthSession {
+  id               String    @id @default(cuid())
+  userId           String
+  playerId         String?
+  refreshTokenHash String
+  createdAt        DateTime  @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  replacedById     String?
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  player           Player?   @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([playerId])
 }

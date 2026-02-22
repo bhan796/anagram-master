@@ -41,9 +41,10 @@ interface ProfileScreenProps {
   onBack: () => void;
   onRetry: () => void;
   onUpdateDisplayName: (value: string) => Promise<void>;
+  isAuthenticated: boolean;
 }
 
-export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetry, onUpdateDisplayName }: ProfileScreenProps) => {
+export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetry, onUpdateDisplayName, isAuthenticated }: ProfileScreenProps) => {
   const [nameDraft, setNameDraft] = useState("");
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
@@ -98,10 +99,10 @@ export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetr
             ["Draws", stats.draws],
             ["Total Score", stats.totalScore],
             ["Peak Rating", stats.peakRating],
-            ["Ranked", `${stats.rankedWins}-${stats.rankedLosses}-${stats.rankedDraws}`]
+            ...(isAuthenticated ? ([["Ranked", `${stats.rankedWins}-${stats.rankedLosses}-${stats.rankedDraws}`]] as [string, string][]) : [])
           ]
         : [],
-    [stats]
+    [isAuthenticated, stats]
   );
 
   return (
@@ -245,7 +246,7 @@ export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetr
                   </span>
                 </div>
                 <div className="text-dim">Your score: {myPlayer?.score ?? 0}</div>
-                <div className="text-dim">Mode: {(match.mode ?? "casual").toUpperCase()}</div>
+                <div className="text-dim">Mode: {isAuthenticated ? (match.mode ?? "casual").toUpperCase() : "CASUAL"}</div>
                 {match.players.map((player) => (
                   <div key={`${match.matchId}-${player.playerId}`} className="text-dim">
                     {player.displayName}: {player.score}

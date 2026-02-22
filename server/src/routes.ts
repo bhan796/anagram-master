@@ -1,5 +1,8 @@
 import type { Request, Response } from "express";
 import { Router } from "express";
+import { AuthService } from "./auth/authService.js";
+import { attachOptionalAuth, requireAuth } from "./auth/httpAuth.js";
+import { createRateLimiter } from "./auth/rateLimit.js";
 import { toActionError } from "./events/contracts.js";
 import { ratingToTier } from "./game/ranking.js";
 import type { MatchService } from "./game/matchService.js";
@@ -9,9 +12,14 @@ import type { MatchHistoryStore } from "./store/matchHistoryStore.js";
 export const createApiRouter = (
   matchHistoryStore: MatchHistoryStore,
   presenceStore: PresenceStore,
-  matchService: MatchService
+  matchService: MatchService,
+  authService: AuthService
 ): Router => {
   const router = Router();
+  const authLimiter = createRateLimiter("auth", 20, 60);
+  const refreshLimiter = createRateLimiter("refresh", 40, 60);
+
+  router.use(attachOptionalAuth);
 
   router.get("/health", (_req: Request, res: Response) => {
     res.json({
@@ -28,7 +36,83 @@ export const createApiRouter = (
     });
   });
 
-  router.get("/profiles/:playerId/stats", (req: Request, res: Response) => {
+  router.post("/auth/register", authLimiter, async (req: Request, res: Response) => {
+    try {
+      const email = String(req.body?.email ?? "");
+      const password = String(req.body?.password ?? "");
+      const playerId = String(req.body?.playerId ?? "").trim() || undefined;
+      const result = await authService.register(email, password, playerId);
+      res.status(201).json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to register.";
+      const status = message.includes("already") ? 409 : 400;
+      res.status(status).json({ code: "AUTH_REGISTER_FAILED", message });
+    }
+  });
+
+  router.post("/auth/login", authLimiter, async (req: Request, res: Response) => {
+    try {
+      const email = String(req.body?.email ?? "");
+      const password = String(req.body?.password ?? "");
+      const playerId = String(req.body?.playerId ?? "").trim() || undefined;
+      const result = await authService.login(email, password, playerId);
+      res.json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to login.";
+      res.status(401).json({ code: "AUTH_LOGIN_FAILED", message });
+    }
+  });
+
+  router.post("/auth/refresh", refreshLimiter, async (req: Request, res: Response) => {
+    try {
+      const refreshToken = String(req.body?.refreshToken ?? "");
+      const session = await authService.refresh(refreshToken);
+      res.json({ session });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to refresh session.";
+      res.status(401).json({ code: "AUTH_REFRESH_FAILED", message });
+    }
+  });
+
+  router.post("/auth/logout", async (req: Request, res: Response) => {
+    try {
+      const refreshToken = String(req.body?.refreshToken ?? "");
+      await authService.logout(refreshToken);
+      res.status(204).send();
+    } catch {
+      res.status(204).send();
+    }
+  });
+
+  router.get("/auth/me", requireAuth, async (req: Request, res: Response) => {
+    const me = await authService.me(req.auth!.userId);
+    if (!me) {
+      res.status(404).json({ code: "AUTH_USER_NOT_FOUND", message: "User not found." });
+      return;
+    }
+    res.json(me);
+  });
+
+  router.post("/auth/claim-guest", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const playerId = String(req.body?.playerId ?? "").trim();
+      if (!playerId) {
+        res.status(400).json({ code: "INVALID_PLAYER_ID", message: "playerId is required." });
+        return;
+      }
+      await authService.claimGuest(req.auth!.userId, playerId);
+      res.status(204).send();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to claim guest profile.";
+      res.status(409).json({ code: "CLAIM_GUEST_FAILED", message });
+    }
+  });
+
+  router.get("/profiles/:playerId/stats", async (req: Request, res: Response) => {
+    const targetPlayerId = req.params.playerId;
+    const ownerUserId = await authService.resolveUserIdForPlayer(targetPlayerId);
+    const canViewRanked = Boolean(req.auth?.userId && ownerUserId && ownerUserId === req.auth.userId);
+
     const stats = matchHistoryStore.getPlayerStats(req.params.playerId);
     if (!stats) {
       const runtimePlayer = matchService.getPlayer(req.params.playerId);
@@ -45,15 +129,21 @@ export const createApiRouter = (
         rating: runtimePlayer?.rating ?? 1000,
         peakRating: runtimePlayer?.peakRating ?? 1000,
         rankTier: ratingToTier(runtimePlayer?.rating ?? 1000),
-        rankedGames: runtimePlayer?.rankedGames ?? 0,
-        rankedWins: runtimePlayer?.rankedWins ?? 0,
-        rankedLosses: runtimePlayer?.rankedLosses ?? 0,
-        rankedDraws: runtimePlayer?.rankedDraws ?? 0
+        rankedGames: canViewRanked ? (runtimePlayer?.rankedGames ?? 0) : 0,
+        rankedWins: canViewRanked ? (runtimePlayer?.rankedWins ?? 0) : 0,
+        rankedLosses: canViewRanked ? (runtimePlayer?.rankedLosses ?? 0) : 0,
+        rankedDraws: canViewRanked ? (runtimePlayer?.rankedDraws ?? 0) : 0
       });
       return;
     }
 
-    res.json(stats);
+    res.json({
+      ...stats,
+      rankedGames: canViewRanked ? stats.rankedGames : 0,
+      rankedWins: canViewRanked ? stats.rankedWins : 0,
+      rankedLosses: canViewRanked ? stats.rankedLosses : 0,
+      rankedDraws: canViewRanked ? stats.rankedDraws : 0
+    });
   });
 
   router.post("/profiles/:playerId/display-name", (req: Request, res: Response) => {
@@ -84,7 +174,7 @@ export const createApiRouter = (
     });
   });
 
-  router.get("/leaderboard", (req: Request, res: Response) => {
+  router.get("/leaderboard", requireAuth, (req: Request, res: Response) => {
     const limit = Number(req.query.limit ?? 50);
     const entries = matchHistoryStore.getLeaderboard(Number.isFinite(limit) ? limit : 50);
     res.json({
