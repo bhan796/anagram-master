@@ -149,10 +149,12 @@ fun OnlineMatchScreen(
 
         NeonTitle("ROUND ${match.roundNumber}")
         NeonTitle(match.phase.name.replace('_', ' '))
-        TimerBar(
-            secondsRemaining = state.secondsRemaining,
-            totalSeconds = phaseTotalSeconds(match.phase)
-        )
+        if (match.phase != MatchPhase.FINISHED) {
+            TimerBar(
+                secondsRemaining = state.secondsRemaining,
+                totalSeconds = phaseTotalSeconds(match.phase)
+            )
+        }
         Text(state.statusMessage, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
 
         val me = state.myPlayer
