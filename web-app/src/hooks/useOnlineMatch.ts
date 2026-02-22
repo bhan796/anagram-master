@@ -66,7 +66,7 @@ const normalizeMatchPayload = (payload: MatchStatePayload): MatchStatePayload =>
 const computeRemainingSeconds = (match: MatchStatePayload | null, offsetMs: number): number => {
   if (!match?.phaseEndsAtMs) return 0;
   const now = Date.now() + offsetMs;
-  return Math.max(0, Math.floor((match.phaseEndsAtMs - now) / 1000));
+  return Math.max(0, Math.ceil((match.phaseEndsAtMs - now) / 1000));
 };
 
 const reduceOnlineState = (

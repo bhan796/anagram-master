@@ -27,6 +27,13 @@ interface OnlineMatchScreenProps {
 
 const phaseLabel = (phase: MatchStatePayload["phase"]) => phase.replaceAll("_", " ");
 
+const phaseTotalSeconds = (phase: MatchStatePayload["phase"]): number => {
+  if (phase === "awaiting_letters_pick") return 20;
+  if (phase === "round_result") return 5;
+  if (phase === "letters_solving" || phase === "conundrum_solving") return 30;
+  return 0;
+};
+
 const LetterSlots = ({ letters }: { letters: string[] }) => (
   <div className="letter-row">
     {Array.from({ length: 9 }).map((_, index) => {
@@ -141,7 +148,7 @@ export const OnlineMatchScreen = ({
         <>
           <NeonTitle text={`Round ${match.roundNumber}`} />
           <NeonTitle text={phaseLabel(match.phase)} />
-          <TimerBar secondsRemaining={state.secondsRemaining} totalSeconds={match.phase === "awaiting_letters_pick" ? 20 : 30} />
+          <TimerBar secondsRemaining={state.secondsRemaining} totalSeconds={phaseTotalSeconds(match.phase)} />
           <div className="text-dim">{state.statusMessage}</div>
 
           {state.myPlayer && state.opponentPlayer ? (

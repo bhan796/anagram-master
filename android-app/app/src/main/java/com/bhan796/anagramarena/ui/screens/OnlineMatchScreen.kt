@@ -52,6 +52,13 @@ import com.bhan796.anagramarena.ui.theme.ColorRed
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.ui.theme.sdp
 
+private fun phaseTotalSeconds(phase: MatchPhase): Int = when (phase) {
+    MatchPhase.AWAITING_LETTERS_PICK -> 20
+    MatchPhase.ROUND_RESULT -> 5
+    MatchPhase.LETTERS_SOLVING, MatchPhase.CONUNDRUM_SOLVING -> 30
+    else -> 0
+}
+
 @Composable
 fun OnlineMatchScreen(
     contentPadding: PaddingValues,
@@ -123,7 +130,7 @@ fun OnlineMatchScreen(
         NeonTitle(match.phase.name.replace('_', ' '))
         TimerBar(
             secondsRemaining = state.secondsRemaining,
-            totalSeconds = if (match.phase == MatchPhase.AWAITING_LETTERS_PICK) 20 else 30
+            totalSeconds = phaseTotalSeconds(match.phase)
         )
         Text(state.statusMessage, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
 

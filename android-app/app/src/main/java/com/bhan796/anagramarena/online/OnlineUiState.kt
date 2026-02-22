@@ -1,6 +1,7 @@
 package com.bhan796.anagramarena.online
 
 import com.bhan796.anagramarena.network.SocketConnectionState
+import kotlin.math.ceil
 
 data class OnlineUiState(
     val connectionState: SocketConnectionState = SocketConnectionState.Disconnected,
@@ -87,6 +88,6 @@ object OnlineMatchReducer {
         val phaseEnd = matchState?.phaseEndsAtMs ?: return 0
         val adjustedNow = nowMs + serverClockOffsetMs
         val remainingMs = phaseEnd - adjustedNow
-        return (remainingMs / 1000.0).toInt().coerceAtLeast(0)
+        return ceil(remainingMs / 1000.0).toInt().coerceAtLeast(0)
     }
 }
