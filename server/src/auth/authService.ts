@@ -40,17 +40,17 @@ type OauthProvider = "google" | "facebook";
 
 export class AuthService {
   private async ensureUserPrimaryPlayerId(userId: string, preferredPlayerId?: string | null): Promise<string> {
-    if (preferredPlayerId) {
-      await this.claimGuest(userId, preferredPlayerId);
-      return preferredPlayerId;
-    }
-
     const existing = await prisma.player.findFirst({
       where: { userId },
       orderBy: { createdAt: "asc" },
       select: { id: true }
     });
     if (existing?.id) return existing.id;
+
+    if (preferredPlayerId) {
+      await this.claimGuest(userId, preferredPlayerId);
+      return preferredPlayerId;
+    }
 
     const created = await prisma.player.create({
       data: { userId },
