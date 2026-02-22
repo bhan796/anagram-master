@@ -95,7 +95,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
     }
 
     LaunchedEffect(currentRoute) {
-        if (currentRoute != Routes.HOME) {
+        if (currentRoute != null && currentRoute != Routes.HOME) {
             playHomeIntro = false
         }
     }
