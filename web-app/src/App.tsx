@@ -267,7 +267,10 @@ export const App = () => {
       try {
         const meRes = await fetchWithAuth("/api/auth/me");
         if (meRes.ok) {
-          const me = (await meRes.json()) as { userId: string; email: string };
+          const me = (await meRes.json()) as { userId: string; email: string; playerIds?: string[] };
+          if (!localStorage.getItem(PLAYER_ID_KEY) && Array.isArray(me.playerIds) && me.playerIds.length > 0) {
+            localStorage.setItem(PLAYER_ID_KEY, me.playerIds[0]);
+          }
           if (!cancelled) {
             setAuth({ status: "authenticated", userId: me.userId, email: me.email, loading: false, error: null });
           }
@@ -389,8 +392,11 @@ export const App = () => {
             const payload = (await response.json().catch(() => ({}))) as { message?: string };
             throw new Error(payload.message ?? "Authentication failed.");
           }
-          const payload = (await response.json()) as { userId: string; email: string; session: AuthSessionPair };
+          const payload = (await response.json()) as { userId: string; email: string; playerId?: string; session: AuthSessionPair };
           storeAuthSession(payload.session, payload.userId, payload.email);
+          if (payload.playerId) {
+            localStorage.setItem(PLAYER_ID_KEY, payload.playerId);
+          }
           online.actions.refreshSession();
           setRoute("online_matchmaking");
         } catch (error) {

@@ -48,12 +48,13 @@ class AuthViewModel(
         viewModelScope.launch {
             val meResult = repository.me(accessToken)
             if (meResult.isSuccess) {
-                val (userId, email) = meResult.getOrThrow()
+                val (userId, email, playerId) = meResult.getOrThrow()
                 persistSession(
                     accessToken = accessToken,
                     refreshToken = refreshToken,
                     userId = userId,
-                    email = email
+                    email = email,
+                    playerId = playerId
                 )
                 return@launch
             }
@@ -71,12 +72,13 @@ class AuthViewModel(
                 return@launch
             }
 
-            val (userId, email) = meRetry.getOrThrow()
+            val (userId, email, playerId) = meRetry.getOrThrow()
             persistSession(
                 accessToken = session.accessToken,
                 refreshToken = session.refreshToken,
                 userId = userId,
-                email = email
+                email = email,
+                playerId = playerId
             )
         }
     }
@@ -99,7 +101,8 @@ class AuthViewModel(
                 accessToken = payload.session.accessToken,
                 refreshToken = payload.session.refreshToken,
                 userId = payload.userId,
-                email = payload.email
+                email = payload.email,
+                playerId = payload.playerId
             )
         }
     }
@@ -122,7 +125,8 @@ class AuthViewModel(
                 accessToken = payload.session.accessToken,
                 refreshToken = payload.session.refreshToken,
                 userId = payload.userId,
-                email = payload.email
+                email = payload.email,
+                playerId = payload.playerId
             )
         }
     }
@@ -138,11 +142,14 @@ class AuthViewModel(
         clearSession()
     }
 
-    private fun persistSession(accessToken: String, refreshToken: String, userId: String, email: String) {
+    private fun persistSession(accessToken: String, refreshToken: String, userId: String, email: String, playerId: String? = null) {
         sessionStore.accessToken = accessToken
         sessionStore.refreshToken = refreshToken
         sessionStore.authUserId = userId
         sessionStore.authEmail = email
+        if (!playerId.isNullOrBlank()) {
+            sessionStore.playerId = playerId
+        }
         _state.value = AuthUiState(
             status = "authenticated",
             userId = userId,

@@ -121,7 +121,7 @@ export const HomeScreen = ({
             void SoundManager.playClick();
             onAuthAction();
           }}
-          accent={isAuthenticated ? "red" : "cyan"}
+          accent={isAuthenticated ? "red" : "green"}
         />
       </div>
 

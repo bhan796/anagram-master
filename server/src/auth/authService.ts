@@ -31,10 +31,31 @@ interface SessionPair {
 interface AuthResult {
   userId: string;
   email: string;
+  playerId: string;
   session: SessionPair;
 }
 
 export class AuthService {
+  private async ensureUserPrimaryPlayerId(userId: string, preferredPlayerId?: string | null): Promise<string> {
+    if (preferredPlayerId) {
+      await this.claimGuest(userId, preferredPlayerId);
+      return preferredPlayerId;
+    }
+
+    const existing = await prisma.player.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true }
+    });
+    if (existing?.id) return existing.id;
+
+    const created = await prisma.player.create({
+      data: { userId },
+      select: { id: true }
+    });
+    return created.id;
+  }
+
   private async issueSession(userId: string, playerId?: string | null): Promise<SessionPair> {
     const sessionId = randomUUID();
     const accessToken = signAccessToken({ sub: userId, sid: sessionId });
@@ -96,16 +117,15 @@ export class AuthService {
       }
     });
 
-    if (playerId) {
-      await this.claimGuest(user.id, playerId);
-    }
+    const resolvedPlayerId = await this.ensureUserPrimaryPlayerId(user.id, playerId);
 
-    const session = await this.issueSession(user.id, playerId);
+    const session = await this.issueSession(user.id, resolvedPlayerId);
     logger.info({ userId: user.id, email, playerId: playerId ?? null }, "auth_register_success");
 
     return {
       userId: user.id,
       email: user.email,
+      playerId: resolvedPlayerId,
       session
     };
   }
@@ -122,16 +142,15 @@ export class AuthService {
       throw new Error("Invalid email or password.");
     }
 
-    if (playerId) {
-      await this.claimGuest(user.id, playerId);
-    }
+    const resolvedPlayerId = await this.ensureUserPrimaryPlayerId(user.id, playerId);
 
-    const session = await this.issueSession(user.id, playerId);
+    const session = await this.issueSession(user.id, resolvedPlayerId);
     logger.info({ userId: user.id, email, playerId: playerId ?? null }, "auth_login_success");
 
     return {
       userId: user.id,
       email: user.email,
+      playerId: resolvedPlayerId,
       session
     };
   }
@@ -223,6 +242,15 @@ export class AuthService {
   async resolveUserIdForPlayer(playerId: string): Promise<string | null> {
     const player = await prisma.player.findUnique({ where: { id: playerId }, select: { userId: true } });
     return player?.userId ?? null;
+  }
+
+  async resolvePrimaryPlayerIdForUser(userId: string): Promise<string | null> {
+    const player = await prisma.player.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true }
+    });
+    return player?.id ?? null;
   }
 
   async upsertPlayerIdentity(playerId: string, displayName: string | null, userId: string | null): Promise<void> {

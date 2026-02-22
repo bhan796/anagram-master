@@ -27,5 +27,5 @@ class AuthRepository(
         return apiService.logout(refreshToken)
     }
 
-    suspend fun me(accessToken: String): Result<Pair<String, String>> = apiService.me(accessToken)
+    suspend fun me(accessToken: String): Result<Triple<String, String, String?>> = apiService.me(accessToken)
 }

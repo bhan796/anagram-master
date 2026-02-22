@@ -16,6 +16,7 @@ data class AuthSessionPayload(
 data class AuthResultPayload(
     val userId: String,
     val email: String,
+    val playerId: String?,
     val session: AuthSessionPayload
 )
 
@@ -55,10 +56,12 @@ class AuthApiService(private val baseUrl: String) {
         }.map { Unit }
     }
 
-    suspend fun me(accessToken: String): Result<Pair<String, String>> = withContext(Dispatchers.IO) {
+    suspend fun me(accessToken: String): Result<Triple<String, String, String?>> = withContext(Dispatchers.IO) {
         runCatching {
             val response = getJson("/api/auth/me", accessToken)
-            response.getString("userId") to response.getString("email")
+            val playerIds = response.optJSONArray("playerIds")
+            val playerId = if (playerIds != null && playerIds.length() > 0) playerIds.optString(0) else null
+            Triple(response.getString("userId"), response.getString("email"), playerId)
         }
     }
 
@@ -106,6 +109,7 @@ class AuthApiService(private val baseUrl: String) {
         return AuthResultPayload(
             userId = getString("userId"),
             email = getString("email"),
+            playerId = if (has("playerId") && !isNull("playerId")) getString("playerId") else null,
             session = getJSONObject("session").toSession()
         )
     }

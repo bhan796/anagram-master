@@ -70,7 +70,8 @@ export class MatchService {
 
   connectPlayer(socketId: string, requestedPlayerId?: string, requestedDisplayName?: string, userId?: string | null): PlayerRuntime {
     const now = this.options.now();
-    const playerId = requestedPlayerId && this.players.has(requestedPlayerId) ? requestedPlayerId : randomUUID();
+    const normalizedRequestedId = requestedPlayerId?.trim();
+    const playerId = normalizedRequestedId && normalizedRequestedId.length > 0 ? normalizedRequestedId : randomUUID();
 
     const existing = this.players.get(playerId);
     const player: PlayerRuntime =

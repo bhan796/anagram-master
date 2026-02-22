@@ -4,7 +4,7 @@ interface ArcadeButtonProps {
   text: string;
   onClick: () => void;
   disabled?: boolean;
-  accent?: "cyan" | "gold" | "magenta" | "red";
+  accent?: "cyan" | "gold" | "magenta" | "red" | "green";
 }
 
 export const ArcadeScaffold = ({ children, className }: { children: ReactNode; className?: string }) => (
@@ -16,7 +16,8 @@ export const ArcadeScaffold = ({ children, className }: { children: ReactNode; c
 export const NeonTitle = ({ text }: { text: string }) => <div className="neon-title">{text}</div>;
 
 export const ArcadeButton = ({ text, onClick, disabled, accent = "cyan" }: ArcadeButtonProps) => {
-  const accentClass = accent === "gold" ? "gold" : accent === "magenta" ? "magenta" : accent === "red" ? "red" : "";
+  const accentClass =
+    accent === "gold" ? "gold" : accent === "magenta" ? "magenta" : accent === "red" ? "red" : accent === "green" ? "green" : "";
   return (
     <button type="button" className={`arcade-button ${accentClass}`.trim()} onClick={onClick} disabled={disabled}>
       {text}

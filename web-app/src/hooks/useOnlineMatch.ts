@@ -168,9 +168,11 @@ export const useOnlineMatch = () => {
       setState((previous) => reduceOnlineState(previous, { connectionState: "connected", connectionError: null, clockOffsetMs }));
 
       const playerId = localStorage.getItem(PLAYER_ID_KEY);
+      const displayName = localStorage.getItem(DISPLAY_NAME_KEY);
       const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
       const identifyPayload: Record<string, string> = {};
       if (playerId) identifyPayload.playerId = playerId;
+      if (displayName) identifyPayload.displayName = displayName;
       if (accessToken) identifyPayload.accessToken = accessToken;
       socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
 
@@ -290,6 +292,7 @@ export const useOnlineMatch = () => {
 
     const identifyPayload: Record<string, string> = {};
     if (state.playerId) identifyPayload.playerId = state.playerId;
+    if (state.displayName) identifyPayload.displayName = state.displayName;
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (accessToken) identifyPayload.accessToken = accessToken;
     socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
@@ -310,10 +313,11 @@ export const useOnlineMatch = () => {
     if (!socket) return;
     const identifyPayload: Record<string, string> = {};
     if (state.playerId) identifyPayload.playerId = state.playerId;
+    if (state.displayName) identifyPayload.displayName = state.displayName;
     const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (accessToken) identifyPayload.accessToken = accessToken;
     socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
-  }, [state.playerId]);
+  }, [state.displayName, state.playerId]);
 
   const pickVowel = useCallback(() => {
     socketRef.current?.emit(SocketEventNames.ROUND_PICK_LETTER, { kind: "vowel" });

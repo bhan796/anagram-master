@@ -67,6 +67,7 @@ export const createSocketServer = (
 
     socket.on(SocketEvents.sessionIdentify, async (payload: { playerId?: string; displayName?: string; accessToken?: string } = {}) => {
       let authenticatedUserId: string | null = null;
+      let resolvedPlayerId = payload.playerId;
       if (payload.accessToken) {
         try {
           const decoded = verifyAccessToken(payload.accessToken);
@@ -76,7 +77,20 @@ export const createSocketServer = (
         }
       }
 
-      const player = service.connectPlayer(socket.id, payload.playerId, payload.displayName, authenticatedUserId);
+      if (authenticatedUserId) {
+        if (resolvedPlayerId) {
+          const ownerUserId = await authService.resolveUserIdForPlayer(resolvedPlayerId);
+          if (ownerUserId && ownerUserId !== authenticatedUserId) {
+            resolvedPlayerId = undefined;
+          }
+        }
+
+        if (!resolvedPlayerId) {
+          resolvedPlayerId = (await authService.resolvePrimaryPlayerIdForUser(authenticatedUserId)) ?? undefined;
+        }
+      }
+
+      const player = service.connectPlayer(socket.id, resolvedPlayerId, payload.displayName, authenticatedUserId);
       playerId = player.playerId;
       presenceStore.markOnline(player.playerId);
       matchHistoryStore.touchPlayer(player);
