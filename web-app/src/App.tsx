@@ -325,6 +325,13 @@ export const App = () => {
     }
   }, [route, loadProfile]);
 
+  useEffect(() => {
+    const hasActiveMatch = Boolean(online.state.matchState && online.state.matchState.phase !== "finished");
+    if (!hasActiveMatch) return;
+    if (route === "online_match" || route === "online_match_found") return;
+    setRoute("online_match");
+  }, [online.state.matchState, route]);
+
   if (route === "home") {
     return renderWithMute(
       <HomeScreen

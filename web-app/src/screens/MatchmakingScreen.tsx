@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { OnlineUiState } from "../types/online";
 import { ArcadeBackButton, ArcadeButton, ArcadeScaffold, NeonTitle, RankBadge } from "../components/ArcadeComponents";
 
@@ -30,19 +30,17 @@ export const MatchmakingScreen = ({
   onRetryConnection,
   onMatchReady
 }: MatchmakingScreenProps) => {
-  const [searchStarted, setSearchStarted] = useState(false);
+  const navigatedToMatchRef = useRef(false);
   const [dots, setDots] = useState(1);
   const [selectedMode, setSelectedMode] = useState<"casual" | "ranked">("casual");
   const hasActiveMatch = Boolean(state.matchState && state.matchState.phase !== "finished");
-  const isSearching = state.isInMatchmaking || searchStarted;
+  const isSearching = state.isInMatchmaking || Boolean(state.matchId);
 
   useEffect(() => {
-    if (state.isInMatchmaking) {
-      setSearchStarted(true);
-    } else if (!hasActiveMatch) {
-      setSearchStarted(false);
+    if (!hasActiveMatch) {
+      navigatedToMatchRef.current = false;
     }
-  }, [state.isInMatchmaking, hasActiveMatch]);
+  }, [hasActiveMatch]);
 
   useEffect(() => {
     if (!isSearching || hasActiveMatch) return;
@@ -51,14 +49,13 @@ export const MatchmakingScreen = ({
   }, [isSearching, hasActiveMatch]);
 
   useEffect(() => {
-    if (searchStarted && hasActiveMatch) {
-      const timer = window.setTimeout(() => {
-        onMatchReady();
-        setSearchStarted(false);
-      }, 900);
-      return () => window.clearTimeout(timer);
-    }
-  }, [searchStarted, hasActiveMatch, onMatchReady]);
+    if (!hasActiveMatch || navigatedToMatchRef.current) return;
+    navigatedToMatchRef.current = true;
+    const timer = window.setTimeout(() => {
+      onMatchReady();
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [hasActiveMatch, onMatchReady]);
 
   const buttonText = useMemo(() => {
     if (isSearching && hasActiveMatch) return "Match Found!";
@@ -111,10 +108,9 @@ export const MatchmakingScreen = ({
       <ArcadeButton
         text={buttonText}
         onClick={() => {
-          setSearchStarted(true);
           onJoinQueue(selectedMode);
         }}
-        disabled={!primaryEnabled}
+        disabled={!primaryEnabled || hasActiveMatch}
       />
 
       <div className="card" style={{ display: "grid", gap: 8 }}>
@@ -141,7 +137,6 @@ export const MatchmakingScreen = ({
         <ArcadeButton
           text="Cancel Search"
           onClick={() => {
-            setSearchStarted(false);
             onCancelQueue();
           }}
         />
