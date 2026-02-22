@@ -64,6 +64,9 @@ fun LettersPracticeScreen(
             LettersPracticePhase.PICKING -> {
                 NeonTitle("LETTERS")
                 Text("Progress: ${state.letters.size}/9", style = MaterialTheme.typography.headlineSmall)
+                if (timerEnabled) {
+                    TimerBar(secondsRemaining = state.secondsRemaining, totalSeconds = 20)
+                }
                 LetterSlots(letters = state.letters)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -90,8 +93,9 @@ fun LettersPracticeScreen(
 
             LettersPracticePhase.SOLVING -> {
                 NeonTitle("SOLVE")
-                TimerBar(secondsRemaining = state.secondsRemaining, totalSeconds = 30)
-                LetterSlots(letters = state.letters)
+                if (timerEnabled) {
+                    TimerBar(secondsRemaining = state.secondsRemaining, totalSeconds = 30)
+                }
 
                 TapLetterComposer(
                     letters = state.letters,

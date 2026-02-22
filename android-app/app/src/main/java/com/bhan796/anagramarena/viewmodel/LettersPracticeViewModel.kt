@@ -39,7 +39,8 @@ data class LettersPracticeUiState(
 class LettersPracticeViewModel(
     dictionaryProvider: DictionaryProvider,
     private val timerEnabled: Boolean,
-    private val roundDuration: Int = 30,
+    private val pickDuration: Int = 20,
+    private val solveDuration: Int = 30,
     private val generator: LetterGenerator = LetterGenerator(),
     private val constraints: PickerConstraints = PickerConstraints(),
     private val random: Random = Random.Default
@@ -47,8 +48,12 @@ class LettersPracticeViewModel(
     private val validator = WordValidator(dictionaryProvider)
     private var timerJob: Job? = null
 
-    private val _state = MutableStateFlow(LettersPracticeUiState(secondsRemaining = roundDuration))
+    private val _state = MutableStateFlow(LettersPracticeUiState(secondsRemaining = pickDuration))
     val state: StateFlow<LettersPracticeUiState> = _state
+
+    init {
+        startPickTimerIfNeeded()
+    }
 
     val allowedKinds: Set<LetterKind>
         get() {
@@ -76,10 +81,10 @@ class LettersPracticeViewModel(
                     letters = nextLetters,
                     vowelCount = nextVowels,
                     consonantCount = nextConsonants,
-                    secondsRemaining = roundDuration
+                    secondsRemaining = solveDuration
                 )
             }
-            startTimerIfNeeded()
+            startSolveTimerIfNeeded()
         } else {
             _state.update {
                 it.copy(
@@ -113,10 +118,35 @@ class LettersPracticeViewModel(
 
     fun resetRound() {
         stopTimer()
-        _state.value = LettersPracticeUiState(secondsRemaining = roundDuration)
+        _state.value = LettersPracticeUiState(secondsRemaining = pickDuration)
+        startPickTimerIfNeeded()
     }
 
-    private fun startTimerIfNeeded() {
+    private fun startPickTimerIfNeeded() {
+        if (!timerEnabled) return
+        stopTimer()
+
+        timerJob = viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                val current = _state.value
+                if (current.phase != LettersPracticePhase.PICKING) {
+                    stopTimer()
+                    break
+                }
+
+                val remaining = (current.secondsRemaining - 1).coerceAtLeast(0)
+                _state.update { it.copy(secondsRemaining = remaining) }
+
+                if (remaining == 0) {
+                    autoFillAndStartSolve()
+                    break
+                }
+            }
+        }
+    }
+
+    private fun startSolveTimerIfNeeded() {
         if (!timerEnabled) return
         stopTimer()
 
@@ -138,6 +168,32 @@ class LettersPracticeViewModel(
                 }
             }
         }
+    }
+
+    private fun autoFillAndStartSolve() {
+        var letters = _state.value.letters
+        var vowels = _state.value.vowelCount
+        var consonants = _state.value.consonantCount
+
+        while (letters.size < 9) {
+            val allowed = constraints.allowedKinds(letters, vowels, consonants).toList()
+            if (allowed.isEmpty()) break
+            val kind = allowed[random.nextInt(allowed.size)]
+            val letter = generator.generateLetter(kind, random)
+            letters = letters + letter
+            if (kind == LetterKind.VOWEL) vowels += 1 else consonants += 1
+        }
+
+        _state.update {
+            it.copy(
+                phase = LettersPracticePhase.SOLVING,
+                letters = letters,
+                vowelCount = vowels,
+                consonantCount = consonants,
+                secondsRemaining = solveDuration
+            )
+        }
+        startSolveTimerIfNeeded()
     }
 
     private fun stopTimer() {

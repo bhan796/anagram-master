@@ -33,14 +33,15 @@ interface ResultState {
   message: string;
 }
 
-const TOTAL_SECONDS = 30;
+const PICK_SECONDS = 20;
+const SOLVE_SECONDS = 30;
 
 export const LettersPracticeScreen = ({ timerEnabled, dictionary, dictionaryError, onBack }: LettersPracticeScreenProps) => {
   const [letters, setLetters] = useState<string[]>([]);
   const [vowelCount, setVowelCount] = useState(0);
   const [consonantCount, setConsonantCount] = useState(0);
   const [phase, setPhase] = useState<"pick" | "solve" | "result">("pick");
-  const [secondsRemaining, setSecondsRemaining] = useState(TOTAL_SECONDS);
+  const [secondsRemaining, setSecondsRemaining] = useState(PICK_SECONDS);
   const [wordInput, setWordInput] = useState("");
   const [result, setResult] = useState<ResultState | null>(null);
 
@@ -49,16 +50,49 @@ export const LettersPracticeScreen = ({ timerEnabled, dictionary, dictionaryErro
     [letters.length, vowelCount, consonantCount]
   );
 
-  useEffect(() => {
-    if (!timerEnabled || phase !== "solve") return;
-    if (secondsRemaining <= 0) {
-      submit();
-      return;
+  const autoFillToSolve = () => {
+    let nextLetters = [...letters];
+    let nextVowels = vowelCount;
+    let nextConsonants = consonantCount;
+
+    while (nextLetters.length < 9) {
+      const kinds = [...allowedPickKinds(nextLetters.length, nextVowels, nextConsonants)];
+      if (kinds.length === 0) break;
+      const kind = kinds[Math.floor(Math.random() * kinds.length)];
+      const letter = drawWeightedLetter(kind);
+      nextLetters.push(letter);
+      if (kind === "vowel") nextVowels += 1;
+      else nextConsonants += 1;
     }
 
-    const timer = window.setTimeout(() => setSecondsRemaining((value) => value - 1), 1000);
-    return () => window.clearTimeout(timer);
-  }, [phase, secondsRemaining, timerEnabled]);
+    setLetters(nextLetters);
+    setVowelCount(nextVowels);
+    setConsonantCount(nextConsonants);
+    setPhase("solve");
+    setSecondsRemaining(SOLVE_SECONDS);
+  };
+
+  useEffect(() => {
+    if (!timerEnabled) return;
+
+    if (phase === "pick") {
+      if (secondsRemaining <= 0) {
+        autoFillToSolve();
+        return;
+      }
+      const timer = window.setTimeout(() => setSecondsRemaining((value) => value - 1), 1000);
+      return () => window.clearTimeout(timer);
+    }
+
+    if (phase === "solve") {
+      if (secondsRemaining <= 0) {
+        submit();
+        return;
+      }
+      const timer = window.setTimeout(() => setSecondsRemaining((value) => value - 1), 1000);
+      return () => window.clearTimeout(timer);
+    }
+  }, [phase, secondsRemaining, timerEnabled, letters, vowelCount, consonantCount]);
 
   const pick = (kind: PickKind) => {
     if (phase !== "pick") return;
@@ -69,7 +103,7 @@ export const LettersPracticeScreen = ({ timerEnabled, dictionary, dictionaryErro
       const next = [...previous, letter];
       if (next.length === 9) {
         setPhase("solve");
-        setSecondsRemaining(TOTAL_SECONDS);
+        setSecondsRemaining(SOLVE_SECONDS);
       }
       return next;
     });
@@ -111,7 +145,7 @@ export const LettersPracticeScreen = ({ timerEnabled, dictionary, dictionaryErro
     setVowelCount(0);
     setConsonantCount(0);
     setPhase("pick");
-    setSecondsRemaining(TOTAL_SECONDS);
+    setSecondsRemaining(PICK_SECONDS);
     setWordInput("");
     setResult(null);
   };
@@ -127,6 +161,7 @@ export const LettersPracticeScreen = ({ timerEnabled, dictionary, dictionaryErro
         <>
           <div className="headline">Pick 9 letters</div>
           <div className="text-dim">Must include at least one vowel and one consonant.</div>
+          {timerEnabled ? <TimerBar secondsRemaining={secondsRemaining} totalSeconds={PICK_SECONDS} /> : null}
           <div className="letter-row">
             {Array.from({ length: 9 }).map((_, index) => {
               const letter = letters[index] ?? "_";
@@ -144,13 +179,7 @@ export const LettersPracticeScreen = ({ timerEnabled, dictionary, dictionaryErro
 
       {phase === "solve" ? (
         <>
-          <div className="headline">Build your longest valid word</div>
-          <div className="letter-row">
-            {letters.map((letter, index) => (
-              <LetterTile key={`solve-${letter}-${index}`} letter={letter} />
-            ))}
-          </div>
-          {timerEnabled ? <TimerBar secondsRemaining={secondsRemaining} totalSeconds={TOTAL_SECONDS} /> : null}
+          {timerEnabled ? <TimerBar secondsRemaining={secondsRemaining} totalSeconds={SOLVE_SECONDS} /> : null}
           <TapLetterComposer letters={letters} value={wordInput} onValueChange={setWordInput} onSubmit={submit} />
           <ArcadeButton text="Submit Word" onClick={submit} />
         </>
