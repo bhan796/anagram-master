@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ArcadeButton, ArcadeScaffold } from "../components/ArcadeComponents";
+import { ArcadeButton, ArcadeScaffold, TileLogo } from "../components/ArcadeComponents";
 import { LogoParticleAnimation } from "../components/LogoParticleAnimation";
 import * as SoundManager from "../sound/SoundManager";
 
@@ -10,17 +10,38 @@ interface HomeScreenProps {
   onSettings: () => void;
   onHowToPlay: () => void;
   playersOnline: number;
+  playIntro: boolean;
+  onIntroComplete: () => void;
 }
 
-export const HomeScreen = ({ onPlayOnline, onPracticeMode, onProfile, onSettings, onHowToPlay, playersOnline }: HomeScreenProps) => {
-  const [logoComplete, setLogoComplete] = useState(false);
-  const handleLogoComplete = useCallback(() => setLogoComplete(true), []);
+export const HomeScreen = ({
+  onPlayOnline,
+  onPracticeMode,
+  onProfile,
+  onSettings,
+  onHowToPlay,
+  playersOnline,
+  playIntro,
+  onIntroComplete
+}: HomeScreenProps) => {
+  const [logoComplete, setLogoComplete] = useState(!playIntro);
+  const handleLogoComplete = useCallback(() => {
+    setLogoComplete(true);
+    onIntroComplete();
+  }, [onIntroComplete]);
 
   useEffect(() => {
+    if (!playIntro) {
+      setLogoComplete(true);
+      return;
+    }
     if (logoComplete) return;
-    const fallback = window.setTimeout(() => setLogoComplete(true), 3200);
+    const fallback = window.setTimeout(() => {
+      setLogoComplete(true);
+      onIntroComplete();
+    }, 3200);
     return () => window.clearTimeout(fallback);
-  }, [logoComplete]);
+  }, [logoComplete, onIntroComplete, playIntro]);
 
   const animatedButtonStyle = (delayMs: number) => ({
     opacity: logoComplete ? 1 : 0,
@@ -31,7 +52,13 @@ export const HomeScreen = ({ onPlayOnline, onPracticeMode, onProfile, onSettings
   return (
     <ArcadeScaffold>
       <div style={{ flex: 1 }} />
-      <LogoParticleAnimation onComplete={handleLogoComplete} />
+      {playIntro ? (
+        <LogoParticleAnimation onComplete={handleLogoComplete} />
+      ) : (
+        <div style={{ width: "100%", minHeight: 120, display: "grid", alignContent: "center", justifyItems: "center" }}>
+          <TileLogo />
+        </div>
+      )}
       <div style={{ height: 28 }} />
 
       <div style={animatedButtonStyle(0)}>

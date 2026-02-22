@@ -23,17 +23,31 @@ fun HomeScreen(
     onPracticeMode: () -> Unit,
     onHowToPlay: () -> Unit,
     onProfile: () -> Unit,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    playIntro: Boolean,
+    onIntroComplete: () -> Unit
 ) {
-    var logoComplete by remember { mutableStateOf(false) }
+    var logoComplete by remember(playIntro) { mutableStateOf(!playIntro) }
 
     ArcadeScaffold(contentPadding = contentPadding) {
         Spacer(Modifier.weight(1f))
 
-        LogoParticleAnimation(
-            modifier = Modifier.fillMaxWidth(),
-            onComplete = { logoComplete = true }
-        )
+        if (playIntro) {
+            LogoParticleAnimation(
+                modifier = Modifier.fillMaxWidth(),
+                onComplete = {
+                    logoComplete = true
+                    onIntroComplete()
+                }
+            )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                TileLogo()
+            }
+        }
 
         Spacer(Modifier.height(32.dp))
 

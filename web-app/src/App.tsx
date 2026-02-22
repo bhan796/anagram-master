@@ -115,6 +115,7 @@ const apiBaseUrl = normalizeBackendUrl(import.meta.env.VITE_SERVER_URL as string
 export const App = () => {
   const [route, setRoute] = useState<Route>("home");
   const [settings, setSettings] = useState<SettingsState>(() => parseStoredSettings());
+  const [homeIntroSeen, setHomeIntroSeen] = useState(false);
 
   const [dictionary, setDictionary] = useState<Set<string> | null>(null);
   const [dictionaryError, setDictionaryError] = useState<string | null>(null);
@@ -299,6 +300,8 @@ export const App = () => {
         onSettings={() => setRoute("settings")}
         onHowToPlay={() => setRoute("how_to_play")}
         playersOnline={playersOnline}
+        playIntro={!homeIntroSeen}
+        onIntroComplete={() => setHomeIntroSeen(true)}
       />
     );
   }
