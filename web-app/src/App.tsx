@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { HomeScreen } from "./screens/HomeScreen";
 import { PracticeMenuScreen } from "./screens/PracticeMenuScreen";
 import { LettersPracticeScreen } from "./screens/LettersPracticeScreen";
@@ -135,6 +135,7 @@ const apiBaseUrl = normalizeBackendUrl(import.meta.env.VITE_SERVER_URL as string
 export const App = () => {
   const [route, setRoute] = useState<Route>("home");
   const [settings, setSettings] = useState<SettingsState>(() => parseStoredSettings());
+  const musicModeRef = useRef<"none" | "menu" | "match">("none");
 
   const [dictionary, setDictionary] = useState<Set<string> | null>(null);
   const [dictionaryError, setDictionaryError] = useState<string | null>(null);
@@ -175,15 +176,22 @@ export const App = () => {
 
   useEffect(() => {
     if (settings.masterMuted || !settings.musicEnabled) {
-      SoundManager.stopMusic();
+      if (musicModeRef.current !== "none") {
+        SoundManager.stopMusic();
+        musicModeRef.current = "none";
+      }
       return;
     }
-    if (route === "online_match") {
+    const targetMode: "menu" | "match" = route === "online_match" ? "match" : "menu";
+    if (musicModeRef.current === targetMode) return;
+
+    if (targetMode === "match") {
       void SoundManager.startMatchMusic();
-      return;
+    } else {
+      void SoundManager.startMenuMusic();
     }
-    void SoundManager.startMenuMusic();
-  }, [route, settings.masterMuted, settings.musicEnabled, settings.musicVolume]);
+    musicModeRef.current = targetMode;
+  }, [route, settings.masterMuted, settings.musicEnabled]);
 
   const renderWithMute = (screen: ReactElement) => (
     <>
@@ -195,7 +203,9 @@ export const App = () => {
         aria-label={settings.masterMuted ? "Unmute audio" : "Mute audio"}
         title={settings.masterMuted ? "Unmute" : "Mute"}
       >
-        {settings.masterMuted ? "MUTED" : "SOUND"}
+        <span className="arcade-mute-icon" aria-hidden>
+          {settings.masterMuted ? "🔇" : "🔊"}
+        </span>
       </button>
     </>
   );

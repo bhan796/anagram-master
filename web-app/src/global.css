@@ -289,17 +289,29 @@ input {
   padding: 10px 12px;
   min-width: 110px;
   font-family: var(--font-pixel);
-  font-size: clamp(7px, 1vw, 9px);
+  font-size: clamp(10px, 1.4vw, 14px);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
   box-shadow: 0 0 0 1px rgb(255 215 0 / 18%), 0 8px 20px rgb(0 0 0 / 40%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .arcade-mute-button.muted {
   border-color: var(--red);
   color: var(--red);
   background: linear-gradient(90deg, rgb(255 58 58 / 24%), rgb(90 20 20 / 20%));
+}
+
+.arcade-mute-icon {
+  filter: drop-shadow(0 0 8px rgb(255 215 0 / 45%));
+  line-height: 1;
+}
+
+.arcade-mute-button.muted .arcade-mute-icon {
+  filter: drop-shadow(0 0 8px rgb(255 58 58 / 45%));
 }
 
 @media (max-width: 480px) {

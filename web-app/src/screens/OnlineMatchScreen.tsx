@@ -91,13 +91,6 @@ export const OnlineMatchScreen = ({
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   useEffect(() => {
-    void SoundManager.startMatchMusic();
-    return () => {
-      SoundManager.stopMusic();
-    };
-  }, []);
-
-  useEffect(() => {
     if (isFinished) {
       setShowLeaveConfirm(false);
     }
