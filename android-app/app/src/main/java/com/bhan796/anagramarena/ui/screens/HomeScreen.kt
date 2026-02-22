@@ -25,22 +25,14 @@ fun HomeScreen(
     onProfile: () -> Unit,
     onSettings: () -> Unit
 ) {
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { visible = true }
-
     ArcadeScaffold(contentPadding = contentPadding) {
         Spacer(Modifier.weight(1f))
 
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn(tween(600)) + slideInVertically(tween(600, easing = FastOutSlowInEasing)) { -40 }
-        ) {
-            TileLogo(modifier = Modifier.fillMaxWidth())
-        }
+        LogoParticleAnimation(modifier = Modifier.fillMaxWidth())
 
         Spacer(Modifier.height(32.dp))
 
-        val delays = listOf(200, 300, 400, 500, 600)
+        val delays = listOf(1700, 1800, 1900, 2000, 2100)
         val buttonVisible = delays.map { delay ->
             var v by remember { mutableStateOf(false) }
             LaunchedEffect(Unit) { kotlinx.coroutines.delay(delay.toLong()); v = true }

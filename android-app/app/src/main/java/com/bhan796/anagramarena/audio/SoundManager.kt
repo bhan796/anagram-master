@@ -6,6 +6,7 @@ import android.media.AudioTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -131,6 +132,65 @@ object SoundManager {
             }.coerceIn(0.0, 1.0)
 
             val value = mixed * envelope * volume
+            data[i] = (value * Short.MAX_VALUE).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+
+        return data
+    }
+
+    private fun generateDualSweepBuffer(
+        startHzA: Double,
+        endHzA: Double,
+        startHzB: Double,
+        endHzB: Double,
+        durationMs: Int,
+        volume: Float
+    ): ShortArray {
+        val sampleCount = ((SAMPLE_RATE * durationMs) / 1000.0).toInt().coerceAtLeast(1)
+        val attackSamples = (sampleCount * 0.06).toInt().coerceAtLeast(1)
+        val releaseSamples = (sampleCount * 0.18).toInt().coerceAtLeast(1)
+        val data = ShortArray(sampleCount)
+
+        var phaseA = 0.0
+        var phaseB = 0.0
+        for (i in 0 until sampleCount) {
+            val t = i.toDouble() / sampleCount.toDouble()
+            val freqA = startHzA + (endHzA - startHzA) * t
+            val freqB = startHzB + (endHzB - startHzB) * t
+
+            phaseA += (2.0 * PI * freqA) / SAMPLE_RATE.toDouble()
+            phaseB += (2.0 * PI * freqB) / SAMPLE_RATE.toDouble()
+
+            val mixed = (sin(phaseA) * 0.6) + (sin(phaseB) * 0.4)
+            val envelope = when {
+                i < attackSamples -> i.toDouble() / attackSamples.toDouble()
+                i > sampleCount - releaseSamples -> (sampleCount - i).toDouble() / releaseSamples.toDouble()
+                else -> 1.0
+            }.coerceIn(0.0, 1.0)
+
+            val value = mixed * envelope * volume
+            data[i] = (value * Short.MAX_VALUE).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+
+        return data
+    }
+
+    private fun generateSnapBurstBuffer(durationMs: Int, volume: Float): ShortArray {
+        val sampleCount = ((SAMPLE_RATE * durationMs) / 1000.0).toInt().coerceAtLeast(1)
+        val data = ShortArray(sampleCount)
+        var phaseA = 0.0
+        var phaseB = 0.0
+
+        for (i in 0 until sampleCount) {
+            val t = i.toDouble() / sampleCount.toDouble()
+            val freqA = 1400.0 + 500.0 * t
+            val freqB = 2200.0 - 700.0 * t
+            phaseA += (2.0 * PI * freqA) / SAMPLE_RATE.toDouble()
+            phaseB += (2.0 * PI * freqB) / SAMPLE_RATE.toDouble()
+
+            val transient = (sin(phaseA) * 0.7) + (sin(phaseB) * 0.3)
+            val envelope = (1.0 - t).coerceIn(0.0, 1.0)
+            val value = transient * envelope * volume
             data[i] = (value * Short.MAX_VALUE).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
 
@@ -275,6 +335,25 @@ object SoundManager {
     fun playMatchFound() {
         if (!canPlayUiSfx()) return
         playSequence(listOf(523.25 to 90, 659.25 to 90, 783.99 to 90, 1046.50 to 90), uiSfxVolume, Waveform.SQUARE)
+    }
+
+    fun playLogoAssemble() {
+        if (!canPlayUiSfx()) return
+        val level = (uiSfxVolume * 0.7f).coerceIn(0f, 1f)
+        scope.launch {
+            playBuffer(
+                generateDualSweepBuffer(
+                    startHzA = 80.0,
+                    endHzA = 800.0,
+                    startHzB = 120.0,
+                    endHzB = 1200.0,
+                    durationMs = 1200,
+                    volume = level
+                )
+            )
+            delay(200)
+            playBuffer(generateSnapBurstBuffer(durationMs = 90, volume = level * 0.9f))
+        }
     }
 
     fun playCountdownBeep() {

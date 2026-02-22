@@ -203,6 +203,45 @@ export async function playMatchFound() {
   window.setTimeout(() => synth.dispose(), 2000);
 }
 
+export async function playLogoAssemble(): Promise<void> {
+  if (!canPlayUiSfx()) return;
+  await ensureStarted();
+
+  const now = Tone.now();
+
+  const noise = new Tone.Noise("pink").start(now).stop(now + 1.3);
+  const filter = new Tone.Filter({ type: "bandpass", frequency: 120, Q: 0.8 });
+  const gain = new Tone.Gain(0);
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.toDestination();
+
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.18 * _uiSfxVolume, now + 0.08);
+  gain.gain.linearRampToValueAtTime(0.22 * _uiSfxVolume, now + 1.0);
+  gain.gain.linearRampToValueAtTime(0, now + 1.35);
+
+  filter.frequency.setValueAtTime(120, now);
+  filter.frequency.exponentialRampToValueAtTime(4800, now + 1.2);
+
+  const snapSynth = new Tone.MetalSynth({
+    envelope: { attack: 0.001, decay: 0.3, release: 0.1 },
+    harmonicity: 5.1,
+    modulationIndex: 32,
+    resonance: 4000,
+    octaves: 1.5
+  }).toDestination();
+  snapSynth.volume.value = -8 + volumeToDb(_uiSfxVolume);
+  snapSynth.triggerAttackRelease("400", "8n", now + 1.4);
+
+  window.setTimeout(() => {
+    noise.dispose();
+    filter.dispose();
+    gain.dispose();
+    snapSynth.dispose();
+  }, 2500);
+}
+
 export async function playCountdownBeep() {
   if (!canPlayUiSfx()) return;
   await ensureStarted();
