@@ -4,10 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -68,44 +70,64 @@ fun TapLetterComposer(
                     style = MaterialTheme.typography.bodySmall,
                     color = ColorDimText
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(sdp(4.dp))
+                ) {
                     repeat(9) { index ->
-                        val letter = selectedIndices.getOrNull(index)?.let { letters[it].toString() } ?: "_"
-                        LetterTile(
-                            letter = letter,
-                            revealed = true,
-                            index = index,
-                            accentColor = if (letter == "_") ColorDimText else ColorCyan
-                        )
+                        val letter = selectedIndices.getOrNull(index)?.let { letters[it].toString().uppercase() } ?: "_"
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f)
+                                .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                                .border(
+                                    sdp(1.5.dp),
+                                    if (letter == "_") ColorDimText.copy(alpha = 0.3f) else ColorCyan.copy(alpha = 0.8f),
+                                    RoundedCornerShape(sdp(6.dp))
+                                )
+                        ) {
+                            Text(
+                                text = letter,
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = if (letter == "_") ColorDimText.copy(alpha = 0.4f) else ColorCyan,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(sdp(4.dp))
+        ) {
             displayOrder.forEach { sourceIndex ->
                 val selected = selectedIndices.contains(sourceIndex)
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(1f)
                         .background(
                             color = if (selected) ColorSurfaceVariant.copy(alpha = 0.35f) else ColorSurfaceVariant,
-                            shape = RoundedCornerShape(sdp(4.dp))
+                            shape = RoundedCornerShape(sdp(6.dp))
                         )
                         .border(
-                            width = sdp(1.dp),
+                            width = sdp(1.5.dp),
                             color = if (selected) ColorDimText else ColorCyan.copy(alpha = 0.8f),
-                            shape = RoundedCornerShape(sdp(4.dp))
+                            shape = RoundedCornerShape(sdp(6.dp))
                         )
                         .clickable(enabled = enabled && !selected) {
                             selectedIndices.add(sourceIndex)
                             syncValue()
                         }
-                        .padding(horizontal = sdp(10.dp), vertical = sdp(8.dp))
                 ) {
                     Text(
                         text = letters[sourceIndex].toString().uppercase(),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.headlineMedium,
                         color = if (selected) ColorDimText else ColorCyan,
                         textAlign = TextAlign.Center
                     )
@@ -113,7 +135,10 @@ fun TapLetterComposer(
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(sdp(10.dp))) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(sdp(10.dp))
+        ) {
             ArcadeButton(
                 text = "UNDO",
                 onClick = {
@@ -123,13 +148,17 @@ fun TapLetterComposer(
                     }
                 },
                 enabled = enabled && selectedIndices.isNotEmpty(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = sdp(52.dp))
             )
             ArcadeButton(
                 text = "SHUFFLE",
                 onClick = { shuffle() },
                 enabled = enabled && letters.size > 1,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = sdp(52.dp))
             )
             ArcadeButton(
                 text = "CLEAR",
@@ -138,7 +167,9 @@ fun TapLetterComposer(
                     syncValue(emptyList())
                 },
                 enabled = enabled && selectedIndices.isNotEmpty(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = sdp(52.dp))
             )
         }
     }

@@ -7,9 +7,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,9 +34,12 @@ import com.bhan796.anagramarena.ui.components.LetterTile
 import com.bhan796.anagramarena.ui.components.NeonTitle
 import com.bhan796.anagramarena.ui.components.TapLetterComposer
 import com.bhan796.anagramarena.ui.components.TimerBar
+import com.bhan796.anagramarena.ui.theme.ColorBackground
 import com.bhan796.anagramarena.ui.theme.ColorCyan
 import com.bhan796.anagramarena.ui.theme.ColorDimText
+import com.bhan796.anagramarena.ui.theme.ColorSurface
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
+import com.bhan796.anagramarena.ui.theme.sdp
 import com.bhan796.anagramarena.viewmodel.LettersPracticePhase
 import com.bhan796.anagramarena.viewmodel.LettersPracticeViewModel
 
@@ -58,6 +65,73 @@ fun LettersPracticeScreen(
         } else {
             SoundManager.playWordInvalid()
         }
+    }
+
+    if (state.phase == LettersPracticePhase.SOLVING) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(ColorBackground)
+                .padding(contentPadding)
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = sdp(16.dp))
+                        .padding(top = sdp(12.dp)),
+                    verticalArrangement = Arrangement.spacedBy(sdp(12.dp))
+                ) {
+                    ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
+                    NeonTitle("SOLVE")
+                    if (timerEnabled) {
+                        TimerBar(secondsRemaining = state.secondsRemaining, totalSeconds = 30)
+                    }
+                    if (!dictionaryLoaded) {
+                        Text(
+                            "Dictionary data failed to load. Validation may mark all words invalid.",
+                            color = ColorDimText,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(ColorSurface, RoundedCornerShape(topStart = sdp(16.dp), topEnd = sdp(16.dp)))
+                        .border(
+                            sdp(1.dp),
+                            ColorCyan.copy(alpha = 0.25f),
+                            RoundedCornerShape(topStart = sdp(16.dp), topEnd = sdp(16.dp))
+                        )
+                        .padding(sdp(16.dp))
+                        .padding(contentPadding),
+                    verticalArrangement = Arrangement.spacedBy(sdp(10.dp))
+                ) {
+                    TapLetterComposer(
+                        letters = state.letters,
+                        value = state.submittedWord,
+                        onValueChange = vm::updateSubmittedWord,
+                        enabled = state.canSubmit,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    ArcadeButton(
+                        "SUBMIT",
+                        onClick = {
+                            SoundManager.playWordSubmit()
+                            vm.submit()
+                        },
+                        enabled = state.canSubmit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = sdp(52.dp))
+                    )
+                }
+            }
+        }
+        return
     }
 
     ArcadeScaffold(contentPadding = contentPadding) {
@@ -107,27 +181,7 @@ fun LettersPracticeScreen(
                     color = ColorDimText
                 )
             }
-
-            LettersPracticePhase.SOLVING -> {
-                NeonTitle("SOLVE")
-                if (timerEnabled) {
-                    TimerBar(secondsRemaining = state.secondsRemaining, totalSeconds = 30)
-                }
-
-                TapLetterComposer(
-                    letters = state.letters,
-                    value = state.submittedWord,
-                    onValueChange = vm::updateSubmittedWord,
-                    enabled = state.canSubmit,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                ArcadeButton("SUBMIT", onClick = {
-                    SoundManager.playWordSubmit()
-                    vm.submit()
-                }, enabled = state.canSubmit)
-            }
-
+            LettersPracticePhase.SOLVING -> {}
             LettersPracticePhase.RESULT -> {
                 val result = state.result
                 if (result != null) {
@@ -156,7 +210,6 @@ fun LettersPracticeScreen(
                             Text("Score: ${result.validation.score}", style = MaterialTheme.typography.headlineSmall)
                         }
                     }
-
                     ArcadeButton("PLAY ANOTHER LETTERS ROUND", onClick = vm::resetRound)
                 }
             }
