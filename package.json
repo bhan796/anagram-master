@@ -15,5 +15,10 @@
     "web:dev": "npm run dev --workspace web-app",
     "web:build": "npm run build --workspace web-app",
     "web:preview": "npm run preview --workspace web-app"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^0.1.94",
+    "sharp": "^0.34.5",
+    "to-ico": "^1.1.5"
   }
 }
