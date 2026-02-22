@@ -14,8 +14,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -34,6 +37,7 @@ fun TapLetterComposer(
     modifier: Modifier = Modifier
 ) {
     val selectedIndices = remember(letters) { mutableStateListOf<Int>() }
+    var displayOrder by remember(letters) { mutableStateOf(letters.indices.toList()) }
 
     LaunchedEffect(value, letters) {
         if (value.isEmpty() && selectedIndices.isNotEmpty()) {
@@ -41,8 +45,13 @@ fun TapLetterComposer(
         }
     }
 
-    fun syncValue() {
-        onValueChange(selectedIndices.joinToString(separator = "") { letters[it].toString() })
+    fun syncValue(indices: List<Int> = selectedIndices) {
+        onValueChange(indices.joinToString(separator = "") { letters[it].toString() })
+    }
+
+    fun shuffle() {
+        if (!enabled || letters.size <= 1) return
+        displayOrder = displayOrder.shuffled()
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(sdp(10.dp))) {
@@ -53,20 +62,20 @@ fun TapLetterComposer(
                 .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
                 .padding(sdp(12.dp))
         ) {
-            if (selectedIndices.isEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
                 Text(
-                    text = "Tap letters below to build your word",
+                    text = if (selectedIndices.isEmpty()) "Tap letters to build your word" else "Your word",
                     style = MaterialTheme.typography.bodySmall,
                     color = ColorDimText
                 )
-            } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
-                    selectedIndices.forEachIndexed { index, letterIndex ->
+                    repeat(9) { index ->
+                        val letter = selectedIndices.getOrNull(index)?.let { letters[it].toString() } ?: "_"
                         LetterTile(
-                            letter = letters[letterIndex].toString(),
+                            letter = letter,
                             revealed = true,
                             index = index,
-                            accentColor = ColorCyan
+                            accentColor = if (letter == "_") ColorDimText else ColorCyan
                         )
                     }
                 }
@@ -74,8 +83,8 @@ fun TapLetterComposer(
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
-            letters.forEachIndexed { index, ch ->
-                val selected = selectedIndices.contains(index)
+            displayOrder.forEach { sourceIndex ->
+                val selected = selectedIndices.contains(sourceIndex)
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -89,13 +98,13 @@ fun TapLetterComposer(
                             shape = RoundedCornerShape(sdp(4.dp))
                         )
                         .clickable(enabled = enabled && !selected) {
-                            selectedIndices.add(index)
+                            selectedIndices.add(sourceIndex)
                             syncValue()
                         }
                         .padding(horizontal = sdp(10.dp), vertical = sdp(8.dp))
                 ) {
                     Text(
-                        text = ch.toString().uppercase(),
+                        text = letters[sourceIndex].toString().uppercase(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (selected) ColorDimText else ColorCyan,
                         textAlign = TextAlign.Center
@@ -117,10 +126,16 @@ fun TapLetterComposer(
                 modifier = Modifier.weight(1f)
             )
             ArcadeButton(
+                text = "SHUFFLE",
+                onClick = { shuffle() },
+                enabled = enabled && letters.size > 1,
+                modifier = Modifier.weight(1f)
+            )
+            ArcadeButton(
                 text = "CLEAR",
                 onClick = {
                     selectedIndices.clear()
-                    syncValue()
+                    syncValue(emptyList())
                 },
                 enabled = enabled && selectedIndices.isNotEmpty(),
                 modifier = Modifier.weight(1f)

@@ -28,14 +28,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.bhan796.anagramarena.network.SocketConnectionState
 import com.bhan796.anagramarena.online.MatchPhase
 import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.online.RoundType
+import com.bhan796.anagramarena.audio.SoundManager
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.LetterTile
@@ -76,7 +77,21 @@ fun OnlineMatchScreen(
 ) {
     val match = state.matchState
     var showLeaveDialog by remember { mutableStateOf(false) }
+    var previousPhase by rememberSaveable { mutableStateOf<MatchPhase?>(null) }
     val isFinished = match?.phase == MatchPhase.FINISHED
+
+    LaunchedEffect(match?.phase) {
+        val phase = match?.phase ?: return@LaunchedEffect
+        if (phase == previousPhase) return@LaunchedEffect
+
+        if (phase == MatchPhase.ROUND_RESULT) {
+            SoundManager.playRoundResult()
+        }
+        if (phase == MatchPhase.FINISHED) {
+            if (match.winnerPlayerId == state.playerId) SoundManager.playWin() else SoundManager.playLose()
+        }
+        previousPhase = phase
+    }
 
     ArcadeScaffold(contentPadding = contentPadding) {
         if (isFinished) {
@@ -194,13 +209,19 @@ fun OnlineMatchScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(sdp(8.dp))) {
                     ArcadeButton(
                         text = "VOWEL",
-                        onClick = onPickVowel,
+                        onClick = {
+                            SoundManager.playTilePlace()
+                            onPickVowel()
+                        },
                         enabled = state.isMyTurnToPick && state.connectionState !is SocketConnectionState.Reconnecting,
                         modifier = Modifier.weight(1f)
                     )
                     ArcadeButton(
                         text = "CONSONANT",
-                        onClick = onPickConsonant,
+                        onClick = {
+                            SoundManager.playTilePlace()
+                            onPickConsonant()
+                        },
                         enabled = state.isMyTurnToPick && state.connectionState !is SocketConnectionState.Reconnecting,
                         modifier = Modifier.weight(1f)
                     )
@@ -249,7 +270,10 @@ fun OnlineMatchScreen(
 
                 ArcadeButton(
                     text = if (state.hasSubmittedWord) "SUBMITTED" else "SUBMIT WORD",
-                    onClick = onSubmitWord,
+                    onClick = {
+                        SoundManager.playWordSubmit()
+                        onSubmitWord()
+                    },
                     enabled = !state.hasSubmittedWord,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -266,20 +290,6 @@ fun OnlineMatchScreen(
 
             MatchPhase.CONUNDRUM_SOLVING -> {
                 NeonTitle("CONUNDRUM")
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
-                        .border(sdp(1.dp), ColorCyan.copy(alpha = 0.4f), RoundedCornerShape(sdp(6.dp)))
-                        .padding(sdp(12.dp))
-                ) {
-                    Text(
-                        text = match.scrambled?.uppercase().orEmpty(),
-                        style = MaterialTheme.typography.displaySmall,
-                        color = ColorGold,
-                        letterSpacing = 8.sp
-                    )
-                }
                 TapLetterComposer(
                     letters = match.scrambled?.toList().orEmpty(),
                     value = state.conundrumGuessInput,

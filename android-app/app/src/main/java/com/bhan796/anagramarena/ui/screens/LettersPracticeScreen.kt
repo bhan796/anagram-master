@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bhan796.anagram.core.model.LetterKind
 import com.bhan796.anagram.core.model.WordValidationFailure
 import com.bhan796.anagram.core.validation.DictionaryProvider
+import com.bhan796.anagramarena.audio.SoundManager
 import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
@@ -49,6 +51,15 @@ fun LettersPracticeScreen(
     val state by vm.state.collectAsState()
     val allowedKinds = vm.allowedKinds
 
+    LaunchedEffect(state.result?.validation?.isValid) {
+        val valid = state.result?.validation?.isValid ?: return@LaunchedEffect
+        if (valid) {
+            SoundManager.playWordValid()
+        } else {
+            SoundManager.playWordInvalid()
+        }
+    }
+
     ArcadeScaffold(contentPadding = contentPadding) {
         ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
 
@@ -72,13 +83,19 @@ fun LettersPracticeScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     ArcadeButton(
                         text = "VOWEL",
-                        onClick = { vm.pick(LetterKind.VOWEL) },
+                        onClick = {
+                            SoundManager.playTilePlace()
+                            vm.pick(LetterKind.VOWEL)
+                        },
                         enabled = allowedKinds.contains(LetterKind.VOWEL),
                         modifier = Modifier.weight(1f)
                     )
                     ArcadeButton(
                         text = "CONSONANT",
-                        onClick = { vm.pick(LetterKind.CONSONANT) },
+                        onClick = {
+                            SoundManager.playTilePlace()
+                            vm.pick(LetterKind.CONSONANT)
+                        },
                         enabled = allowedKinds.contains(LetterKind.CONSONANT),
                         modifier = Modifier.weight(1f)
                     )
@@ -105,7 +122,10 @@ fun LettersPracticeScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                ArcadeButton("SUBMIT", onClick = vm::submit, enabled = state.canSubmit)
+                ArcadeButton("SUBMIT", onClick = {
+                    SoundManager.playWordSubmit()
+                    vm.submit()
+                }, enabled = state.canSubmit)
             }
 
             LettersPracticePhase.RESULT -> {

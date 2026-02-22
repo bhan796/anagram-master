@@ -51,7 +51,7 @@ fun MatchmakingScreen(
     onRetryConnection: () -> Unit,
     onMatchReady: () -> Unit
 ) {
-    var searchStarted by remember { mutableStateOf(false) }
+    var hasNavigatedToMatch by remember { mutableStateOf(false) }
     var selectedMode by remember { mutableStateOf("casual") }
     val dotsAnim = rememberInfiniteTransition(label = "searchDots")
     val dotsProgress by dotsAnim.animateFloat(
@@ -62,9 +62,9 @@ fun MatchmakingScreen(
     )
 
     val searchingLabel = "SEARCHING" + ".".repeat((dotsProgress * 3).toInt() + 1)
-    val hasExistingMatch = onlineState.matchState != null
-    val isSearching = onlineState.isInMatchmaking || searchStarted
-    val hasMatchAfterSearch = searchStarted && hasExistingMatch
+    val hasExistingMatch = onlineState.matchState != null && onlineState.matchState.phase.name != "FINISHED"
+    val isSearching = onlineState.isInMatchmaking || !onlineState.matchId.isNullOrBlank()
+    val hasMatchAfterSearch = hasExistingMatch
     val primaryButtonText = when {
         hasMatchAfterSearch -> "MATCH FOUND!"
         isSearching && onlineState.isInMatchmaking -> searchingLabel
@@ -76,19 +76,17 @@ fun MatchmakingScreen(
             !hasExistingMatch &&
             onlineState.connectionState is SocketConnectionState.Connected
 
-    LaunchedEffect(onlineState.isInMatchmaking, hasExistingMatch) {
-        if (onlineState.isInMatchmaking) {
-            searchStarted = true
-        } else if (!hasExistingMatch) {
-            searchStarted = false
+    LaunchedEffect(hasExistingMatch) {
+        if (!hasExistingMatch) {
+            hasNavigatedToMatch = false
         }
     }
 
-    LaunchedEffect(searchStarted, onlineState.matchState?.matchId) {
-        if (searchStarted && onlineState.matchState != null) {
-            kotlinx.coroutines.delay(1000)
+    LaunchedEffect(hasExistingMatch, onlineState.matchState?.matchId) {
+        if (hasExistingMatch && !hasNavigatedToMatch) {
+            hasNavigatedToMatch = true
+            kotlinx.coroutines.delay(250)
             onMatchReady()
-            searchStarted = false
         }
     }
 
@@ -127,10 +125,9 @@ fun MatchmakingScreen(
         ArcadeButton(
             text = primaryButtonText,
             onClick = {
-                searchStarted = true
                 onJoinQueue(selectedMode)
             },
-            enabled = primaryButtonEnabled,
+            enabled = primaryButtonEnabled && !hasExistingMatch,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -160,7 +157,6 @@ fun MatchmakingScreen(
             ArcadeButton(
                 text = "CANCEL SEARCH",
                 onClick = {
-                    searchStarted = false
                     onCancelQueue()
                 },
                 modifier = Modifier.fillMaxWidth()
