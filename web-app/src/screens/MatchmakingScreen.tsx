@@ -109,7 +109,7 @@ export const MatchmakingScreen = ({
             }
             setSelectedMode("ranked");
           }}
-          disabled={isSearching || state.isInMatchmaking || hasActiveMatch || !isAuthenticated}
+          disabled={isSearching || state.isInMatchmaking || hasActiveMatch}
         >
           Ranked
         </button>
