@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { HomeScreen } from "./screens/HomeScreen";
 import { PracticeMenuScreen } from "./screens/PracticeMenuScreen";
 import { LettersPracticeScreen } from "./screens/LettersPracticeScreen";
@@ -32,12 +32,7 @@ interface SettingsState {
   soundEnabled: boolean;
   vibrationEnabled: boolean;
   masterMuted: boolean;
-  musicEnabled: boolean;
-  uiSfxEnabled: boolean;
-  gameSfxEnabled: boolean;
-  musicVolume: number;
-  uiSfxVolume: number;
-  gameSfxVolume: number;
+  sfxVolume: number;
 }
 
 interface StatsSummary {
@@ -86,12 +81,7 @@ const parseStoredSettings = (): SettingsState => {
         soundEnabled: true,
         vibrationEnabled: true,
         masterMuted: false,
-        musicEnabled: true,
-        uiSfxEnabled: true,
-        gameSfxEnabled: true,
-        musicVolume: 0.5,
-        uiSfxVolume: 0.8,
-        gameSfxVolume: 0.85
+        sfxVolume: 0.85
       };
     }
     const parsed = JSON.parse(raw) as Partial<SettingsState>;
@@ -100,12 +90,7 @@ const parseStoredSettings = (): SettingsState => {
       soundEnabled: parsed.soundEnabled ?? true,
       vibrationEnabled: parsed.vibrationEnabled ?? true,
       masterMuted: parsed.masterMuted ?? false,
-      musicEnabled: parsed.musicEnabled ?? true,
-      uiSfxEnabled: parsed.uiSfxEnabled ?? true,
-      gameSfxEnabled: parsed.gameSfxEnabled ?? true,
-      musicVolume: parsed.musicVolume ?? 0.5,
-      uiSfxVolume: parsed.uiSfxVolume ?? 0.8,
-      gameSfxVolume: parsed.gameSfxVolume ?? 0.85
+      sfxVolume: parsed.sfxVolume ?? 0.85
     };
   } catch {
     return {
@@ -113,12 +98,7 @@ const parseStoredSettings = (): SettingsState => {
       soundEnabled: true,
       vibrationEnabled: true,
       masterMuted: false,
-      musicEnabled: true,
-      uiSfxEnabled: true,
-      gameSfxEnabled: true,
-      musicVolume: 0.5,
-      uiSfxVolume: 0.8,
-      gameSfxVolume: 0.85
+      sfxVolume: 0.85
     };
   }
 };
@@ -135,7 +115,6 @@ const apiBaseUrl = normalizeBackendUrl(import.meta.env.VITE_SERVER_URL as string
 export const App = () => {
   const [route, setRoute] = useState<Route>("home");
   const [settings, setSettings] = useState<SettingsState>(() => parseStoredSettings());
-  const musicModeRef = useRef<"none" | "menu" | "match">("none");
 
   const [dictionary, setDictionary] = useState<Set<string> | null>(null);
   const [dictionaryError, setDictionaryError] = useState<string | null>(null);
@@ -166,32 +145,8 @@ export const App = () => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     SoundManager.setSoundEnabled(settings.soundEnabled);
     SoundManager.setMasterMuted(settings.masterMuted);
-    SoundManager.setMusicEnabled(settings.musicEnabled);
-    SoundManager.setUiSfxEnabled(settings.uiSfxEnabled);
-    SoundManager.setGameSfxEnabled(settings.gameSfxEnabled);
-    SoundManager.setMusicVolume(settings.musicVolume);
-    SoundManager.setUiSfxVolume(settings.uiSfxVolume);
-    SoundManager.setGameSfxVolume(settings.gameSfxVolume);
+    SoundManager.setSfxVolume(settings.sfxVolume);
   }, [settings]);
-
-  useEffect(() => {
-    if (settings.masterMuted || !settings.musicEnabled) {
-      if (musicModeRef.current !== "none") {
-        SoundManager.stopMusic();
-        musicModeRef.current = "none";
-      }
-      return;
-    }
-    const targetMode: "menu" | "match" = route === "online_match" ? "match" : "menu";
-    if (musicModeRef.current === targetMode) return;
-
-    if (targetMode === "match") {
-      void SoundManager.startMatchMusic();
-    } else {
-      void SoundManager.startMenuMusic();
-    }
-    musicModeRef.current = targetMode;
-  }, [route, settings.masterMuted, settings.musicEnabled]);
 
   const renderWithMute = (screen: ReactElement) => (
     <>
@@ -447,26 +402,12 @@ export const App = () => {
   return renderWithMute(
     <SettingsScreen
       timerEnabled={settings.timerEnabled}
-      soundEnabled={settings.soundEnabled}
-      vibrationEnabled={settings.vibrationEnabled}
       masterMuted={settings.masterMuted}
-      musicEnabled={settings.musicEnabled}
-      uiSfxEnabled={settings.uiSfxEnabled}
-      gameSfxEnabled={settings.gameSfxEnabled}
-      musicVolume={settings.musicVolume}
-      uiSfxVolume={settings.uiSfxVolume}
-      gameSfxVolume={settings.gameSfxVolume}
+      sfxVolume={settings.sfxVolume}
       onBack={() => setRoute("home")}
       onTimerToggle={(value) => setSettings((previous) => ({ ...previous, timerEnabled: value }))}
-      onSoundToggle={(value) => setSettings((previous) => ({ ...previous, soundEnabled: value }))}
-      onVibrationToggle={(value) => setSettings((previous) => ({ ...previous, vibrationEnabled: value }))}
       onMasterMuteToggle={(value) => setSettings((previous) => ({ ...previous, masterMuted: value }))}
-      onMusicToggle={(value) => setSettings((previous) => ({ ...previous, musicEnabled: value }))}
-      onUiSfxToggle={(value) => setSettings((previous) => ({ ...previous, uiSfxEnabled: value }))}
-      onGameSfxToggle={(value) => setSettings((previous) => ({ ...previous, gameSfxEnabled: value }))}
-      onMusicVolumeChange={(value) => setSettings((previous) => ({ ...previous, musicVolume: value }))}
-      onUiSfxVolumeChange={(value) => setSettings((previous) => ({ ...previous, uiSfxVolume: value }))}
-      onGameSfxVolumeChange={(value) => setSettings((previous) => ({ ...previous, gameSfxVolume: value }))}
+      onSfxVolumeChange={(value) => setSettings((previous) => ({ ...previous, sfxVolume: value }))}
     />
   );
 };

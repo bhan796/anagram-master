@@ -5,19 +5,12 @@ import android.media.AudioFormat
 import android.media.AudioTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.sin
-
-private enum class MusicMode {
-    NONE,
-    MENU,
-    MATCH
-}
 
 private enum class Waveform {
     SINE,
@@ -25,32 +18,15 @@ private enum class Waveform {
     SAW
 }
 
-private data class ToneStep(
-    val frequencyHz: Double,
-    val beats: Double,
-    val waveform: Waveform
-)
-
 object SoundManager {
     private const val SAMPLE_RATE = 22_050
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private var soundEnabled = true
     private var masterMuted = false
-    private var musicEnabled = true
-    private var uiSfxEnabled = true
-    private var gameSfxEnabled = true
+    private var sfxVolume = 0.85f
 
-    private var musicVolume = 0.5f
-    private var uiSfxVolume = 0.8f
-    private var gameSfxVolume = 0.85f
-
-    private var activeMusicMode = MusicMode.NONE
-    private var musicJob: Job? = null
-
-    private fun canPlayUiSfx(): Boolean = soundEnabled && !masterMuted && uiSfxEnabled && uiSfxVolume > 0f
-    private fun canPlayGameSfx(): Boolean = soundEnabled && !masterMuted && gameSfxEnabled && gameSfxVolume > 0f
-    private fun canPlayMusic(): Boolean = !masterMuted && musicEnabled && musicVolume > 0f
+    private fun canPlay(): Boolean = soundEnabled && !masterMuted && sfxVolume > 0f
 
     private fun playTone(frequencyHz: Double, durationMs: Int, volume: Float, waveform: Waveform = Waveform.SQUARE) {
         val level = volume.coerceIn(0f, 1f)
@@ -227,119 +203,86 @@ object SoundManager {
         }
     }
 
-    private fun startLoop(mode: MusicMode, bpm: Int, pattern: List<ToneStep>) {
-        musicJob?.cancel()
-        musicJob = scope.launch {
-            val beatMs = 60_000.0 / bpm.toDouble()
-            while (isActive && activeMusicMode == mode && canPlayMusic()) {
-                for (step in pattern) {
-                    if (!isActive || activeMusicMode != mode || !canPlayMusic()) break
-                    val duration = (beatMs * step.beats).toInt().coerceAtLeast(30)
-                    playBuffer(generateBuffer(step.frequencyHz, duration, (musicVolume * 0.55f).coerceIn(0f, 1f), step.waveform))
-                }
-            }
-        }
-    }
-
-    private fun updateMusicState(targetMode: MusicMode = activeMusicMode) {
-        if (!canPlayMusic()) {
-            stopMusic()
-            return
-        }
-
-        when (targetMode) {
-            MusicMode.NONE -> stopMusic()
-            MusicMode.MENU -> startMenuMusic(forceRestart = true)
-            MusicMode.MATCH -> startMatchMusic(forceRestart = true)
-        }
-    }
-
     fun setSoundEnabled(enabled: Boolean) {
         soundEnabled = enabled
     }
 
     fun setMasterMuted(muted: Boolean) {
         masterMuted = muted
-        if (muted) {
-            stopMusic()
-        } else {
-            updateMusicState()
-        }
     }
 
-    fun setMusicEnabled(enabled: Boolean) {
-        musicEnabled = enabled
-        if (!enabled) {
-            stopMusic()
-        } else {
-            updateMusicState()
-        }
-    }
-
-    fun setUiSfxEnabled(enabled: Boolean) {
-        uiSfxEnabled = enabled
-    }
-
-    fun setGameSfxEnabled(enabled: Boolean) {
-        gameSfxEnabled = enabled
-    }
-
-    fun setMusicVolume(volume: Float) {
-        musicVolume = volume.coerceIn(0f, 1f)
-        updateMusicState()
-    }
-
-    fun setUiSfxVolume(volume: Float) {
-        uiSfxVolume = volume.coerceIn(0f, 1f)
-    }
-
-    fun setGameSfxVolume(volume: Float) {
-        gameSfxVolume = volume.coerceIn(0f, 1f)
+    fun setSfxVolume(volume: Float) {
+        sfxVolume = volume.coerceIn(0f, 1f)
     }
 
     fun playClick() {
-        if (!canPlayUiSfx()) return
-        playTone(1046.50, 52, uiSfxVolume, Waveform.SQUARE)
+        if (!canPlay()) return
+        playTone(2093.0, 38, sfxVolume * 0.85f, Waveform.SQUARE)
     }
 
     fun playTilePlace() {
-        if (!canPlayGameSfx()) return
-        playSequence(listOf(392.0 to 90, 329.63 to 90), gameSfxVolume, Waveform.SQUARE)
+        if (!canPlay()) return
+        val topNotes = listOf(783.99, 880.0, 987.77, 783.99, 698.46)
+        val top = topNotes.random()
+        scope.launch {
+            playBuffer(generateBuffer(top, 55, sfxVolume, Waveform.SQUARE))
+            playBuffer(generateBuffer(146.83, 75, sfxVolume * 0.85f, Waveform.SINE))
+        }
     }
 
     fun playWordSubmit() {
-        if (!canPlayGameSfx()) return
-        playSequence(listOf(523.25 to 90, 659.25 to 90, 783.99 to 90), gameSfxVolume, Waveform.SINE)
+        if (!canPlay()) return
+        playSequence(
+            listOf(523.25 to 45, 659.25 to 45, 783.99 to 45, 987.77 to 45, 1174.66 to 45, 1567.98 to 45),
+            sfxVolume,
+            Waveform.SINE
+        )
     }
 
     fun playWordValid() {
-        if (!canPlayGameSfx()) return
-        playSequence(listOf(523.25 to 80, 659.25 to 80, 783.99 to 80, 1046.50 to 80), gameSfxVolume, Waveform.SINE)
+        if (!canPlay()) return
+        scope.launch {
+            for ((freq, dur) in listOf(523.25 to 65, 659.25 to 65, 783.99 to 65, 1046.50 to 65, 1318.51 to 65)) {
+                playBuffer(generateBuffer(freq, dur, sfxVolume, Waveform.SQUARE))
+            }
+            delay(20)
+            playBuffer(generateMixedBuffer(listOf(1046.50, 1318.51, 1567.98), 220, sfxVolume * 0.9f, Waveform.SQUARE))
+        }
     }
 
     fun playWordInvalid() {
-        if (!canPlayGameSfx()) return
-        playSequence(listOf(220.0 to 140, 174.61 to 120), gameSfxVolume, Waveform.SAW)
+        if (!canPlay()) return
+        playSequence(
+            listOf(466.16 to 110, 415.30 to 110, 311.13 to 110, 277.18 to 120, 233.08 to 130),
+            sfxVolume * 0.85f,
+            Waveform.SAW
+        )
     }
 
     fun playTimerTick() {
-        if (!canPlayGameSfx()) return
-        playTone(1046.50, 42, gameSfxVolume * 0.8f, Waveform.SINE)
+        if (!canPlay()) return
+        playTone(2093.0, 22, sfxVolume * 0.55f, Waveform.SQUARE)
     }
 
     fun playTimerUrgent() {
-        if (!canPlayGameSfx()) return
-        playTone(1318.51, 70, gameSfxVolume, Waveform.SINE)
+        if (!canPlay()) return
+        playSequence(listOf(2637.02 to 50, 3135.96 to 50), sfxVolume * 0.9f, Waveform.SQUARE)
     }
 
     fun playMatchFound() {
-        if (!canPlayUiSfx()) return
-        playSequence(listOf(523.25 to 90, 659.25 to 90, 783.99 to 90, 1046.50 to 90), uiSfxVolume, Waveform.SQUARE)
+        if (!canPlay()) return
+        scope.launch {
+            val sweepSteps = listOf(220.0 to 45, 330.0 to 45, 495.0 to 45, 660.0 to 45, 880.0 to 45, 1100.0 to 45, 1320.0 to 45)
+            for ((freq, dur) in sweepSteps) {
+                playBuffer(generateBuffer(freq, dur, sfxVolume * 0.6f, Waveform.SAW))
+            }
+            playBuffer(generateMixedBuffer(listOf(523.25, 659.25, 783.99, 1046.50), 450, sfxVolume, Waveform.SQUARE))
+        }
     }
 
     fun playLogoAssemble() {
-        if (!canPlayUiSfx()) return
-        val level = (uiSfxVolume * 0.7f).coerceIn(0f, 1f)
+        if (!canPlay()) return
+        val level = (sfxVolume * 0.7f).coerceIn(0f, 1f)
         scope.launch {
             playBuffer(
                 generateDualSweepBuffer(
@@ -357,79 +300,49 @@ object SoundManager {
     }
 
     fun playCountdownBeep() {
-        if (!canPlayUiSfx()) return
-        playTone(880.0, 120, uiSfxVolume, Waveform.SINE)
+        if (!canPlay()) return
+        playTone(1760.0, 105, sfxVolume, Waveform.SQUARE)
     }
 
     fun playCountdownGo() {
-        if (!canPlayUiSfx()) return
-        playChord(listOf(880.0, 1174.66, 1567.98), 260, uiSfxVolume, Waveform.SQUARE)
+        if (!canPlay()) return
+        scope.launch {
+            playBuffer(generateMixedBuffer(listOf(783.99, 987.77, 1174.66), 110, sfxVolume, Waveform.SQUARE))
+            delay(10)
+            playBuffer(generateMixedBuffer(listOf(880.0, 1046.50, 1318.51), 110, sfxVolume, Waveform.SQUARE))
+            delay(10)
+            playBuffer(generateMixedBuffer(listOf(1046.50, 1318.51, 1567.98), 260, sfxVolume, Waveform.SQUARE))
+        }
     }
 
     fun playRoundResult() {
-        if (!canPlayGameSfx()) return
-        playSequence(listOf(783.99 to 100, 1046.50 to 100), gameSfxVolume, Waveform.SINE)
+        if (!canPlay()) return
+        scope.launch {
+            playBuffer(generateMixedBuffer(listOf(783.99, 987.77), 300, sfxVolume * 0.8f, Waveform.SINE))
+            delay(350)
+            playBuffer(generateMixedBuffer(listOf(1046.50, 1318.51), 380, sfxVolume * 0.8f, Waveform.SINE))
+        }
     }
 
     fun playWin() {
-        if (!canPlayGameSfx()) return
-        playSequence(
-            listOf(523.25 to 90, 659.25 to 90, 783.99 to 90, 1046.50 to 90, 1318.51 to 90),
-            gameSfxVolume,
-            Waveform.SQUARE
-        )
+        if (!canPlay()) return
+        scope.launch {
+            for ((freq, dur) in listOf(523.25 to 80, 659.25 to 80, 783.99 to 80, 1046.50 to 80, 1318.51 to 80, 1567.98 to 80)) {
+                playBuffer(generateBuffer(freq, dur, sfxVolume, Waveform.SQUARE))
+            }
+            delay(30)
+            playBuffer(generateMixedBuffer(listOf(523.25, 659.25, 783.99, 1046.50), 200, sfxVolume, Waveform.SQUARE))
+            delay(220)
+            playBuffer(generateMixedBuffer(listOf(1567.98, 1318.51, 1046.50), 600, sfxVolume * 0.85f, Waveform.SQUARE))
+        }
     }
 
     fun playLose() {
-        if (!canPlayGameSfx()) return
-        playSequence(listOf(392.0 to 120, 349.23 to 120, 311.13 to 120, 261.63 to 140), gameSfxVolume, Waveform.SAW)
-    }
-
-    fun startMenuMusic(forceRestart: Boolean = false) {
-        if (!canPlayMusic()) return
-        if (!forceRestart && activeMusicMode == MusicMode.MENU && musicJob?.isActive == true) return
-
-        activeMusicMode = MusicMode.MENU
-        startLoop(
-            mode = MusicMode.MENU,
-            bpm = 120,
-            pattern = listOf(
-                ToneStep(261.63, 0.5, Waveform.SQUARE),
-                ToneStep(329.63, 0.5, Waveform.SQUARE),
-                ToneStep(392.0, 0.5, Waveform.SQUARE),
-                ToneStep(523.25, 0.5, Waveform.SQUARE),
-                ToneStep(329.63, 0.5, Waveform.SQUARE),
-                ToneStep(392.0, 0.5, Waveform.SQUARE),
-                ToneStep(293.66, 0.5, Waveform.SQUARE),
-                ToneStep(349.23, 0.5, Waveform.SQUARE)
-            )
+        if (!canPlay()) return
+        playSequence(
+            listOf(392.0 to 130, 349.23 to 130, 311.13 to 130, 277.18 to 130, 233.08 to 160),
+            sfxVolume,
+            Waveform.SAW
         )
-    }
-
-    fun startMatchMusic(forceRestart: Boolean = false) {
-        if (!canPlayMusic()) return
-        if (!forceRestart && activeMusicMode == MusicMode.MATCH && musicJob?.isActive == true) return
-
-        activeMusicMode = MusicMode.MATCH
-        startLoop(
-            mode = MusicMode.MATCH,
-            bpm = 140,
-            pattern = listOf(
-                ToneStep(220.0, 0.5, Waveform.SQUARE),
-                ToneStep(261.63, 0.5, Waveform.SQUARE),
-                ToneStep(329.63, 0.5, Waveform.SQUARE),
-                ToneStep(440.0, 0.5, Waveform.SQUARE),
-                ToneStep(392.0, 0.5, Waveform.SQUARE),
-                ToneStep(329.63, 0.5, Waveform.SQUARE),
-                ToneStep(261.63, 0.5, Waveform.SQUARE),
-                ToneStep(220.0, 0.5, Waveform.SQUARE)
-            )
-        )
-    }
-
-    fun stopMusic() {
-        musicJob?.cancel()
-        musicJob = null
-        activeMusicMode = MusicMode.NONE
     }
 }

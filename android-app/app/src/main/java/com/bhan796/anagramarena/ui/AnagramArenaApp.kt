@@ -13,9 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -87,33 +84,10 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
     val onlineState by onlineMatchViewModel.state.collectAsState()
     val homeStatus by homeStatusViewModel.state.collectAsState()
 
-    var activeMusicMode by remember { mutableStateOf("none") }
-
     LaunchedEffect(settings) {
         SoundManager.setSoundEnabled(settings.soundEnabled)
         SoundManager.setMasterMuted(settings.masterMuted)
-        SoundManager.setMusicEnabled(settings.musicEnabled)
-        SoundManager.setUiSfxEnabled(settings.uiSfxEnabled)
-        SoundManager.setGameSfxEnabled(settings.gameSfxEnabled)
-        SoundManager.setMusicVolume(settings.musicVolume)
-        SoundManager.setUiSfxVolume(settings.uiSfxVolume)
-        SoundManager.setGameSfxVolume(settings.gameSfxVolume)
-    }
-
-    LaunchedEffect(currentRoute, settings.masterMuted, settings.musicEnabled) {
-        if (settings.masterMuted || !settings.musicEnabled) {
-            if (activeMusicMode != "none") {
-                SoundManager.stopMusic()
-                activeMusicMode = "none"
-            }
-            return@LaunchedEffect
-        }
-
-        val targetMode = if (currentRoute == Routes.ONLINE_MATCH) "match" else "menu"
-        if (activeMusicMode == targetMode) return@LaunchedEffect
-
-        if (targetMode == "match") SoundManager.startMatchMusic() else SoundManager.startMenuMusic()
-        activeMusicMode = targetMode
+        SoundManager.setSfxVolume(settings.sfxVolume)
     }
 
     LaunchedEffect(onlineState.matchState?.matchId, onlineState.matchState?.phase, currentRoute) {
@@ -232,12 +206,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                         onSoundToggle = settingsViewModel::setSoundEnabled,
                         onVibrationToggle = settingsViewModel::setVibrationEnabled,
                         onMasterMuteToggle = settingsViewModel::setMasterMuted,
-                        onMusicToggle = settingsViewModel::setMusicEnabled,
-                        onUiSfxToggle = settingsViewModel::setUiSfxEnabled,
-                        onGameSfxToggle = settingsViewModel::setGameSfxEnabled,
-                        onMusicVolumeChange = settingsViewModel::setMusicVolume,
-                        onUiSfxVolumeChange = settingsViewModel::setUiSfxVolume,
-                        onGameSfxVolumeChange = settingsViewModel::setGameSfxVolume
+                        onSfxVolumeChange = settingsViewModel::setSfxVolume
                     )
                 }
             }
