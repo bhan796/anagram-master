@@ -16,6 +16,39 @@ import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+private val allowedSingleLetterWords = setOf("a", "i")
+private val excludedNameWords = setOf(
+    "aaron", "abigail", "adam", "adrian", "ahmed", "albert", "alec", "alexa", "alexander", "alfred",
+    "ali", "alice", "alison", "amanda", "amber", "amelia", "amy", "andrea", "andrew", "angela",
+    "anna", "anthony", "arthur", "ashley", "audrey", "austin", "barbara", "benjamin", "bethany", "betty",
+    "beverly", "blake", "bradley", "brandon", "brian", "brianna", "brittany", "caleb", "cameron", "carla",
+    "carmen", "carol", "caroline", "carter", "catherine", "charles", "charlotte", "cheryl", "chloe", "christian",
+    "christina", "christine", "christopher", "cindy", "claire", "cole", "colin", "connor", "courtney", "crystal",
+    "daniel", "danielle", "david", "deborah", "denise", "dennis", "derek", "diana", "donald", "donna",
+    "dylan", "edward", "elijah", "elizabeth", "ella", "emily", "emma", "eric", "ethan", "eugene",
+    "evelyn", "frances", "frank", "gabriel", "gary", "george", "gerald", "gloria", "grace", "gregory",
+    "hannah", "harold", "heather", "helen", "henry", "isabella", "jacob", "jacqueline", "james", "jamie",
+    "janet", "janice", "jason", "jean", "jeffrey", "jenna", "jennifer", "jeremy", "jerry", "jesse",
+    "jessica", "joan", "joe", "john", "johnny", "jonathan", "jordan", "joseph", "joshua", "joyce",
+    "judith", "judy", "julia", "julie", "justin", "karen", "katherine", "kathleen", "kathryn", "kayla",
+    "keith", "kelly", "kenneth", "kevin", "kimberly", "kyle", "larry", "laura", "lauren", "linda",
+    "lisa", "logan", "lori", "madison", "maria", "marie", "marilyn", "markus", "martha", "mary",
+    "mason", "matthew", "megan", "melanie", "melissa", "michael", "michelle", "morgan", "nancy", "natalie",
+    "nathan", "nicholas", "nicole", "noah", "olivia", "pamela", "patricia", "patrick", "paul", "peter",
+    "philip", "rachel", "ralph", "raymond", "rebecca", "richard", "robert", "roger", "ronald", "rosemary",
+    "russell", "ruth", "ryan", "samantha", "samuel", "sandra", "sara", "sarah", "scott", "sean",
+    "sharon", "shirley", "sophia", "stephanie", "stephen", "steven", "susan", "tammy", "taylor", "teresa",
+    "terry", "theresa", "thomas", "timothy", "tyler", "victoria", "vincent", "virginia", "walter", "wayne",
+    "william"
+)
+
+private fun isAllowedDictionaryEntry(word: String): Boolean {
+    if (word.isEmpty()) return false
+    if (!word.all(Char::isLetter)) return false
+    if (word.length == 1) return allowedSingleLetterWords.contains(word)
+    return !excludedNameWords.contains(word)
+}
+
 class AssetDictionaryProvider(context: Context) : DictionaryProvider {
     private val words: Set<String> = loadWords(context)
 
@@ -27,7 +60,7 @@ class AssetDictionaryProvider(context: Context) : DictionaryProvider {
         return runCatching {
             context.assets.open("data/dictionary_common_10k.txt").bufferedReader().use(BufferedReader::readLines)
                 .map { it.trim().lowercase() }
-                .filter { it.isNotEmpty() && it.all(Char::isLetter) }
+                .filter(::isAllowedDictionaryEntry)
                 .toSet()
         }.getOrElse { emptySet() }
     }
