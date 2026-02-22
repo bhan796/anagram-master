@@ -12,6 +12,7 @@ model Player {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   displayName String?
+  displayNameNormalized String? @unique
   rating      Int           @default(1000)
   peakRating  Int           @default(1000)
   rankedGames Int           @default(0)

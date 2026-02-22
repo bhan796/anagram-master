@@ -168,21 +168,46 @@ export const createApiRouter = (
 
   router.post("/profiles/:playerId/display-name", async (req: Request, res: Response) => {
     const nextDisplayName = String(req.body?.displayName ?? "");
-    const result = matchService.updateDisplayName(req.params.playerId, nextDisplayName);
-    if (!result.ok) {
-      const payload = toActionError("profile:update_display_name", result.code ?? "ACTION_FAILED");
-      const status = payload.code === "DISPLAY_NAME_TAKEN" ? 409 : payload.code === "UNKNOWN_PLAYER" ? 404 : 400;
-      res.status(status).json(payload);
+    const normalized = nextDisplayName.trim();
+    if (!normalized || normalized.length < 3 || normalized.length > 20 || !/^[A-Za-z0-9_ ]+$/.test(normalized)) {
+      res.status(400).json(toActionError("profile:update_display_name", "INVALID_DISPLAY_NAME"));
       return;
     }
 
-    matchHistoryStore.updateDisplayName(req.params.playerId, result.displayName ?? nextDisplayName);
     const ownerUserId = await authService.resolveUserIdForPlayer(req.params.playerId);
-    await authService.upsertPlayerIdentity(req.params.playerId, result.displayName ?? nextDisplayName, ownerUserId);
+    if (ownerUserId && !req.auth?.userId) {
+      res.status(403).json({ code: "AUTH_REQUIRED", message: "Authentication required." });
+      return;
+    }
+    if (ownerUserId && req.auth?.userId && ownerUserId !== req.auth.userId) {
+      res.status(403).json({ code: "FORBIDDEN", message: "Cannot update another player's profile." });
+      return;
+    }
+
+    const isTaken = await authService.isDisplayNameTaken(normalized, req.params.playerId);
+    if (isTaken) {
+      res.status(409).json(toActionError("profile:update_display_name", "DISPLAY_NAME_TAKEN"));
+      return;
+    }
+
+    const runtimePlayer = matchService.getPlayer(req.params.playerId);
+    if (runtimePlayer) {
+      const runtimeResult = matchService.updateDisplayName(req.params.playerId, normalized);
+      if (!runtimeResult.ok) {
+        const payload = toActionError("profile:update_display_name", runtimeResult.code ?? "ACTION_FAILED");
+        const status = payload.code === "DISPLAY_NAME_TAKEN" ? 409 : payload.code === "UNKNOWN_PLAYER" ? 404 : 400;
+        res.status(status).json(payload);
+        return;
+      }
+    }
+
+    const effectiveOwnerUserId = ownerUserId ?? req.auth?.userId ?? runtimePlayer?.userId ?? null;
+    await authService.upsertPlayerIdentity(req.params.playerId, normalized, effectiveOwnerUserId);
+    matchHistoryStore.updateDisplayName(req.params.playerId, normalized);
 
     res.json({
       playerId: req.params.playerId,
-      displayName: result.displayName
+      displayName: normalized
     });
   });
 

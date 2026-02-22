@@ -95,16 +95,7 @@ export const createSocketServer = (
       }
 
       if (authenticatedUserId) {
-        if (resolvedPlayerId) {
-          const ownerUserId = await authService.resolveUserIdForPlayer(resolvedPlayerId);
-          if (ownerUserId && ownerUserId !== authenticatedUserId) {
-            resolvedPlayerId = undefined;
-          }
-        }
-
-        if (!resolvedPlayerId) {
-          resolvedPlayerId = (await authService.resolvePrimaryPlayerIdForUser(authenticatedUserId)) ?? undefined;
-        }
+        resolvedPlayerId = (await authService.resolvePrimaryPlayerIdForUser(authenticatedUserId)) ?? undefined;
       }
 
       if (resolvedPlayerId) {

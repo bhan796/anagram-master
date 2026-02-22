@@ -39,12 +39,30 @@ interface AuthResult {
 type OauthProvider = "google" | "facebook";
 
 export class AuthService {
-  private async ensureUserPrimaryPlayerId(userId: string, preferredPlayerId?: string | null): Promise<string> {
-    const existing = await prisma.player.findFirst({
+  private normalizeDisplayName(displayName: string | null | undefined): string | null {
+    const trimmed = displayName?.trim();
+    if (!trimmed) return null;
+    return trimmed.toLowerCase();
+  }
+
+  private isGuestDisplayName(displayName: string | null | undefined): boolean {
+    if (!displayName) return true;
+    return /^guest-[a-z0-9]+$/i.test(displayName.trim());
+  }
+
+  private async findPreferredPlayerForUser(userId: string): Promise<{ id: string } | null> {
+    const players = await prisma.player.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
-      select: { id: true }
+      select: { id: true, displayName: true }
     });
+    if (players.length === 0) return null;
+    const preferred = players.find((player) => !this.isGuestDisplayName(player.displayName)) ?? players[0];
+    return { id: preferred.id };
+  }
+
+  private async ensureUserPrimaryPlayerId(userId: string, preferredPlayerId?: string | null): Promise<string> {
+    const existing = await this.findPreferredPlayerForUser(userId);
     if (existing?.id) return existing.id;
 
     if (preferredPlayerId) {
@@ -264,17 +282,18 @@ export class AuthService {
       include: {
         players: {
           orderBy: { updatedAt: "desc" },
-          select: { id: true }
+          select: { id: true, displayName: true }
         }
       }
     });
     if (!user) return null;
 
+    const preferredPlayer = user.players.find((player) => !this.isGuestDisplayName(player.displayName)) ?? user.players[0] ?? null;
     return {
       userId: user.id,
       email: user.email,
       playerIds: user.players.map((p: { id: string }) => p.id),
-      primaryPlayerId: user.players[0]?.id ?? null
+      primaryPlayerId: preferredPlayer?.id ?? null
     };
   }
 
@@ -311,11 +330,7 @@ export class AuthService {
   }
 
   async resolvePrimaryPlayerIdForUser(userId: string): Promise<string | null> {
-    const player = await prisma.player.findFirst({
-      where: { userId },
-      orderBy: { updatedAt: "desc" },
-      select: { id: true }
-    });
+    const player = await this.findPreferredPlayerForUser(userId);
     return player?.id ?? null;
   }
 
@@ -361,18 +376,36 @@ export class AuthService {
   }
 
   async upsertPlayerIdentity(playerId: string, displayName: string | null, userId: string | null): Promise<void> {
+    const normalizedDisplayName = this.normalizeDisplayName(displayName);
     await prisma.player.upsert({
       where: { id: playerId },
       update: {
         displayName,
+        displayNameNormalized: normalizedDisplayName,
         userId: userId ?? undefined
       },
       create: {
         id: playerId,
         displayName,
+        displayNameNormalized: normalizedDisplayName,
         userId: userId ?? undefined
       }
     });
+  }
+
+  async isDisplayNameTaken(displayName: string, excludePlayerId?: string): Promise<boolean> {
+    const normalized = this.normalizeDisplayName(displayName);
+    if (!normalized) return false;
+
+    const existing = await prisma.player.findFirst({
+      where: {
+        displayNameNormalized: normalized,
+        ...(excludePlayerId ? { id: { not: excludePlayerId } } : {})
+      },
+      select: { id: true }
+    });
+
+    return Boolean(existing);
   }
 
   async upsertPlayerProgress(
