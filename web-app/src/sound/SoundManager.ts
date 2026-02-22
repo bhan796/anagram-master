@@ -4,6 +4,8 @@ let _soundEnabled = true;
 let _masterMuted = false;
 let _sfxVolume = 0.85;
 let _started = false;
+let _logoRetryArmed = false;
+let _matchFoundRetryArmed = false;
 
 function volumeToDb(volume: number): number {
   if (volume <= 0) return -72;
@@ -19,6 +21,26 @@ async function ensureStarted() {
     await Tone.start();
     _started = true;
   }
+}
+
+function armGestureRetry(kind: "logo" | "match", callback: () => void) {
+  if (typeof window === "undefined") return;
+  if (kind === "logo" && _logoRetryArmed) return;
+  if (kind === "match" && _matchFoundRetryArmed) return;
+
+  if (kind === "logo") _logoRetryArmed = true;
+  if (kind === "match") _matchFoundRetryArmed = true;
+
+  const run = () => {
+    window.removeEventListener("pointerdown", run);
+    window.removeEventListener("keydown", run);
+    if (kind === "logo") _logoRetryArmed = false;
+    if (kind === "match") _matchFoundRetryArmed = false;
+    void callback();
+  };
+
+  window.addEventListener("pointerdown", run, { once: true, passive: true });
+  window.addEventListener("keydown", run, { once: true });
 }
 
 export function setSoundEnabled(enabled: boolean) {
@@ -160,7 +182,12 @@ export async function playTimerUrgent() {
 
 export async function playMatchFound() {
   if (!canPlay()) return;
-  await ensureStarted();
+  try {
+    await ensureStarted();
+  } catch {
+    armGestureRetry("match", () => playMatchFound());
+    return;
+  }
   const now = Tone.now();
 
   const sweep = new Tone.Synth({
@@ -189,7 +216,12 @@ export async function playMatchFound() {
 
 export async function playLogoAssemble(): Promise<void> {
   if (!canPlay()) return;
-  await ensureStarted();
+  try {
+    await ensureStarted();
+  } catch {
+    armGestureRetry("logo", () => playLogoAssemble());
+    return;
+  }
 
   const now = Tone.now();
 
