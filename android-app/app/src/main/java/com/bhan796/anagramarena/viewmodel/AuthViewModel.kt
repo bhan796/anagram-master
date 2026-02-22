@@ -128,10 +128,9 @@ class AuthViewModel(
     }
 
     fun logout() {
-        _state.update { it.copy(loading = true, error = null) }
+        clearSession()
         viewModelScope.launch {
             repository.logout()
-            clearSession()
         }
     }
 
@@ -158,6 +157,9 @@ class AuthViewModel(
         sessionStore.refreshToken = null
         sessionStore.authUserId = null
         sessionStore.authEmail = null
+        sessionStore.playerId = null
+        sessionStore.displayName = null
+        sessionStore.matchId = null
         _state.value = AuthUiState(status = "guest", loading = false, error = null)
     }
 

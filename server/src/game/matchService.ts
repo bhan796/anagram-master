@@ -93,9 +93,7 @@ export class MatchService {
 
     player.socketId = socketId;
     player.connected = true;
-    if (userId) {
-      player.userId = userId;
-    }
+    player.userId = userId ?? null;
 
     this.players.set(playerId, player);
     this.reconcilePlayerMatch(player);

@@ -92,6 +92,9 @@ const ACCESS_TOKEN_KEY = "anagram.auth.accessToken";
 const REFRESH_TOKEN_KEY = "anagram.auth.refreshToken";
 const AUTH_USER_ID_KEY = "anagram.auth.userId";
 const AUTH_EMAIL_KEY = "anagram.auth.email";
+const PLAYER_ID_KEY = "anagram.playerId";
+const DISPLAY_NAME_KEY = "anagram.displayName";
+const MATCH_ID_KEY = "anagram.matchId";
 
 const parseStoredSettings = (): SettingsState => {
   try {
@@ -183,6 +186,13 @@ export const App = () => {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_ID_KEY);
     localStorage.removeItem(AUTH_EMAIL_KEY);
+    localStorage.removeItem(PLAYER_ID_KEY);
+    localStorage.removeItem(DISPLAY_NAME_KEY);
+    localStorage.removeItem(MATCH_ID_KEY);
+    setStats(null);
+    setHistory([]);
+    setProfileError(null);
+    setLeaderboard([]);
     setAuth({ status: "guest", userId: null, email: null, loading: false, error: null });
   };
 
@@ -405,11 +415,19 @@ export const App = () => {
         }).catch(() => undefined);
       }
       clearAuthSession();
-      online.actions.refreshSession();
+      online.actions.resetIdentity();
       setRoute("home");
     },
     [online.actions]
   );
+
+  useEffect(() => {
+    if (auth.status === "authenticated") return;
+    setStats(null);
+    setHistory([]);
+    setProfileError(null);
+    setLeaderboard([]);
+  }, [auth.status]);
 
   useEffect(() => {
     let cancelled = false;
@@ -507,7 +525,7 @@ export const App = () => {
         onRegister={async (email, password) => authenticate("register", email, password)}
         onContinueGuest={() => {
           clearAuthSession();
-          online.actions.refreshSession();
+          online.actions.resetIdentity();
           setRoute("online_matchmaking");
         }}
       />

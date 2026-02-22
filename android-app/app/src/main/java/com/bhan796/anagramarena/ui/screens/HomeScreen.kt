@@ -15,6 +15,7 @@ import com.bhan796.anagramarena.ui.theme.ColorWhite
 import com.bhan796.anagramarena.ui.theme.ColorGold
 import com.bhan796.anagramarena.ui.theme.ColorMagenta
 import com.bhan796.anagramarena.ui.theme.ColorCyan
+import com.bhan796.anagramarena.ui.theme.ColorRed
 
 @Composable
 fun HomeScreen(
@@ -89,7 +90,7 @@ fun HomeScreen(
             ArcadeButton(if (isAuthenticated) "LOG OUT" else "SIGN IN", onClick = {
                 SoundManager.playClick()
                 onAuthAction()
-            }, accentColor = ColorCyan)
+            }, accentColor = if (isAuthenticated) ColorRed else ColorCyan)
         }
         androidx.compose.foundation.layout.Row(
             horizontalArrangement = Arrangement.Center,

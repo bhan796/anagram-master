@@ -42,7 +42,13 @@ class ProfileViewModel(
         val playerId = sessionStore.playerId
         if (playerId.isNullOrBlank()) {
             _state.update {
-                it.copy(errorMessage = "Play an online match first to create a profile.")
+                it.copy(
+                    playerId = null,
+                    stats = null,
+                    history = null,
+                    leaderboard = emptyList(),
+                    errorMessage = "Play an online match first to create a profile."
+                )
             }
             return
         }

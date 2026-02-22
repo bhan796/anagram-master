@@ -381,6 +381,42 @@ export const useOnlineMatch = () => {
     localStorage.removeItem(MATCH_ID_KEY);
   }, []);
 
+  const resetIdentity = useCallback(() => {
+    localStorage.removeItem(PLAYER_ID_KEY);
+    localStorage.removeItem(DISPLAY_NAME_KEY);
+    localStorage.removeItem(MATCH_ID_KEY);
+
+    setState((previous) => ({
+      ...previous,
+      playerId: null,
+      displayName: null,
+      isAuthenticated: false,
+      playerRating: 1000,
+      playerRankTier: "silver",
+      queueState: "idle",
+      queueMode: "casual",
+      isInMatchmaking: false,
+      matchId: null,
+      matchState: null,
+      myPlayer: null,
+      opponentPlayer: null,
+      isMyTurnToPick: false,
+      secondsRemaining: 0,
+      hasSubmittedWord: false,
+      wordInput: "",
+      conundrumGuessInput: "",
+      localValidationMessage: null,
+      lastError: null
+    }));
+
+    const socket = socketRef.current;
+    if (!socket) return;
+    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+    const identifyPayload: Record<string, string> = {};
+    if (accessToken) identifyPayload.accessToken = accessToken;
+    socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
+  }, []);
+
   const value = useMemo(
     () => ({
       state,
@@ -397,7 +433,8 @@ export const useOnlineMatch = () => {
         submitConundrumGuess,
         clearError,
         forfeitMatch,
-        clearFinishedMatch
+        clearFinishedMatch,
+        resetIdentity
       }
     }),
     [
@@ -414,7 +451,8 @@ export const useOnlineMatch = () => {
       submitConundrumGuess,
       clearError,
       forfeitMatch,
-      clearFinishedMatch
+      clearFinishedMatch,
+      resetIdentity
     ]
   );
 
