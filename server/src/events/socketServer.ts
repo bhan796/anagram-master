@@ -36,6 +36,22 @@ export const createSocketServer = (
     onMatchFinished: (record) => {
       matchHistoryStore.recordMatch(record);
       logger.info({ matchId: record.matchId }, "Persisted finished match record");
+      void (async () => {
+        for (const entry of record.players) {
+          const runtime = service.getPlayer(entry.playerId);
+          await authService.upsertPlayerProgress(entry.playerId, {
+            rating: runtime?.rating ?? entry.ratingAfter,
+            peakRating: runtime?.peakRating ?? entry.ratingAfter,
+            rankedGames: runtime?.rankedGames ?? 0,
+            rankedWins: runtime?.rankedWins ?? 0,
+            rankedLosses: runtime?.rankedLosses ?? 0,
+            rankedDraws: runtime?.rankedDraws ?? 0
+          });
+          await authService.upsertPlayerIdentity(entry.playerId, entry.displayName, runtime?.userId ?? null);
+        }
+      })().catch((error) => {
+        logger.warn({ error, matchId: record.matchId }, "Failed to persist player progress after match");
+      });
     },
     onMatchUpdated: (matchId) => {
       const match = service.getMatch(matchId);
@@ -96,10 +112,12 @@ export const createSocketServer = (
         persistedDisplayName = profile?.displayName ?? null;
       }
 
+      const requestedDisplayName = authenticatedUserId ? undefined : payload.displayName;
+
       const player = service.connectPlayer(
         socket.id,
         resolvedPlayerId,
-        payload.displayName ?? persistedDisplayName ?? undefined,
+        requestedDisplayName ?? persistedDisplayName ?? undefined,
         authenticatedUserId
       );
 
@@ -115,6 +133,15 @@ export const createSocketServer = (
           rankedDraws: persistedStats.rankedDraws
         });
       }
+
+      await authService.upsertPlayerProgress(player.playerId, {
+        rating: player.rating,
+        peakRating: player.peakRating,
+        rankedGames: player.rankedGames,
+        rankedWins: player.rankedWins,
+        rankedLosses: player.rankedLosses,
+        rankedDraws: player.rankedDraws
+      });
 
       playerId = player.playerId;
       presenceStore.markOnline(player.playerId);

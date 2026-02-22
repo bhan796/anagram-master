@@ -15,6 +15,18 @@ const DISPLAY_NAME_KEY = "anagram.displayName";
 const MATCH_ID_KEY = "anagram.matchId";
 const ACCESS_TOKEN_KEY = "anagram.auth.accessToken";
 
+const buildIdentifyPayload = (playerId: string | null, displayName: string | null): Record<string, string> => {
+  const payload: Record<string, string> = {};
+  if (playerId) payload.playerId = playerId;
+  const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (accessToken) {
+    payload.accessToken = accessToken;
+    return payload;
+  }
+  if (displayName) payload.displayName = displayName;
+  return payload;
+};
+
 const normalizeBackendUrl = (raw: string | undefined): string => {
   const candidate = (raw ?? "").trim();
   if (!candidate) return "http://localhost:4000";
@@ -169,11 +181,7 @@ export const useOnlineMatch = () => {
 
       const playerId = localStorage.getItem(PLAYER_ID_KEY);
       const displayName = localStorage.getItem(DISPLAY_NAME_KEY);
-      const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-      const identifyPayload: Record<string, string> = {};
-      if (playerId) identifyPayload.playerId = playerId;
-      if (displayName) identifyPayload.displayName = displayName;
-      if (accessToken) identifyPayload.accessToken = accessToken;
+      const identifyPayload = buildIdentifyPayload(playerId, displayName);
       socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
 
       const lastMatch = localStorage.getItem(MATCH_ID_KEY);
@@ -290,15 +298,11 @@ export const useOnlineMatch = () => {
     const socket = socketRef.current;
     if (!socket) return;
 
-    const identifyPayload: Record<string, string> = {};
-    if (state.playerId) identifyPayload.playerId = state.playerId;
-    if (state.displayName) identifyPayload.displayName = state.displayName;
-    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-    if (accessToken) identifyPayload.accessToken = accessToken;
+    const identifyPayload = buildIdentifyPayload(state.playerId, state.displayName);
     socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
     socket.emit(SocketEventNames.QUEUE_JOIN, { mode });
     setState((previous) => ({ ...previous, queueMode: mode }));
-  }, [state.isAuthenticated, state.playerId]);
+  }, [state.displayName, state.isAuthenticated, state.playerId]);
 
   const cancelQueue = useCallback(() => {
     socketRef.current?.emit(SocketEventNames.QUEUE_LEAVE);
@@ -311,11 +315,7 @@ export const useOnlineMatch = () => {
   const refreshSession = useCallback(() => {
     const socket = socketRef.current;
     if (!socket) return;
-    const identifyPayload: Record<string, string> = {};
-    if (state.playerId) identifyPayload.playerId = state.playerId;
-    if (state.displayName) identifyPayload.displayName = state.displayName;
-    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-    if (accessToken) identifyPayload.accessToken = accessToken;
+    const identifyPayload = buildIdentifyPayload(state.playerId, state.displayName);
     socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
   }, [state.displayName, state.playerId]);
 
@@ -415,9 +415,7 @@ export const useOnlineMatch = () => {
 
     const socket = socketRef.current;
     if (!socket) return;
-    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-    const identifyPayload: Record<string, string> = {};
-    if (accessToken) identifyPayload.accessToken = accessToken;
+    const identifyPayload = buildIdentifyPayload(null, null);
     socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
   }, []);
 

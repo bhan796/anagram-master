@@ -117,6 +117,13 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
         }
     }
 
+    LaunchedEffect(authState.status, currentRoute) {
+        homeStatusViewModel.refreshNow()
+        if (currentRoute == Routes.PROFILE || currentRoute == Routes.ONLINE_MATCHMAKING) {
+            profileViewModel.refresh()
+        }
+    }
+
     Scaffold { innerPadding: PaddingValues ->
         Box {
             NavHost(navController = navController, startDestination = Routes.HOME) {
@@ -215,6 +222,10 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                 }
 
                 composable(Routes.ONLINE_MATCHMAKING) {
+                    LaunchedEffect(Unit) {
+                        homeStatusViewModel.refreshNow()
+                        profileViewModel.refresh()
+                    }
                     MatchmakingScreen(
                         contentPadding = innerPadding,
                         onlineState = onlineState,
@@ -261,6 +272,9 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                 }
 
                 composable(Routes.PROFILE) {
+                    LaunchedEffect(Unit) {
+                        profileViewModel.refresh()
+                    }
                     ProfileScreen(
                         contentPadding = innerPadding,
                         onBack = { navController.popBackStack() },

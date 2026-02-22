@@ -42,7 +42,7 @@ export class AuthService {
   private async ensureUserPrimaryPlayerId(userId: string, preferredPlayerId?: string | null): Promise<string> {
     const existing = await prisma.player.findFirst({
       where: { userId },
-      orderBy: { createdAt: "asc" },
+      orderBy: { updatedAt: "desc" },
       select: { id: true }
     });
     if (existing?.id) return existing.id;
@@ -258,11 +258,12 @@ export class AuthService {
     logger.info({ userId: payload.sub, sessionId: payload.sid }, "auth_logout_success");
   }
 
-  async me(userId: string): Promise<{ userId: string; email: string; playerIds: string[] } | null> {
+  async me(userId: string): Promise<{ userId: string; email: string; playerIds: string[]; primaryPlayerId: string | null } | null> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         players: {
+          orderBy: { updatedAt: "desc" },
           select: { id: true }
         }
       }
@@ -272,7 +273,8 @@ export class AuthService {
     return {
       userId: user.id,
       email: user.email,
-      playerIds: user.players.map((p: { id: string }) => p.id)
+      playerIds: user.players.map((p: { id: string }) => p.id),
+      primaryPlayerId: user.players[0]?.id ?? null
     };
   }
 
@@ -311,21 +313,50 @@ export class AuthService {
   async resolvePrimaryPlayerIdForUser(userId: string): Promise<string | null> {
     const player = await prisma.player.findFirst({
       where: { userId },
-      orderBy: { createdAt: "asc" },
+      orderBy: { updatedAt: "desc" },
       select: { id: true }
     });
     return player?.id ?? null;
   }
 
-  async getPlayerProfile(playerId: string): Promise<{ displayName: string | null; userId: string | null } | null> {
+  async getPlayerProfile(
+    playerId: string
+  ): Promise<
+    | {
+        displayName: string | null;
+        userId: string | null;
+        rating: number;
+        peakRating: number;
+        rankedGames: number;
+        rankedWins: number;
+        rankedLosses: number;
+        rankedDraws: number;
+      }
+    | null
+  > {
     const player = await prisma.player.findUnique({
       where: { id: playerId },
-      select: { displayName: true, userId: true }
+      select: {
+        displayName: true,
+        userId: true,
+        rating: true,
+        peakRating: true,
+        rankedGames: true,
+        rankedWins: true,
+        rankedLosses: true,
+        rankedDraws: true
+      }
     });
     if (!player) return null;
     return {
       displayName: player.displayName ?? null,
-      userId: player.userId ?? null
+      userId: player.userId ?? null,
+      rating: player.rating ?? 1000,
+      peakRating: player.peakRating ?? 1000,
+      rankedGames: player.rankedGames ?? 0,
+      rankedWins: player.rankedWins ?? 0,
+      rankedLosses: player.rankedLosses ?? 0,
+      rankedDraws: player.rankedDraws ?? 0
     };
   }
 
@@ -340,6 +371,39 @@ export class AuthService {
         id: playerId,
         displayName,
         userId: userId ?? undefined
+      }
+    });
+  }
+
+  async upsertPlayerProgress(
+    playerId: string,
+    progress: {
+      rating: number;
+      peakRating: number;
+      rankedGames: number;
+      rankedWins: number;
+      rankedLosses: number;
+      rankedDraws: number;
+    }
+  ): Promise<void> {
+    await prisma.player.upsert({
+      where: { id: playerId },
+      update: {
+        rating: progress.rating,
+        peakRating: progress.peakRating,
+        rankedGames: progress.rankedGames,
+        rankedWins: progress.rankedWins,
+        rankedLosses: progress.rankedLosses,
+        rankedDraws: progress.rankedDraws
+      },
+      create: {
+        id: playerId,
+        rating: progress.rating,
+        peakRating: progress.peakRating,
+        rankedGames: progress.rankedGames,
+        rankedWins: progress.rankedWins,
+        rankedLosses: progress.rankedLosses,
+        rankedDraws: progress.rankedDraws
       }
     });
   }

@@ -27,21 +27,25 @@ class HomeStatusViewModel(
     init {
         viewModelScope.launch {
             while (true) {
-                val result = repository.loadPlayersOnline()
-                result.getOrNull()?.let { count ->
-                    _state.value = _state.value.copy(playersOnline = count)
-                }
-                val accessToken = sessionStore.accessToken
-                if (!accessToken.isNullOrBlank()) {
-                    val leaderboardResult = repository.loadLeaderboard(20, accessToken)
-                    leaderboardResult.getOrNull()?.let { entries ->
-                        _state.value = _state.value.copy(leaderboard = entries)
-                    }
-                } else {
-                    _state.value = _state.value.copy(leaderboard = emptyList())
-                }
+                refreshNow()
                 delay(10_000)
             }
+        }
+    }
+
+    suspend fun refreshNow() {
+        val result = repository.loadPlayersOnline()
+        result.getOrNull()?.let { count ->
+            _state.value = _state.value.copy(playersOnline = count)
+        }
+        val accessToken = sessionStore.accessToken
+        if (!accessToken.isNullOrBlank()) {
+            val leaderboardResult = repository.loadLeaderboard(20, accessToken)
+            leaderboardResult.getOrNull()?.let { entries ->
+                _state.value = _state.value.copy(leaderboard = entries)
+            }
+        } else {
+            _state.value = _state.value.copy(leaderboard = emptyList())
         }
     }
 

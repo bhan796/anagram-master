@@ -110,6 +110,13 @@ interface AuthState {
   error: string | null;
 }
 
+interface AuthMePayload {
+  userId: string;
+  email: string;
+  playerIds?: string[];
+  primaryPlayerId?: string | null;
+}
+
 const SETTINGS_KEY = "anagram.web.settings";
 const ACCESS_TOKEN_KEY = "anagram.auth.accessToken";
 const REFRESH_TOKEN_KEY = "anagram.auth.refreshToken";
@@ -275,6 +282,22 @@ export const App = () => {
     return response;
   };
 
+  const syncPrimaryPlayerId = async (): Promise<string | null> => {
+    try {
+      const meRes = await fetchWithAuth("/api/auth/me");
+      if (!meRes.ok) return null;
+      const me = (await meRes.json()) as AuthMePayload;
+      const primaryPlayerId = me.primaryPlayerId ?? (Array.isArray(me.playerIds) ? me.playerIds[0] : null) ?? null;
+      if (primaryPlayerId) {
+        localStorage.setItem(PLAYER_ID_KEY, primaryPlayerId);
+      }
+      setAuth({ status: "authenticated", userId: me.userId, email: me.email, loading: false, error: null });
+      return primaryPlayerId;
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     SoundManager.setSoundEnabled(settings.soundEnabled);
@@ -292,15 +315,9 @@ export const App = () => {
     let cancelled = false;
     const bootstrap = async () => {
       try {
-        const meRes = await fetchWithAuth("/api/auth/me");
-        if (meRes.ok) {
-          const me = (await meRes.json()) as { userId: string; email: string; playerIds?: string[] };
-          if (!localStorage.getItem(PLAYER_ID_KEY) && Array.isArray(me.playerIds) && me.playerIds.length > 0) {
-            localStorage.setItem(PLAYER_ID_KEY, me.playerIds[0]);
-          }
-          if (!cancelled) {
-            setAuth({ status: "authenticated", userId: me.userId, email: me.email, loading: false, error: null });
-          }
+        const primaryPlayerId = await syncPrimaryPlayerId();
+        if (!cancelled && primaryPlayerId) {
+          online.actions.refreshSession();
           return;
         }
       } catch {
@@ -381,7 +398,8 @@ export const App = () => {
 
   const loadProfile = useMemo(
     () => async () => {
-      if (!online.state.playerId) {
+      const targetPlayerId = online.state.playerId ?? localStorage.getItem(PLAYER_ID_KEY);
+      if (!targetPlayerId) {
         setProfileError("Play online once to create a player profile.");
         return;
       }
@@ -392,9 +410,9 @@ export const App = () => {
       try {
         const [statsRes, historyRes] = await Promise.all([
           auth.status === "authenticated"
-            ? fetchWithAuth(`/api/profiles/${online.state.playerId}/stats`)
-            : fetch(`${apiBaseUrl}/api/profiles/${online.state.playerId}/stats`),
-          fetch(`${apiBaseUrl}/api/profiles/${online.state.playerId}/matches`)
+            ? fetchWithAuth(`/api/profiles/${targetPlayerId}/stats`)
+            : fetch(`${apiBaseUrl}/api/profiles/${targetPlayerId}/stats`),
+          fetch(`${apiBaseUrl}/api/profiles/${targetPlayerId}/matches`)
         ]);
 
         if (!statsRes.ok || !historyRes.ok) {
@@ -462,6 +480,7 @@ export const App = () => {
           if (payload.playerId) {
             localStorage.setItem(PLAYER_ID_KEY, payload.playerId);
           }
+          await syncPrimaryPlayerId();
           online.actions.refreshSession();
           setRoute("online_matchmaking");
         } catch (error) {
@@ -497,6 +516,7 @@ export const App = () => {
           if (payload.playerId) {
             localStorage.setItem(PLAYER_ID_KEY, payload.playerId);
           }
+          await syncPrimaryPlayerId();
           online.actions.refreshSession();
           setRoute("online_matchmaking");
         } catch (error) {
@@ -582,7 +602,7 @@ export const App = () => {
   }, [auth.status]);
 
   useEffect(() => {
-    if (route === "profile") {
+    if (route === "profile" || route === "online_matchmaking") {
       void loadProfile();
     }
   }, [route, loadProfile]);

@@ -68,8 +68,9 @@ class AuthApiService(private val baseUrl: String) {
     suspend fun me(accessToken: String): Result<Triple<String, String, String?>> = withContext(Dispatchers.IO) {
         runCatching {
             val response = getJson("/api/auth/me", accessToken)
+            val primaryPlayerId = response.optString("primaryPlayerId").takeIf { it.isNotBlank() }
             val playerIds = response.optJSONArray("playerIds")
-            val playerId = if (playerIds != null && playerIds.length() > 0) playerIds.optString(0) else null
+            val playerId = primaryPlayerId ?: if (playerIds != null && playerIds.length() > 0) playerIds.optString(0) else null
             Triple(response.getString("userId"), response.getString("email"), playerId)
         }
     }

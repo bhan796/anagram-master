@@ -146,13 +146,13 @@ export const createApiRouter = (
         totalScore: 0,
         averageScore: 0,
         recentMatchIds: [],
-        rating: runtimePlayer?.rating ?? 1000,
-        peakRating: runtimePlayer?.peakRating ?? 1000,
-        rankTier: ratingToTier(runtimePlayer?.rating ?? 1000),
-        rankedGames: canViewRanked ? (runtimePlayer?.rankedGames ?? 0) : 0,
-        rankedWins: canViewRanked ? (runtimePlayer?.rankedWins ?? 0) : 0,
-        rankedLosses: canViewRanked ? (runtimePlayer?.rankedLosses ?? 0) : 0,
-        rankedDraws: canViewRanked ? (runtimePlayer?.rankedDraws ?? 0) : 0
+        rating: runtimePlayer?.rating ?? persistedProfile?.rating ?? 1000,
+        peakRating: runtimePlayer?.peakRating ?? persistedProfile?.peakRating ?? 1000,
+        rankTier: ratingToTier(runtimePlayer?.rating ?? persistedProfile?.rating ?? 1000),
+        rankedGames: canViewRanked ? (runtimePlayer?.rankedGames ?? persistedProfile?.rankedGames ?? 0) : 0,
+        rankedWins: canViewRanked ? (runtimePlayer?.rankedWins ?? persistedProfile?.rankedWins ?? 0) : 0,
+        rankedLosses: canViewRanked ? (runtimePlayer?.rankedLosses ?? persistedProfile?.rankedLosses ?? 0) : 0,
+        rankedDraws: canViewRanked ? (runtimePlayer?.rankedDraws ?? persistedProfile?.rankedDraws ?? 0) : 0
       });
       return;
     }
