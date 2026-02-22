@@ -1,5 +1,9 @@
 package com.bhan796.anagramarena.ui.screens
 
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,8 +22,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.bhan796.anagramarena.BuildConfig
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
@@ -39,11 +48,32 @@ fun AuthScreen(
     onBack: () -> Unit,
     onLogin: (String, String) -> Unit,
     onRegister: (String, String) -> Unit,
-    onContinueGuest: () -> Unit
+    onContinueGuest: () -> Unit,
+    onGoogleToken: (String) -> Unit,
+    onAuthError: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
     var mode by remember { mutableStateOf("login") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val googleClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
+
+    val googleAuthLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val data: Intent? = result.data
+        val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val token = account.idToken
+            if (!token.isNullOrBlank()) {
+                onGoogleToken(token)
+            } else {
+                onAuthError("Google sign-in did not return a token.")
+            }
+        } catch (_: Exception) {
+            onAuthError("Google sign-in failed.")
+        }
+    }
 
     ArcadeScaffold(contentPadding = contentPadding) {
         ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
@@ -112,6 +142,35 @@ fun AuthScreen(
                     val normalizedEmail = email.trim()
                     if (normalizedEmail.isBlank() || password.isBlank()) return@ArcadeButton
                     if (mode == "login") onLogin(normalizedEmail, password) else onRegister(normalizedEmail, password)
+                },
+                enabled = !isSubmitting,
+                modifier = Modifier.fillMaxWidth()
+            )
+            ArcadeButton(
+                text = "CONTINUE WITH GOOGLE",
+                onClick = {
+                    if (activity == null) {
+                        onAuthError("Google sign-in is unavailable on this screen.")
+                        return@ArcadeButton
+                    }
+                    if (googleClientId.isBlank()) {
+                        onAuthError("Google sign-in is not configured.")
+                        return@ArcadeButton
+                    }
+                    val options = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestEmail()
+                        .requestIdToken(googleClientId)
+                        .build()
+                    val client = GoogleSignIn.getClient(activity, options)
+                    googleAuthLauncher.launch(client.signInIntent)
+                },
+                enabled = !isSubmitting && googleClientId.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            )
+            ArcadeButton(
+                text = "CONTINUE WITH FACEBOOK",
+                onClick = {
+                    onAuthError("Facebook sign-in is currently available on web.")
                 },
                 enabled = !isSubmitting,
                 modifier = Modifier.fillMaxWidth()

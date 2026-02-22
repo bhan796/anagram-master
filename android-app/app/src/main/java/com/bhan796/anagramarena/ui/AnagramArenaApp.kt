@@ -170,6 +170,12 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                             navController.navigate(Routes.ONLINE_MATCHMAKING) {
                                 popUpTo(Routes.AUTH) { inclusive = true }
                             }
+                        },
+                        onGoogleToken = { token ->
+                            authViewModel.loginWithGoogleToken(token)
+                        },
+                        onAuthError = { message ->
+                            authViewModel.setError(message)
                         }
                     )
                 }

@@ -3,6 +3,7 @@ package com.bhan796.anagramarena.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.bhan796.anagramarena.network.AuthResultPayload
 import com.bhan796.anagramarena.repository.AuthRepository
 import com.bhan796.anagramarena.storage.SessionStore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.Result
 
 data class AuthUiState(
     val status: String = "guest",
@@ -86,48 +88,28 @@ class AuthViewModel(
     fun login(email: String, password: String) {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
-            val result = repository.login(email, password)
-            if (result.isFailure) {
-                _state.update {
-                    it.copy(
-                        loading = false,
-                        error = result.exceptionOrNull()?.message ?: "Authentication failed."
-                    )
-                }
-                return@launch
-            }
-            val payload = result.getOrThrow()
-            persistSession(
-                accessToken = payload.session.accessToken,
-                refreshToken = payload.session.refreshToken,
-                userId = payload.userId,
-                email = payload.email,
-                playerId = payload.playerId
-            )
+            handleAuthResult(repository.login(email, password))
         }
     }
 
     fun register(email: String, password: String) {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
-            val result = repository.register(email, password)
-            if (result.isFailure) {
-                _state.update {
-                    it.copy(
-                        loading = false,
-                        error = result.exceptionOrNull()?.message ?: "Authentication failed."
-                    )
-                }
-                return@launch
-            }
-            val payload = result.getOrThrow()
-            persistSession(
-                accessToken = payload.session.accessToken,
-                refreshToken = payload.session.refreshToken,
-                userId = payload.userId,
-                email = payload.email,
-                playerId = payload.playerId
-            )
+            handleAuthResult(repository.register(email, password))
+        }
+    }
+
+    fun loginWithGoogleToken(token: String) {
+        _state.update { it.copy(loading = true, error = null) }
+        viewModelScope.launch {
+            handleAuthResult(repository.loginWithGoogleToken(token))
+        }
+    }
+
+    fun loginWithFacebookToken(token: String) {
+        _state.update { it.copy(loading = true, error = null) }
+        viewModelScope.launch {
+            handleAuthResult(repository.loginWithFacebookToken(token))
         }
     }
 
@@ -140,6 +122,10 @@ class AuthViewModel(
 
     fun continueAsGuest() {
         clearSession()
+    }
+
+    fun setError(message: String) {
+        _state.update { it.copy(loading = false, error = message) }
     }
 
     private fun persistSession(accessToken: String, refreshToken: String, userId: String, email: String, playerId: String? = null) {
@@ -168,6 +154,26 @@ class AuthViewModel(
         sessionStore.displayName = null
         sessionStore.matchId = null
         _state.value = AuthUiState(status = "guest", loading = false, error = null)
+    }
+
+    private fun handleAuthResult(result: Result<AuthResultPayload>) {
+        if (result.isFailure) {
+            _state.update {
+                it.copy(
+                    loading = false,
+                    error = result.exceptionOrNull()?.message ?: "Authentication failed."
+                )
+            }
+            return
+        }
+        val payload = result.getOrThrow()
+        persistSession(
+            accessToken = payload.session.accessToken,
+            refreshToken = payload.session.refreshToken,
+            userId = payload.userId,
+            email = payload.email,
+            playerId = payload.playerId
+        )
     }
 
     companion object {

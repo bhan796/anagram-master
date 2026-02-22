@@ -63,6 +63,25 @@ export const createApiRouter = (
     }
   });
 
+  router.post("/auth/oauth/:provider", authLimiter, async (req: Request, res: Response) => {
+    try {
+      const provider = String(req.params.provider ?? "").toLowerCase();
+      if (provider !== "google" && provider !== "facebook") {
+        res.status(400).json({ code: "AUTH_OAUTH_PROVIDER_INVALID", message: "Unsupported OAuth provider." });
+        return;
+      }
+
+      const token = String(req.body?.token ?? "");
+      const playerId = String(req.body?.playerId ?? "").trim() || undefined;
+      const result = await authService.oauthLogin(provider, token, playerId);
+      res.json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to authenticate.";
+      const status = message.includes("configured") ? 503 : 401;
+      res.status(status).json({ code: "AUTH_OAUTH_FAILED", message });
+    }
+  });
+
   router.post("/auth/refresh", refreshLimiter, async (req: Request, res: Response) => {
     try {
       const refreshToken = String(req.body?.refreshToken ?? "");

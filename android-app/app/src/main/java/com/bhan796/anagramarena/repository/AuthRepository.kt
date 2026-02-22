@@ -17,6 +17,14 @@ class AuthRepository(
         return apiService.login(email.trim(), password, sessionStore.playerId)
     }
 
+    suspend fun loginWithGoogleToken(token: String): Result<AuthResultPayload> {
+        return apiService.oauth("google", token, sessionStore.playerId)
+    }
+
+    suspend fun loginWithFacebookToken(token: String): Result<AuthResultPayload> {
+        return apiService.oauth("facebook", token, sessionStore.playerId)
+    }
+
     suspend fun refresh(): Result<AuthSessionPayload> {
         val refreshToken = sessionStore.refreshToken ?: return Result.failure(IllegalStateException("No refresh token."))
         return apiService.refresh(refreshToken)

@@ -8,9 +8,24 @@ interface AuthScreenProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onRegister: (email: string, password: string) => Promise<void>;
   onContinueGuest: () => void;
+  onGoogleAuth: () => Promise<void>;
+  onFacebookAuth: () => Promise<void>;
+  googleEnabled: boolean;
+  facebookEnabled: boolean;
 }
 
-export const AuthScreen = ({ isSubmitting, error, onBack, onLogin, onRegister, onContinueGuest }: AuthScreenProps) => {
+export const AuthScreen = ({
+  isSubmitting,
+  error,
+  onBack,
+  onLogin,
+  onRegister,
+  onContinueGuest,
+  onGoogleAuth,
+  onFacebookAuth,
+  googleEnabled,
+  facebookEnabled
+}: AuthScreenProps) => {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,6 +78,18 @@ export const AuthScreen = ({ isSubmitting, error, onBack, onLogin, onRegister, o
           text={isSubmitting ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
           onClick={() => void submit()}
           disabled={isSubmitting}
+        />
+        <ArcadeButton
+          text="Continue with Google"
+          onClick={() => void onGoogleAuth()}
+          disabled={isSubmitting || !googleEnabled}
+          accent="green"
+        />
+        <ArcadeButton
+          text="Continue with Facebook"
+          onClick={() => void onFacebookAuth()}
+          disabled={isSubmitting || !facebookEnabled}
+          accent="magenta"
         />
         <ArcadeButton text="Continue as Guest" onClick={onContinueGuest} disabled={isSubmitting} />
       </div>

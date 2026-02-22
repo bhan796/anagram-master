@@ -8,6 +8,9 @@ plugins {
 val backendBaseUrl = providers
     .gradleProperty("backendBaseUrl")
     .getOrElse("https://anagram-server-production.up.railway.app")
+val googleWebClientId = providers
+    .gradleProperty("googleWebClientId")
+    .getOrElse("")
 
 android {
     namespace = "com.bhan796.anagramarena"
@@ -40,6 +43,11 @@ android {
                 "BACKEND_BASE_URL",
                 "\"$backendBaseUrl\""
             )
+            buildConfigField(
+                "String",
+                "GOOGLE_WEB_CLIENT_ID",
+                "\"$googleWebClientId\""
+            )
         }
         release {
             isMinifyEnabled = false
@@ -51,6 +59,11 @@ android {
                 "String",
                 "BACKEND_BASE_URL",
                 "\"$backendBaseUrl\""
+            )
+            buildConfigField(
+                "String",
+                "GOOGLE_WEB_CLIENT_ID",
+                "\"$googleWebClientId\""
             )
         }
     }
@@ -82,6 +95,7 @@ dependencies {
     implementation("androidx.compose.animation:animation-core")
     implementation("com.google.accompanist:accompanist-navigation-animation:0.34.0")
     implementation("com.google.android.material:material:1.12.0")
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 

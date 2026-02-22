@@ -43,6 +43,15 @@ class AuthApiService(private val baseUrl: String) {
         }
     }
 
+    suspend fun oauth(provider: String, token: String, playerId: String?): Result<AuthResultPayload> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = JSONObject().put("token", token)
+            if (!playerId.isNullOrBlank()) payload.put("playerId", playerId)
+            val response = postJson("/api/auth/oauth/$provider", payload)
+            response.toAuthResult()
+        }
+    }
+
     suspend fun refresh(refreshToken: String): Result<AuthSessionPayload> = withContext(Dispatchers.IO) {
         runCatching {
             val response = postJson("/api/auth/refresh", JSONObject().put("refreshToken", refreshToken))

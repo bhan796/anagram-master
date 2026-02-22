@@ -6,6 +6,7 @@ import { ensureRedisConnected } from "../config/redis.js";
 import { loadEnv } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "./jwt.js";
+import { verifyOauthToken } from "./oauthVerifier.js";
 
 const env = loadEnv();
 
@@ -34,6 +35,8 @@ interface AuthResult {
   playerId: string;
   session: SessionPair;
 }
+
+type OauthProvider = "google" | "facebook";
 
 export class AuthService {
   private async ensureUserPrimaryPlayerId(userId: string, preferredPlayerId?: string | null): Promise<string> {
@@ -150,6 +153,67 @@ export class AuthService {
     return {
       userId: user.id,
       email: user.email,
+      playerId: resolvedPlayerId,
+      session
+    };
+  }
+
+  async oauthLogin(provider: OauthProvider, token: string, playerId?: string | null): Promise<AuthResult> {
+    const identity = await verifyOauthToken(provider, token);
+
+    const account = await prisma.oauthAccount.findUnique({
+      where: {
+        provider_providerUserId: {
+          provider,
+          providerUserId: identity.providerUserId
+        }
+      }
+    });
+
+    let userId: string;
+    let email: string;
+    if (account) {
+      const user = await prisma.user.findUnique({ where: { id: account.userId } });
+      if (!user) {
+        throw new Error("Linked OAuth user not found.");
+      }
+      userId = user.id;
+      email = user.email;
+    } else {
+      const candidateEmail =
+        identity.email?.trim().toLowerCase() ?? `${provider}_${identity.providerUserId}@oauth.anagram.local`;
+
+      let user = await prisma.user.findUnique({ where: { email: candidateEmail } });
+      if (!user) {
+        const passwordHash = await argon2.hash(randomUUID(), { type: argon2.argon2id });
+        user = await prisma.user.create({
+          data: {
+            email: candidateEmail,
+            passwordHash
+          }
+        });
+      }
+
+      userId = user.id;
+      email = user.email;
+
+      await prisma.oauthAccount.create({
+        data: {
+          userId,
+          provider,
+          providerUserId: identity.providerUserId,
+          email: identity.email
+        }
+      });
+    }
+
+    const resolvedPlayerId = await this.ensureUserPrimaryPlayerId(userId, playerId);
+    const session = await this.issueSession(userId, resolvedPlayerId);
+    logger.info({ userId, provider, playerId: resolvedPlayerId }, "auth_oauth_success");
+
+    return {
+      userId,
+      email,
       playerId: resolvedPlayerId,
       session
     };

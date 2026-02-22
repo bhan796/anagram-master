@@ -15,6 +15,29 @@ import { useOnlineMatch } from "./hooks/useOnlineMatch";
 import * as SoundManager from "./sound/SoundManager";
 
 import type { ConundrumEntry } from "./logic/gameRules";
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        oauth2?: {
+          initTokenClient: (config: {
+            client_id: string;
+            scope: string;
+            callback: (response: { access_token?: string; error?: string }) => void;
+          }) => { requestAccessToken: (options?: { prompt?: string }) => void };
+        };
+      };
+    };
+    FB?: {
+      init: (options: { appId: string; cookie: boolean; xfbml: boolean; version: string }) => void;
+      login: (
+        callback: (response: { authResponse?: { accessToken?: string } } | null) => void,
+        options: { scope: string }
+      ) => void;
+    };
+    fbAsyncInit?: () => void;
+  }
+}
 
 type Route =
   | "home"
@@ -95,6 +118,8 @@ const AUTH_EMAIL_KEY = "anagram.auth.email";
 const PLAYER_ID_KEY = "anagram.playerId";
 const DISPLAY_NAME_KEY = "anagram.displayName";
 const MATCH_ID_KEY = "anagram.matchId";
+const GOOGLE_CLIENT_ID = String(import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "").trim();
+const FACEBOOK_APP_ID = String(import.meta.env.VITE_FACEBOOK_APP_ID ?? "").trim();
 
 const parseStoredSettings = (): SettingsState => {
   try {
@@ -170,6 +195,8 @@ export const App = () => {
     }>
   >([]);
   const [playersOnline, setPlayersOnline] = useState(0);
+  const [googleReady, setGoogleReady] = useState(false);
+  const [facebookReady, setFacebookReady] = useState(false);
 
   const online = useOnlineMatch();
 
@@ -314,6 +341,44 @@ export const App = () => {
       .catch((error: Error) => setConundrumError(error.message));
   }, []);
 
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setGoogleReady(true);
+    script.onerror = () => setGoogleReady(false);
+    document.head.appendChild(script);
+    return () => {
+      script.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!FACEBOOK_APP_ID) return;
+    window.fbAsyncInit = () => {
+      window.FB?.init({
+        appId: FACEBOOK_APP_ID,
+        cookie: false,
+        xfbml: false,
+        version: "v20.0"
+      });
+      setFacebookReady(true);
+    };
+
+    const script = document.createElement("script");
+    script.src = "https://connect.facebook.net/en_US/sdk.js";
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => setFacebookReady(false);
+    document.head.appendChild(script);
+    return () => {
+      script.remove();
+      window.fbAsyncInit = undefined;
+    };
+  }, []);
+
   const loadProfile = useMemo(
     () => async () => {
       if (!online.state.playerId) {
@@ -385,6 +450,41 @@ export const App = () => {
             body: JSON.stringify({
               email,
               password,
+              playerId: online.state.playerId ?? undefined
+            })
+          });
+          if (!response.ok) {
+            const payload = (await response.json().catch(() => ({}))) as { message?: string };
+            throw new Error(payload.message ?? "Authentication failed.");
+          }
+          const payload = (await response.json()) as { userId: string; email: string; playerId?: string; session: AuthSessionPair };
+          storeAuthSession(payload.session, payload.userId, payload.email);
+          if (payload.playerId) {
+            localStorage.setItem(PLAYER_ID_KEY, payload.playerId);
+          }
+          online.actions.refreshSession();
+          setRoute("online_matchmaking");
+        } catch (error) {
+          setAuth((previous) => ({
+            ...previous,
+            loading: false,
+            error: error instanceof Error ? error.message : "Authentication failed."
+          }));
+        }
+      },
+    [online.actions, online.state.playerId]
+  );
+
+  const authenticateOauth = useMemo(
+    () =>
+      async (provider: "google" | "facebook", token: string) => {
+        setAuth((previous) => ({ ...previous, loading: true, error: null }));
+        try {
+          const response = await fetch(`${apiBaseUrl}/api/auth/oauth/${provider}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              token,
               playerId: online.state.playerId ?? undefined
             })
           });
@@ -529,6 +629,67 @@ export const App = () => {
         onBack={() => setRoute("online_matchmaking")}
         onLogin={async (email, password) => authenticate("login", email, password)}
         onRegister={async (email, password) => authenticate("register", email, password)}
+        onGoogleAuth={async () => {
+          if (!GOOGLE_CLIENT_ID || !window.google?.accounts?.oauth2) {
+            setAuth((previous) => ({ ...previous, error: "Google login is not configured." }));
+            return;
+          }
+          setAuth((previous) => ({ ...previous, loading: true, error: null }));
+          try {
+            const token = await new Promise<string>((resolve, reject) => {
+              const client = window.google!.accounts!.oauth2!.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: "openid email profile",
+                callback: (response) => {
+                  if (!response.access_token) {
+                    reject(new Error(response.error ?? "Google login cancelled."));
+                    return;
+                  }
+                  resolve(response.access_token);
+                }
+              });
+              client.requestAccessToken({ prompt: "consent" });
+            });
+            await authenticateOauth("google", token);
+          } catch (error) {
+            setAuth((previous) => ({
+              ...previous,
+              loading: false,
+              error: error instanceof Error ? error.message : "Google login failed."
+            }));
+          }
+        }}
+        onFacebookAuth={async () => {
+          if (!FACEBOOK_APP_ID || !window.FB) {
+            setAuth((previous) => ({ ...previous, error: "Facebook login is not configured." }));
+            return;
+          }
+          setAuth((previous) => ({ ...previous, loading: true, error: null }));
+          try {
+            const token = await new Promise<string>((resolve, reject) => {
+              window.FB!.login(
+                (response) => {
+                  const accessToken = response?.authResponse?.accessToken;
+                  if (!accessToken) {
+                    reject(new Error("Facebook login cancelled."));
+                    return;
+                  }
+                  resolve(accessToken);
+                },
+                { scope: "public_profile,email" }
+              );
+            });
+            await authenticateOauth("facebook", token);
+          } catch (error) {
+            setAuth((previous) => ({
+              ...previous,
+              loading: false,
+              error: error instanceof Error ? error.message : "Facebook login failed."
+            }));
+          }
+        }}
+        googleEnabled={Boolean(GOOGLE_CLIENT_ID && googleReady)}
+        facebookEnabled={Boolean(FACEBOOK_APP_ID && facebookReady)}
         onContinueGuest={() => {
           clearAuthSession();
           online.actions.resetIdentity();
