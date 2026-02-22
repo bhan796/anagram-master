@@ -14,6 +14,7 @@ import com.bhan796.anagramarena.ui.theme.ColorGreen
 import com.bhan796.anagramarena.ui.theme.ColorWhite
 import com.bhan796.anagramarena.ui.theme.ColorGold
 import com.bhan796.anagramarena.ui.theme.ColorMagenta
+import com.bhan796.anagramarena.ui.theme.ColorCyan
 
 @Composable
 fun HomeScreen(
@@ -24,6 +25,9 @@ fun HomeScreen(
     onHowToPlay: () -> Unit,
     onProfile: () -> Unit,
     onSettings: () -> Unit,
+    isAuthenticated: Boolean,
+    authLabel: String,
+    onAuthAction: () -> Unit,
     playIntro: Boolean,
     onIntroComplete: () -> Unit
 ) {
@@ -81,12 +85,29 @@ fun HomeScreen(
                 onSettings()
             }, accentColor = ColorMagenta)
         }
+        AnimatedVisibility(logoComplete, enter = fadeIn(tween(400, delayMillis = 500)) + expandVertically(tween(400, delayMillis = 500))) {
+            ArcadeButton(if (isAuthenticated) "LOG OUT" else "SIGN IN", onClick = {
+                SoundManager.playClick()
+                onAuthAction()
+            }, accentColor = ColorCyan)
+        }
         androidx.compose.foundation.layout.Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Players Online: ", style = MaterialTheme.typography.labelLarge, color = ColorWhite)
             Text(playersOnline.toString(), style = MaterialTheme.typography.labelLarge, color = ColorGreen)
+        }
+        androidx.compose.foundation.layout.Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Account: ", style = MaterialTheme.typography.labelLarge, color = ColorWhite)
+            Text(
+                authLabel,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (isAuthenticated) ColorCyan else ColorGold
+            )
         }
 
         Spacer(Modifier.weight(1f))

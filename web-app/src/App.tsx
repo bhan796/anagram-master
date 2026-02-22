@@ -481,6 +481,15 @@ export const App = () => {
         onProfile={() => setRoute("profile")}
         onSettings={() => setRoute("settings")}
         onHowToPlay={() => setRoute("how_to_play")}
+        isAuthenticated={auth.status === "authenticated"}
+        authEmail={auth.email}
+        onAuthAction={() => {
+          if (auth.status === "authenticated") {
+            void logout();
+            return;
+          }
+          setRoute("auth");
+        }}
         playersOnline={playersOnline}
         playIntro={!homeIntroSeen}
         onIntroComplete={() => setHomeIntroSeen(true)}

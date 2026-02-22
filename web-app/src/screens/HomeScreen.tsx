@@ -9,6 +9,9 @@ interface HomeScreenProps {
   onProfile: () => void;
   onSettings: () => void;
   onHowToPlay: () => void;
+  isAuthenticated: boolean;
+  authEmail: string | null;
+  onAuthAction: () => void;
   playersOnline: number;
   playIntro: boolean;
   onIntroComplete: () => void;
@@ -20,6 +23,9 @@ export const HomeScreen = ({
   onProfile,
   onSettings,
   onHowToPlay,
+  isAuthenticated,
+  authEmail,
+  onAuthAction,
   playersOnline,
   playIntro,
   onIntroComplete
@@ -108,6 +114,16 @@ export const HomeScreen = ({
           accent="magenta"
         />
       </div>
+      <div style={animatedButtonStyle(500)}>
+        <ArcadeButton
+          text={isAuthenticated ? "Log Out" : "Sign In"}
+          onClick={() => {
+            void SoundManager.playClick();
+            onAuthAction();
+          }}
+          accent="cyan"
+        />
+      </div>
 
       <div
         style={{
@@ -121,6 +137,19 @@ export const HomeScreen = ({
         }}
       >
         Players Online: <span style={{ color: "var(--green)" }}>{playersOnline}</span>
+      </div>
+      <div
+        style={{
+          color: "var(--white)",
+          textAlign: "center",
+          marginTop: 2,
+          fontFamily: "var(--font-pixel)",
+          fontSize: "var(--text-label)",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase"
+        }}
+      >
+        Account: <span style={{ color: isAuthenticated ? "var(--cyan)" : "var(--gold)" }}>{isAuthenticated ? authEmail ?? "Signed In" : "Guest"}</span>
       </div>
       <div style={{ flex: 1 }} />
     </ArcadeScaffold>

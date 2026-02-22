@@ -129,6 +129,16 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                         onHowToPlay = { navController.navigate(Routes.HOW_TO_PLAY) },
                         onProfile = { navController.navigate(Routes.PROFILE) },
                         onSettings = { navController.navigate(Routes.SETTINGS) },
+                        isAuthenticated = authState.status == "authenticated",
+                        authLabel = if (authState.status == "authenticated") (authState.email ?: "SIGNED IN") else "GUEST",
+                        onAuthAction = {
+                            if (authState.status == "authenticated") {
+                                authViewModel.logout()
+                                onlineMatchViewModel.retryConnect()
+                            } else {
+                                navController.navigate(Routes.AUTH)
+                            }
+                        },
                         playIntro = playHomeIntro,
                         onIntroComplete = { playHomeIntro = false }
                     )
