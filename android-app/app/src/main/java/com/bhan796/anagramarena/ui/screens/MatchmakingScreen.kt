@@ -63,18 +63,26 @@ fun MatchmakingScreen(
 
     val searchingLabel = "SEARCHING" + ".".repeat((dotsProgress * 3).toInt() + 1)
     val hasExistingMatch = onlineState.matchState != null
+    val isSearching = onlineState.isInMatchmaking || searchStarted
     val hasMatchAfterSearch = searchStarted && hasExistingMatch
     val primaryButtonText = when {
         hasMatchAfterSearch -> "MATCH FOUND!"
-        searchStarted && onlineState.isInMatchmaking -> searchingLabel
+        isSearching && onlineState.isInMatchmaking -> searchingLabel
         hasExistingMatch -> "ALREADY IN MATCH"
         else -> "FIND OPPONENT"
     }
     val primaryButtonEnabled =
-        !searchStarted &&
-            !onlineState.isInMatchmaking &&
+        !onlineState.isInMatchmaking &&
             !hasExistingMatch &&
             onlineState.connectionState is SocketConnectionState.Connected
+
+    LaunchedEffect(onlineState.isInMatchmaking, hasExistingMatch) {
+        if (onlineState.isInMatchmaking) {
+            searchStarted = true
+        } else if (!hasExistingMatch) {
+            searchStarted = false
+        }
+    }
 
     LaunchedEffect(searchStarted, onlineState.matchState?.matchId) {
         if (searchStarted && onlineState.matchState != null) {
@@ -103,14 +111,14 @@ fun MatchmakingScreen(
             ModeOptionButton(
                 text = "CASUAL",
                 selected = selectedMode == "casual",
-                enabled = !searchStarted && !onlineState.isInMatchmaking && !hasExistingMatch,
+                enabled = !isSearching && !onlineState.isInMatchmaking && !hasExistingMatch,
                 onClick = { selectedMode = "casual" },
                 modifier = Modifier.weight(1f)
             )
             ModeOptionButton(
                 text = "RANKED",
                 selected = selectedMode == "ranked",
-                enabled = !searchStarted && !onlineState.isInMatchmaking && !hasExistingMatch,
+                enabled = !isSearching && !onlineState.isInMatchmaking && !hasExistingMatch,
                 onClick = { selectedMode = "ranked" },
                 modifier = Modifier.weight(1f)
             )
@@ -148,7 +156,7 @@ fun MatchmakingScreen(
             }
         }
 
-        if (searchStarted && onlineState.isInMatchmaking && onlineState.matchState == null) {
+        if (isSearching && onlineState.isInMatchmaking && onlineState.matchState == null) {
             ArcadeButton(
                 text = "CANCEL SEARCH",
                 onClick = {

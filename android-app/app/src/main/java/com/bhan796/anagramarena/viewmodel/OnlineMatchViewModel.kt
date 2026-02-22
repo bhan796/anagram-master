@@ -139,6 +139,33 @@ class OnlineMatchViewModel(
         _state.value = _state.value.copy(lastError = null, localValidationMessage = null)
     }
 
+    fun queuePlayAgain() {
+        val mode = _state.value.matchState?.mode ?: "casual"
+        if (_state.value.matchState?.phase == MatchPhase.FINISHED) {
+            _state.value = _state.value.copy(
+                matchId = null,
+                matchState = null,
+                myPlayer = null,
+                opponentPlayer = null,
+                isMyTurnToPick = false,
+                secondsRemaining = 0,
+                hasSubmittedWord = false,
+                wordInput = "",
+                conundrumGuessInput = "",
+                localValidationMessage = null,
+                lastError = null
+            )
+        }
+        telemetry.log("queue_play_again")
+        repository.identify(null)
+        repository.joinQueue(mode)
+        _state.value = _state.value.copy(
+            queueMode = mode,
+            queueState = "searching",
+            isInMatchmaking = true
+        )
+    }
+
     private fun startTicker() {
         tickerJob?.cancel()
         tickerJob = viewModelScope.launch {

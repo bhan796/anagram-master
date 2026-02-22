@@ -70,6 +70,7 @@ fun OnlineMatchScreen(
     onConundrumGuessChange: (String) -> Unit,
     onSubmitConundrumGuess: () -> Unit,
     onDismissError: () -> Unit,
+    onPlayAgain: () -> Unit,
     onBack: () -> Unit,
     onBackToHome: () -> Unit
 ) {
@@ -79,6 +80,11 @@ fun OnlineMatchScreen(
 
     ArcadeScaffold(contentPadding = contentPadding) {
         if (isFinished) {
+            ArcadeButton(
+                text = "PLAY AGAIN",
+                onClick = onPlayAgain,
+                modifier = Modifier.fillMaxWidth()
+            )
             ArcadeButton(
                 text = "BACK HOME",
                 onClick = onBackToHome,

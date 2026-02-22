@@ -22,6 +22,7 @@ interface OnlineMatchScreenProps {
   onSubmitConundrumGuess: () => void;
   onDismissError: () => void;
   onLeaveGame: () => void;
+  onPlayAgain: () => void;
   onBackToHome: () => void;
 }
 
@@ -80,6 +81,7 @@ export const OnlineMatchScreen = ({
   onSubmitConundrumGuess,
   onDismissError,
   onLeaveGame,
+  onPlayAgain,
   onBackToHome
 }: OnlineMatchScreenProps) => {
   const match = state.matchState;
@@ -129,7 +131,10 @@ export const OnlineMatchScreen = ({
   return (
     <ArcadeScaffold>
       {isFinished ? (
-        <ArcadeButton text="Back Home" onClick={onBackToHome} accent="gold" />
+        <>
+          <ArcadeButton text="Play Again" onClick={onPlayAgain} />
+          <ArcadeButton text="Back Home" onClick={onBackToHome} accent="gold" />
+        </>
       ) : (
         <>
           <ArcadeButton text="Leave Game" onClick={() => setShowLeaveConfirm(true)} accent="gold" />

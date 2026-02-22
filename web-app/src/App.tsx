@@ -327,6 +327,12 @@ export const App = () => {
         onSubmitConundrumGuess={online.actions.submitConundrumGuess}
         onDismissError={online.actions.clearError}
         onLeaveGame={online.actions.forfeitMatch}
+        onPlayAgain={() => {
+          const mode = online.state.matchState?.mode ?? "casual";
+          online.actions.clearFinishedMatch();
+          setRoute("online_matchmaking");
+          online.actions.startQueue(mode);
+        }}
         onBackToHome={() => {
           online.actions.clearFinishedMatch();
           setRoute("home");

@@ -34,12 +34,21 @@ export const MatchmakingScreen = ({
   const [dots, setDots] = useState(1);
   const [selectedMode, setSelectedMode] = useState<"casual" | "ranked">("casual");
   const hasActiveMatch = Boolean(state.matchState && state.matchState.phase !== "finished");
+  const isSearching = state.isInMatchmaking || searchStarted;
 
   useEffect(() => {
-    if (!searchStarted || !state.isInMatchmaking || hasActiveMatch) return;
+    if (state.isInMatchmaking) {
+      setSearchStarted(true);
+    } else if (!hasActiveMatch) {
+      setSearchStarted(false);
+    }
+  }, [state.isInMatchmaking, hasActiveMatch]);
+
+  useEffect(() => {
+    if (!isSearching || hasActiveMatch) return;
     const timer = window.setInterval(() => setDots((value) => (value % 3) + 1), 350);
     return () => window.clearInterval(timer);
-  }, [searchStarted, state.isInMatchmaking, hasActiveMatch]);
+  }, [isSearching, hasActiveMatch]);
 
   useEffect(() => {
     if (searchStarted && hasActiveMatch) {
@@ -52,13 +61,12 @@ export const MatchmakingScreen = ({
   }, [searchStarted, hasActiveMatch, onMatchReady]);
 
   const buttonText = useMemo(() => {
-    if (searchStarted && hasActiveMatch) return "Match Found!";
-    if (searchStarted && state.isInMatchmaking) return `Searching${".".repeat(dots)}`;
+    if (isSearching && hasActiveMatch) return "Match Found!";
+    if (isSearching && state.isInMatchmaking) return `Searching${".".repeat(dots)}`;
     return "Find Opponent";
-  }, [searchStarted, hasActiveMatch, state.isInMatchmaking, dots]);
+  }, [isSearching, hasActiveMatch, state.isInMatchmaking, dots]);
 
   const primaryEnabled =
-    !searchStarted &&
     !state.isInMatchmaking &&
     (state.connectionState === "connected" || state.connectionState === "connecting");
   const showRetry = state.connectionState === "failed" || state.connectionState === "disconnected";
@@ -86,7 +94,7 @@ export const MatchmakingScreen = ({
           type="button"
           className={`mode-select-btn ${selectedMode === "casual" ? "selected" : "unselected"}`}
           onClick={() => setSelectedMode("casual")}
-          disabled={searchStarted || state.isInMatchmaking || hasActiveMatch}
+          disabled={isSearching || state.isInMatchmaking || hasActiveMatch}
         >
           Casual
         </button>
@@ -94,7 +102,7 @@ export const MatchmakingScreen = ({
           type="button"
           className={`mode-select-btn ${selectedMode === "ranked" ? "selected" : "unselected"}`}
           onClick={() => setSelectedMode("ranked")}
-          disabled={searchStarted || state.isInMatchmaking || hasActiveMatch}
+          disabled={isSearching || state.isInMatchmaking || hasActiveMatch}
         >
           Ranked
         </button>
@@ -129,7 +137,7 @@ export const MatchmakingScreen = ({
         )}
       </div>
 
-      {searchStarted && state.isInMatchmaking && !hasActiveMatch ? (
+      {isSearching && state.isInMatchmaking && !hasActiveMatch ? (
         <ArcadeButton
           text="Cancel Search"
           onClick={() => {
