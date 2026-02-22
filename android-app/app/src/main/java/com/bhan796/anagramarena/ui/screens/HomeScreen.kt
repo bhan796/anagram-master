@@ -25,45 +25,43 @@ fun HomeScreen(
     onProfile: () -> Unit,
     onSettings: () -> Unit
 ) {
+    var logoComplete by remember { mutableStateOf(false) }
+
     ArcadeScaffold(contentPadding = contentPadding) {
         Spacer(Modifier.weight(1f))
 
-        LogoParticleAnimation(modifier = Modifier.fillMaxWidth())
+        LogoParticleAnimation(
+            modifier = Modifier.fillMaxWidth(),
+            onComplete = { logoComplete = true }
+        )
 
         Spacer(Modifier.height(32.dp))
 
-        val delays = listOf(1700, 1800, 1900, 2000, 2100)
-        val buttonVisible = delays.map { delay ->
-            var v by remember { mutableStateOf(false) }
-            LaunchedEffect(Unit) { kotlinx.coroutines.delay(delay.toLong()); v = true }
-            v
-        }
-
-        AnimatedVisibility(buttonVisible[0], enter = fadeIn(tween(400)) + expandVertically()) {
+        AnimatedVisibility(logoComplete, enter = fadeIn(tween(400, delayMillis = 0)) + expandVertically(tween(400, delayMillis = 0))) {
             ArcadeButton("PLAY ONLINE", onClick = {
                 SoundManager.playClick()
                 onPlayOnline()
             })
         }
-        AnimatedVisibility(buttonVisible[1], enter = fadeIn(tween(400)) + expandVertically()) {
+        AnimatedVisibility(logoComplete, enter = fadeIn(tween(400, delayMillis = 100)) + expandVertically(tween(400, delayMillis = 100))) {
             ArcadeButton("PRACTICE MODE", onClick = {
                 SoundManager.playClick()
                 onPracticeMode()
             })
         }
-        AnimatedVisibility(buttonVisible[2], enter = fadeIn(tween(400)) + expandVertically()) {
+        AnimatedVisibility(logoComplete, enter = fadeIn(tween(400, delayMillis = 200)) + expandVertically(tween(400, delayMillis = 200))) {
             ArcadeButton("HOW TO PLAY", onClick = {
                 SoundManager.playClick()
                 onHowToPlay()
             })
         }
-        AnimatedVisibility(buttonVisible[3], enter = fadeIn(tween(400)) + expandVertically()) {
+        AnimatedVisibility(logoComplete, enter = fadeIn(tween(400, delayMillis = 300)) + expandVertically(tween(400, delayMillis = 300))) {
             ArcadeButton("PROFILE / STATS", onClick = {
                 SoundManager.playClick()
                 onProfile()
             }, accentColor = ColorGold)
         }
-        AnimatedVisibility(buttonVisible[4], enter = fadeIn(tween(400)) + expandVertically()) {
+        AnimatedVisibility(logoComplete, enter = fadeIn(tween(400, delayMillis = 400)) + expandVertically(tween(400, delayMillis = 400))) {
             ArcadeButton("SETTINGS", onClick = {
                 SoundManager.playClick()
                 onSettings()
