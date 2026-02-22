@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LetterTile } from "./ArcadeComponents";
-import * as SoundManager from "../sound/SoundManager";
 
 const TOP_WORD = "ANAGRAM";
 const BOTTOM_WORD = "ARENA";
@@ -38,15 +37,12 @@ export const LogoParticleAnimation = ({ onComplete }: { onComplete?: () => void 
   }, [onComplete]);
 
   useEffect(() => {
-    void SoundManager.playLogoAssemble();
     const activation = window.requestAnimationFrame(() => setActive(true));
     const maxDelayMs = Math.max(...topLetters.map((letter) => letter.delayMs), ...bottomLetters.map((letter) => letter.delayMs));
     const doneAtMs = maxDelayMs + SLIDE_DURATION_MS + 70;
-    const snapSound = window.setTimeout(() => void SoundManager.playMatchFound(), Math.max(0, doneAtMs - 170));
     const completed = window.setTimeout(() => onCompleteRef.current?.(), doneAtMs);
     return () => {
       window.cancelAnimationFrame(activation);
-      window.clearTimeout(snapSound);
       window.clearTimeout(completed);
     };
   }, [topLetters, bottomLetters]);

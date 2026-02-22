@@ -86,12 +86,18 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
     val settings by settingsViewModel.state.collectAsState()
     val onlineState by onlineMatchViewModel.state.collectAsState()
     val homeStatus by homeStatusViewModel.state.collectAsState()
-    var homeIntroSeen by rememberSaveable { mutableStateOf(false) }
+    var playHomeIntro by rememberSaveable { mutableStateOf(true) }
 
     LaunchedEffect(settings) {
         SoundManager.setSoundEnabled(settings.soundEnabled)
         SoundManager.setMasterMuted(settings.masterMuted)
         SoundManager.setSfxVolume(settings.sfxVolume)
+    }
+
+    LaunchedEffect(currentRoute) {
+        if (currentRoute != Routes.HOME) {
+            playHomeIntro = false
+        }
     }
 
     LaunchedEffect(onlineState.matchState?.matchId, onlineState.matchState?.phase, currentRoute) {
@@ -116,8 +122,8 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                         onHowToPlay = { navController.navigate(Routes.HOW_TO_PLAY) },
                         onProfile = { navController.navigate(Routes.PROFILE) },
                         onSettings = { navController.navigate(Routes.SETTINGS) },
-                        playIntro = !homeIntroSeen,
-                        onIntroComplete = { homeIntroSeen = true }
+                        playIntro = playHomeIntro,
+                        onIntroComplete = { playHomeIntro = false }
                     )
                 }
 
