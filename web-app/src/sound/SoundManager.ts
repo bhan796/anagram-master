@@ -2,10 +2,42 @@ import * as Tone from "tone";
 
 // -- Internal state ------------------------------------------------------------
 let _soundEnabled = true;
+let _masterMuted = false;
+
 let _musicEnabled = true;
+let _uiSfxEnabled = true;
+let _gameSfxEnabled = true;
+
+let _musicVolume = 0.5;
+let _uiSfxVolume = 0.8;
+let _gameSfxVolume = 0.85;
+
 let _musicLoop: Tone.Part | null = null;
 let _musicSynth: Tone.PolySynth | null = null;
+let _musicReverb: Tone.Reverb | null = null;
 let _started = false;
+
+function clamp01(value: number): number {
+  if (Number.isNaN(value)) return 0;
+  return Math.max(0, Math.min(1, value));
+}
+
+function volumeToDb(volume: number): number {
+  if (volume <= 0) return -72;
+  return Tone.gainToDb(volume);
+}
+
+function canPlayUiSfx() {
+  return _soundEnabled && !_masterMuted && _uiSfxEnabled && _uiSfxVolume > 0;
+}
+
+function canPlayGameSfx() {
+  return _soundEnabled && !_masterMuted && _gameSfxEnabled && _gameSfxVolume > 0;
+}
+
+function canPlayMusic() {
+  return !_masterMuted && _musicEnabled && _musicVolume > 0;
+}
 
 async function ensureStarted() {
   if (!_started) {
@@ -19,34 +51,64 @@ export function setSoundEnabled(enabled: boolean) {
   _soundEnabled = enabled;
 }
 
+export function setMasterMuted(muted: boolean) {
+  _masterMuted = muted;
+  if (muted) {
+    stopMusic();
+  }
+}
+
 export function setMusicEnabled(enabled: boolean) {
   _musicEnabled = enabled;
   if (!enabled) {
     stopMusic();
-  } else {
-    void startMenuMusic();
   }
+}
+
+export function setUiSfxEnabled(enabled: boolean) {
+  _uiSfxEnabled = enabled;
+}
+
+export function setGameSfxEnabled(enabled: boolean) {
+  _gameSfxEnabled = enabled;
+}
+
+export function setMusicVolume(volume: number) {
+  _musicVolume = clamp01(volume);
+  if (_musicSynth) {
+    _musicSynth.volume.value = -18 + volumeToDb(_musicVolume);
+  }
+}
+
+export function setUiSfxVolume(volume: number) {
+  _uiSfxVolume = clamp01(volume);
+}
+
+export function setGameSfxVolume(volume: number) {
+  _gameSfxVolume = clamp01(volume);
 }
 
 // -- Short SFX (fire-and-forget) -----------------------------------------------
 
 export async function playClick() {
-  if (!_soundEnabled) return;
+  if (!canPlayUiSfx()) return;
   await ensureStarted();
   const synth = new Tone.Synth({
     oscillator: { type: "square" },
-    envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.01 }
+    envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.01 },
+    volume: -6 + volumeToDb(_uiSfxVolume)
   }).toDestination();
   synth.triggerAttackRelease("C6", "32n");
   window.setTimeout(() => synth.dispose(), 300);
 }
 
 export async function playTilePlace() {
-  if (!_soundEnabled) return;
+  if (!canPlayGameSfx()) return;
   await ensureStarted();
   const synth = new Tone.Synth({
     oscillator: { type: "square" },
-    envelope: { attack: 0.001, decay: 0.07, sustain: 0, release: 0.01 }
+    envelope: { attack: 0.001, decay: 0.07, sustain: 0, release: 0.01 },
+    volume: -8 + volumeToDb(_gameSfxVolume)
   }).toDestination();
   synth.triggerAttackRelease("G4", "16n");
   window.setTimeout(() => {
@@ -56,12 +118,13 @@ export async function playTilePlace() {
 }
 
 export async function playWordSubmit() {
-  if (!_soundEnabled) return;
+  if (!canPlayGameSfx()) return;
   await ensureStarted();
   const synth = new Tone.PolySynth(Tone.Synth).toDestination();
   synth.set({
     oscillator: { type: "sine" },
-    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 }
+    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 },
+    volume: -10 + volumeToDb(_gameSfxVolume)
   });
   const now = Tone.now();
   synth.triggerAttackRelease("C5", "8n", now);
@@ -71,12 +134,13 @@ export async function playWordSubmit() {
 }
 
 export async function playWordValid() {
-  if (!_soundEnabled) return;
+  if (!canPlayGameSfx()) return;
   await ensureStarted();
   const synth = new Tone.PolySynth(Tone.Synth).toDestination();
   synth.set({
     oscillator: { type: "sine" },
-    envelope: { attack: 0.01, decay: 0.12, sustain: 0.1, release: 0.3 }
+    envelope: { attack: 0.01, decay: 0.12, sustain: 0.1, release: 0.3 },
+    volume: -8 + volumeToDb(_gameSfxVolume)
   });
   const now = Tone.now();
   ["C5", "E5", "G5", "C6"].forEach((note, index) => {
@@ -86,11 +150,12 @@ export async function playWordValid() {
 }
 
 export async function playWordInvalid() {
-  if (!_soundEnabled) return;
+  if (!canPlayGameSfx()) return;
   await ensureStarted();
   const synth = new Tone.Synth({
     oscillator: { type: "square" },
-    envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.05 }
+    envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.05 },
+    volume: -10 + volumeToDb(_gameSfxVolume)
   }).toDestination();
   const now = Tone.now();
   synth.triggerAttackRelease("A3", "8n", now);
@@ -99,37 +164,37 @@ export async function playWordInvalid() {
 }
 
 export async function playTimerTick() {
-  if (!_soundEnabled) return;
+  if (!canPlayGameSfx()) return;
   await ensureStarted();
   const synth = new Tone.Synth({
     oscillator: { type: "sine" },
     envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.01 },
-    volume: -12
+    volume: -12 + volumeToDb(_gameSfxVolume)
   }).toDestination();
   synth.triggerAttackRelease("C6", "32n");
   window.setTimeout(() => synth.dispose(), 300);
 }
 
 export async function playTimerUrgent() {
-  if (!_soundEnabled) return;
+  if (!canPlayGameSfx()) return;
   await ensureStarted();
   const synth = new Tone.Synth({
     oscillator: { type: "sine" },
     envelope: { attack: 0.001, decay: 0.06, sustain: 0, release: 0.01 },
-    volume: -8
+    volume: -8 + volumeToDb(_gameSfxVolume)
   }).toDestination();
   synth.triggerAttackRelease("E6", "16n");
   window.setTimeout(() => synth.dispose(), 300);
 }
 
 export async function playMatchFound() {
-  if (!_soundEnabled) return;
+  if (!canPlayUiSfx()) return;
   await ensureStarted();
   const synth = new Tone.PolySynth(Tone.Synth).toDestination();
   synth.set({
     oscillator: { type: "square" },
     envelope: { attack: 0.01, decay: 0.15, sustain: 0.1, release: 0.4 },
-    volume: -4
+    volume: -4 + volumeToDb(_uiSfxVolume)
   });
   const now = Tone.now();
   ["C5", "E5", "G5", "C6", "E6"].forEach((note, index) => {
@@ -139,25 +204,25 @@ export async function playMatchFound() {
 }
 
 export async function playCountdownBeep() {
-  if (!_soundEnabled) return;
+  if (!canPlayUiSfx()) return;
   await ensureStarted();
   const synth = new Tone.Synth({
     oscillator: { type: "sine" },
     envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.05 },
-    volume: -6
+    volume: -6 + volumeToDb(_uiSfxVolume)
   }).toDestination();
   synth.triggerAttackRelease("A5", "16n");
   window.setTimeout(() => synth.dispose(), 500);
 }
 
 export async function playCountdownGo() {
-  if (!_soundEnabled) return;
+  if (!canPlayUiSfx()) return;
   await ensureStarted();
   const synth = new Tone.PolySynth(Tone.Synth).toDestination();
   synth.set({
     oscillator: { type: "square" },
     envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.5 },
-    volume: -3
+    volume: -3 + volumeToDb(_uiSfxVolume)
   });
   const now = Tone.now();
   ["A5", "D6", "G6"].forEach((note, index) => {
@@ -167,12 +232,13 @@ export async function playCountdownGo() {
 }
 
 export async function playRoundResult() {
-  if (!_soundEnabled) return;
+  if (!canPlayGameSfx()) return;
   await ensureStarted();
   const synth = new Tone.PolySynth(Tone.Synth).toDestination();
   synth.set({
     oscillator: { type: "sine" },
-    envelope: { attack: 0.01, decay: 0.15, sustain: 0.05, release: 0.3 }
+    envelope: { attack: 0.01, decay: 0.15, sustain: 0.05, release: 0.3 },
+    volume: -10 + volumeToDb(_gameSfxVolume)
   });
   const now = Tone.now();
   synth.triggerAttackRelease("G5", "8n", now);
@@ -181,13 +247,13 @@ export async function playRoundResult() {
 }
 
 export async function playWin() {
-  if (!_soundEnabled) return;
+  if (!canPlayGameSfx()) return;
   await ensureStarted();
   const synth = new Tone.PolySynth(Tone.Synth).toDestination();
   synth.set({
     oscillator: { type: "square" },
     envelope: { attack: 0.01, decay: 0.18, sustain: 0.1, release: 0.5 },
-    volume: -4
+    volume: -4 + volumeToDb(_gameSfxVolume)
   });
   const now = Tone.now();
   ["C5", "E5", "G5", "C6", "E6", "G6"].forEach((note, index) => {
@@ -197,13 +263,13 @@ export async function playWin() {
 }
 
 export async function playLose() {
-  if (!_soundEnabled) return;
+  if (!canPlayGameSfx()) return;
   await ensureStarted();
   const synth = new Tone.PolySynth(Tone.Synth).toDestination();
   synth.set({
     oscillator: { type: "sawtooth" },
     envelope: { attack: 0.02, decay: 0.2, sustain: 0.05, release: 0.4 },
-    volume: -6
+    volume: -6 + volumeToDb(_gameSfxVolume)
   });
   const now = Tone.now();
   ["G4", "F4", "Eb4", "C4"].forEach((note, index) => {
@@ -215,7 +281,7 @@ export async function playLose() {
 // -- Background music (procedural chiptune loop) ------------------------------
 
 export async function startMenuMusic() {
-  if (!_musicEnabled) return;
+  if (!canPlayMusic()) return;
   await ensureStarted();
   stopMusic();
 
@@ -224,11 +290,11 @@ export async function startMenuMusic() {
   _musicSynth.set({
     oscillator: { type: "square" },
     envelope: { attack: 0.02, decay: 0.1, sustain: 0.4, release: 0.8 },
-    volume: -18
+    volume: -18 + volumeToDb(_musicVolume)
   });
 
-  const reverb = new Tone.Reverb({ decay: 2, wet: 0.25 }).toDestination();
-  _musicSynth.connect(reverb);
+  _musicReverb = new Tone.Reverb({ decay: 2, wet: 0.25 }).toDestination();
+  _musicSynth.connect(_musicReverb);
 
   const pattern = [
     { time: "0:0", note: "C4", dur: "8n" },
@@ -262,7 +328,7 @@ export async function startMenuMusic() {
 }
 
 export async function startMatchMusic() {
-  if (!_musicEnabled) return;
+  if (!canPlayMusic()) return;
   await ensureStarted();
   stopMusic();
 
@@ -271,7 +337,7 @@ export async function startMatchMusic() {
   _musicSynth.set({
     oscillator: { type: "square" },
     envelope: { attack: 0.01, decay: 0.08, sustain: 0.3, release: 0.5 },
-    volume: -20
+    volume: -20 + volumeToDb(_musicVolume)
   });
 
   const pattern = [
@@ -312,6 +378,9 @@ export function stopMusic() {
 
   _musicSynth?.dispose();
   _musicSynth = null;
+
+  _musicReverb?.dispose();
+  _musicReverb = null;
 
   Tone.getTransport().stop();
 }

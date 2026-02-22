@@ -246,8 +246,71 @@ input {
   gap: var(--space-3);
 }
 
+.sound-setting-block {
+  display: grid;
+  gap: 8px;
+}
+
+.sound-setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.sound-slider-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.sound-slider {
+  width: 100%;
+  accent-color: var(--cyan);
+  cursor: pointer;
+}
+
+.sound-pct {
+  color: var(--cyan);
+  min-width: 44px;
+  text-align: right;
+}
+
+.arcade-mute-button {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 200;
+  border: 1.5px solid var(--gold);
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgb(255 215 0 / 22%), rgb(255 0 204 / 18%));
+  color: var(--gold);
+  padding: 10px 12px;
+  min-width: 110px;
+  font-family: var(--font-pixel);
+  font-size: clamp(7px, 1vw, 9px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgb(255 215 0 / 18%), 0 8px 20px rgb(0 0 0 / 40%);
+}
+
+.arcade-mute-button.muted {
+  border-color: var(--red);
+  color: var(--red);
+  background: linear-gradient(90deg, rgb(255 58 58 / 24%), rgb(90 20 20 / 20%));
+}
+
 @media (max-width: 480px) {
   .arcade-scaffold {
     padding-inline: 14px;
+  }
+
+  .arcade-mute-button {
+    right: 10px;
+    bottom: 10px;
+    min-width: 96px;
+    padding: 9px 10px;
   }
 }

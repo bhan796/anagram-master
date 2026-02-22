@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { HomeScreen } from "./screens/HomeScreen";
 import { PracticeMenuScreen } from "./screens/PracticeMenuScreen";
 import { LettersPracticeScreen } from "./screens/LettersPracticeScreen";
@@ -31,6 +31,13 @@ interface SettingsState {
   timerEnabled: boolean;
   soundEnabled: boolean;
   vibrationEnabled: boolean;
+  masterMuted: boolean;
+  musicEnabled: boolean;
+  uiSfxEnabled: boolean;
+  gameSfxEnabled: boolean;
+  musicVolume: number;
+  uiSfxVolume: number;
+  gameSfxVolume: number;
 }
 
 interface StatsSummary {
@@ -74,16 +81,45 @@ const parseStoredSettings = (): SettingsState => {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) {
-      return { timerEnabled: true, soundEnabled: true, vibrationEnabled: true };
+      return {
+        timerEnabled: true,
+        soundEnabled: true,
+        vibrationEnabled: true,
+        masterMuted: false,
+        musicEnabled: true,
+        uiSfxEnabled: true,
+        gameSfxEnabled: true,
+        musicVolume: 0.5,
+        uiSfxVolume: 0.8,
+        gameSfxVolume: 0.85
+      };
     }
     const parsed = JSON.parse(raw) as Partial<SettingsState>;
     return {
       timerEnabled: parsed.timerEnabled ?? true,
       soundEnabled: parsed.soundEnabled ?? true,
-      vibrationEnabled: parsed.vibrationEnabled ?? true
+      vibrationEnabled: parsed.vibrationEnabled ?? true,
+      masterMuted: parsed.masterMuted ?? false,
+      musicEnabled: parsed.musicEnabled ?? true,
+      uiSfxEnabled: parsed.uiSfxEnabled ?? true,
+      gameSfxEnabled: parsed.gameSfxEnabled ?? true,
+      musicVolume: parsed.musicVolume ?? 0.5,
+      uiSfxVolume: parsed.uiSfxVolume ?? 0.8,
+      gameSfxVolume: parsed.gameSfxVolume ?? 0.85
     };
   } catch {
-    return { timerEnabled: true, soundEnabled: true, vibrationEnabled: true };
+    return {
+      timerEnabled: true,
+      soundEnabled: true,
+      vibrationEnabled: true,
+      masterMuted: false,
+      musicEnabled: true,
+      uiSfxEnabled: true,
+      gameSfxEnabled: true,
+      musicVolume: 0.5,
+      uiSfxVolume: 0.8,
+      gameSfxVolume: 0.85
+    };
   }
 };
 
@@ -128,11 +164,41 @@ export const App = () => {
   useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     SoundManager.setSoundEnabled(settings.soundEnabled);
+    SoundManager.setMasterMuted(settings.masterMuted);
+    SoundManager.setMusicEnabled(settings.musicEnabled);
+    SoundManager.setUiSfxEnabled(settings.uiSfxEnabled);
+    SoundManager.setGameSfxEnabled(settings.gameSfxEnabled);
+    SoundManager.setMusicVolume(settings.musicVolume);
+    SoundManager.setUiSfxVolume(settings.uiSfxVolume);
+    SoundManager.setGameSfxVolume(settings.gameSfxVolume);
   }, [settings]);
 
   useEffect(() => {
+    if (settings.masterMuted || !settings.musicEnabled) {
+      SoundManager.stopMusic();
+      return;
+    }
+    if (route === "online_match") {
+      void SoundManager.startMatchMusic();
+      return;
+    }
     void SoundManager.startMenuMusic();
-  }, []);
+  }, [route, settings.masterMuted, settings.musicEnabled, settings.musicVolume]);
+
+  const renderWithMute = (screen: ReactElement) => (
+    <>
+      {screen}
+      <button
+        type="button"
+        className={`arcade-mute-button ${settings.masterMuted ? "muted" : ""}`.trim()}
+        onClick={() => setSettings((previous) => ({ ...previous, masterMuted: !previous.masterMuted }))}
+        aria-label={settings.masterMuted ? "Unmute audio" : "Mute audio"}
+        title={settings.masterMuted ? "Unmute" : "Mute"}
+      >
+        {settings.masterMuted ? "MUTED" : "SOUND"}
+      </button>
+    </>
+  );
 
   useEffect(() => {
     loadDictionary()
@@ -250,7 +316,7 @@ export const App = () => {
   }, [route, loadProfile]);
 
   if (route === "home") {
-    return (
+    return renderWithMute(
       <HomeScreen
         onPlayOnline={() => {
           online.actions.clearFinishedMatch();
@@ -266,11 +332,11 @@ export const App = () => {
   }
 
   if (route === "how_to_play") {
-    return <HowToPlayScreen onBack={() => setRoute("home")} />;
+    return renderWithMute(<HowToPlayScreen onBack={() => setRoute("home")} />);
   }
 
   if (route === "practice") {
-    return (
+    return renderWithMute(
       <PracticeMenuScreen
         timerEnabled={settings.timerEnabled}
         onTimerToggle={(value) => setSettings((previous) => ({ ...previous, timerEnabled: value }))}
@@ -282,7 +348,7 @@ export const App = () => {
   }
 
   if (route === "practice_letters") {
-    return (
+    return renderWithMute(
       <LettersPracticeScreen
         timerEnabled={settings.timerEnabled}
         dictionary={dictionary}
@@ -293,7 +359,7 @@ export const App = () => {
   }
 
   if (route === "practice_conundrum") {
-    return (
+    return renderWithMute(
       <ConundrumPracticeScreen
         timerEnabled={settings.timerEnabled}
         conundrums={conundrums}
@@ -304,7 +370,7 @@ export const App = () => {
   }
 
   if (route === "online_matchmaking") {
-    return (
+    return renderWithMute(
       <MatchmakingScreen
         state={online.state}
         leaderboard={leaderboard}
@@ -318,11 +384,11 @@ export const App = () => {
   }
 
   if (route === "online_match_found") {
-    return <MatchFoundScreen state={online.state} onDone={() => setRoute("online_match")} />;
+    return renderWithMute(<MatchFoundScreen state={online.state} onDone={() => setRoute("online_match")} />);
   }
 
   if (route === "online_match") {
-    return (
+    return renderWithMute(
       <OnlineMatchScreen
         state={online.state}
         onPickVowel={online.actions.pickVowel}
@@ -348,7 +414,7 @@ export const App = () => {
   }
 
   if (route === "profile") {
-    return (
+    return renderWithMute(
       <ProfileScreen
         isLoading={profileLoading}
         error={profileError}
@@ -361,22 +427,29 @@ export const App = () => {
     );
   }
 
-  return (
+  return renderWithMute(
     <SettingsScreen
       timerEnabled={settings.timerEnabled}
       soundEnabled={settings.soundEnabled}
       vibrationEnabled={settings.vibrationEnabled}
+      masterMuted={settings.masterMuted}
+      musicEnabled={settings.musicEnabled}
+      uiSfxEnabled={settings.uiSfxEnabled}
+      gameSfxEnabled={settings.gameSfxEnabled}
+      musicVolume={settings.musicVolume}
+      uiSfxVolume={settings.uiSfxVolume}
+      gameSfxVolume={settings.gameSfxVolume}
       onBack={() => setRoute("home")}
       onTimerToggle={(value) => setSettings((previous) => ({ ...previous, timerEnabled: value }))}
-      onSoundToggle={(value) => {
-        if (!value) {
-          SoundManager.stopMusic();
-        } else {
-          void SoundManager.startMenuMusic();
-        }
-        setSettings((previous) => ({ ...previous, soundEnabled: value }));
-      }}
+      onSoundToggle={(value) => setSettings((previous) => ({ ...previous, soundEnabled: value }))}
       onVibrationToggle={(value) => setSettings((previous) => ({ ...previous, vibrationEnabled: value }))}
+      onMasterMuteToggle={(value) => setSettings((previous) => ({ ...previous, masterMuted: value }))}
+      onMusicToggle={(value) => setSettings((previous) => ({ ...previous, musicEnabled: value }))}
+      onUiSfxToggle={(value) => setSettings((previous) => ({ ...previous, uiSfxEnabled: value }))}
+      onGameSfxToggle={(value) => setSettings((previous) => ({ ...previous, gameSfxEnabled: value }))}
+      onMusicVolumeChange={(value) => setSettings((previous) => ({ ...previous, musicVolume: value }))}
+      onUiSfxVolumeChange={(value) => setSettings((previous) => ({ ...previous, uiSfxVolume: value }))}
+      onGameSfxVolumeChange={(value) => setSettings((previous) => ({ ...previous, gameSfxVolume: value }))}
     />
   );
 };
