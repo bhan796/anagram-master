@@ -121,7 +121,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
         val hasActiveMatch = match != null && match.phase.name != "FINISHED"
         if (!hasActiveMatch) return@LaunchedEffect
         if (currentRoute == Routes.ONLINE_MATCH || currentRoute == Routes.ONLINE_MATCH_FOUND) return@LaunchedEffect
-        navController.navigate(Routes.ONLINE_MATCH) {
+        navController.navigate(Routes.ONLINE_MATCH_FOUND) {
             launchSingleTop = true
         }
     }

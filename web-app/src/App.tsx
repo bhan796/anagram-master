@@ -329,7 +329,7 @@ export const App = () => {
     const hasActiveMatch = Boolean(online.state.matchState && online.state.matchState.phase !== "finished");
     if (!hasActiveMatch) return;
     if (route === "online_match" || route === "online_match_found") return;
-    setRoute("online_match");
+    setRoute("online_match_found");
   }, [online.state.matchState, route]);
 
   if (route === "home") {
