@@ -5,12 +5,32 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+import java.util.Properties
+
 val backendBaseUrl = providers
     .gradleProperty("backendBaseUrl")
     .getOrElse("https://anagram-server-production.up.railway.app")
 val googleWebClientId = providers
     .gradleProperty("googleWebClientId")
     .getOrElse("")
+val keystoreProps = Properties()
+val keystorePropsFile = rootProject.file("keystore.properties")
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.inputStream().use { keystoreProps.load(it) }
+}
+val releaseStoreFile = (keystoreProps.getProperty("releaseStoreFile")
+    ?: providers.gradleProperty("releaseStoreFile").orNull)
+val releaseStorePassword = (keystoreProps.getProperty("releaseStorePassword")
+    ?: providers.gradleProperty("releaseStorePassword").orNull)
+val releaseKeyAlias = (keystoreProps.getProperty("releaseKeyAlias")
+    ?: providers.gradleProperty("releaseKeyAlias").orNull)
+val releaseKeyPassword = (keystoreProps.getProperty("releaseKeyPassword")
+    ?: providers.gradleProperty("releaseKeyPassword").orNull)
+val hasReleaseSigning =
+    !releaseStoreFile.isNullOrBlank() &&
+        !releaseStorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank()
 
 android {
     namespace = "com.bhan796.anagramarena"
@@ -34,6 +54,17 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
@@ -65,6 +96,9 @@ android {
                 "GOOGLE_WEB_CLIENT_ID",
                 "\"$googleWebClientId\""
             )
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }
