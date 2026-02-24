@@ -1,6 +1,11 @@
 package com.bhan796.anagramarena.ui.screens
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -131,7 +136,9 @@ fun OnlineMatchScreen(
     var showLeaveDialog by remember { mutableStateOf(false) }
     var previousPhase by rememberSaveable { mutableStateOf<MatchPhase?>(null) }
     var opponentConundrumSubmittedPrevious by rememberSaveable { mutableStateOf(false) }
+    var lettersEndingTransitionPrevious by rememberSaveable { mutableStateOf(false) }
     val isFinished = match?.phase == MatchPhase.FINISHED
+    val isLettersRoundEndingTransition = match?.phase == MatchPhase.LETTERS_SOLVING && state.secondsRemaining <= 2
     val me = state.myPlayer
     val opponent = state.opponentPlayer
     val selectableLetters = remember(match?.letters) {
@@ -159,6 +166,13 @@ fun OnlineMatchScreen(
             SoundManager.playTimerTick()
         }
         opponentConundrumSubmittedPrevious = nowSubmitted
+    }
+
+    LaunchedEffect(isLettersRoundEndingTransition) {
+        if (isLettersRoundEndingTransition && !lettersEndingTransitionPrevious) {
+            SoundManager.playTimerUrgent()
+        }
+        lettersEndingTransitionPrevious = isLettersRoundEndingTransition
     }
 
     Box(
@@ -264,12 +278,16 @@ fun OnlineMatchScreen(
                             )
                         }
                         MatchPhase.LETTERS_SOLVING -> {
-                            WordTargetRow(
-                                sourceLetters = selectableLetters,
-                                selectedIndices = selectedIndices.toList(),
-                                doubleIndex = match.bonusTiles?.doubleIndex,
-                                tripleIndex = match.bonusTiles?.tripleIndex
-                            )
+                            if (isLettersRoundEndingTransition) {
+                                RoundEndingTransitionCard()
+                            } else {
+                                WordTargetRow(
+                                    sourceLetters = selectableLetters,
+                                    selectedIndices = selectedIndices.toList(),
+                                    doubleIndex = match.bonusTiles?.doubleIndex,
+                                    tripleIndex = match.bonusTiles?.tripleIndex
+                                )
+                            }
                         }
                         MatchPhase.CONUNDRUM_SOLVING -> {
                             Box(
@@ -538,58 +556,63 @@ fun OnlineMatchScreen(
                             }
                         }
                         MatchPhase.LETTERS_SOLVING -> {
-                            SelectableLetterSlots(
-                                letters = match.letters,
-                                selectedIndices = selectedIndices.toSet(),
-                                doubleIndex = match.bonusTiles?.doubleIndex,
-                                tripleIndex = match.bonusTiles?.tripleIndex,
-                                enabled = !state.hasSubmittedWord,
-                                onLetterTapped = { index ->
-                                    if (!selectedIndices.contains(index)) {
-                                        selectedIndices.add(index)
-                                        onWordChange(selectedIndices.joinToString(separator = "") { selectableLetters[it].toString() })
-                                    }
-                                }
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(sdp(10.dp))) {
-                                ArcadeButton(
-                                    "UNDO",
-                                    onClick = {
-                                        if (selectedIndices.isNotEmpty()) {
-                                            selectedIndices.removeAt(selectedIndices.lastIndex)
+                            if (isLettersRoundEndingTransition) {
+                                RoundEndingTransitionCard()
+                                Text("Syncing round result...", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+                            } else {
+                                SelectableLetterSlots(
+                                    letters = match.letters,
+                                    selectedIndices = selectedIndices.toSet(),
+                                    doubleIndex = match.bonusTiles?.doubleIndex,
+                                    tripleIndex = match.bonusTiles?.tripleIndex,
+                                    enabled = !state.hasSubmittedWord,
+                                    onLetterTapped = { index ->
+                                        if (!selectedIndices.contains(index)) {
+                                            selectedIndices.add(index)
                                             onWordChange(selectedIndices.joinToString(separator = "") { selectableLetters[it].toString() })
                                         }
-                                    },
-                                    enabled = !state.hasSubmittedWord && selectedIndices.isNotEmpty(),
-                                    modifier = Modifier.weight(1f).heightIn(min = sdp(52.dp))
+                                    }
                                 )
+                                Row(horizontalArrangement = Arrangement.spacedBy(sdp(10.dp))) {
+                                    ArcadeButton(
+                                        "UNDO",
+                                        onClick = {
+                                            if (selectedIndices.isNotEmpty()) {
+                                                selectedIndices.removeAt(selectedIndices.lastIndex)
+                                                onWordChange(selectedIndices.joinToString(separator = "") { selectableLetters[it].toString() })
+                                            }
+                                        },
+                                        enabled = !state.hasSubmittedWord && selectedIndices.isNotEmpty(),
+                                        modifier = Modifier.weight(1f).heightIn(min = sdp(52.dp))
+                                    )
+                                    ArcadeButton(
+                                        "CLEAR",
+                                        onClick = {
+                                            selectedIndices.clear()
+                                            onWordChange("")
+                                        },
+                                        enabled = !state.hasSubmittedWord && selectedIndices.isNotEmpty(),
+                                        modifier = Modifier.weight(1f).heightIn(min = sdp(52.dp))
+                                    )
+                                }
                                 ArcadeButton(
-                                    "CLEAR",
+                                    if (state.hasSubmittedWord) "SUBMITTED" else "SUBMIT WORD",
                                     onClick = {
-                                        selectedIndices.clear()
-                                        onWordChange("")
+                                        SoundManager.playWordSubmit()
+                                        onSubmitWord()
                                     },
-                                    enabled = !state.hasSubmittedWord && selectedIndices.isNotEmpty(),
-                                    modifier = Modifier.weight(1f).heightIn(min = sdp(52.dp))
+                                    enabled = !state.hasSubmittedWord,
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = sdp(52.dp))
                                 )
-                            }
-                            ArcadeButton(
-                                if (state.hasSubmittedWord) "SUBMITTED" else "SUBMIT WORD",
-                                onClick = {
-                                    SoundManager.playWordSubmit()
-                                    onSubmitWord()
-                                },
-                                enabled = !state.hasSubmittedWord,
-                                modifier = Modifier.fillMaxWidth().heightIn(min = sdp(52.dp))
-                            )
-                            if (state.hasSubmittedWord) {
-                                LinearProgressIndicator(
-                                    progress = { 0.5f },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = ColorCyan,
-                                    trackColor = ColorSurfaceVariant
-                                )
-                                Text("Waiting for opponent or timeout...", style = MaterialTheme.typography.labelMedium)
+                                if (state.hasSubmittedWord) {
+                                    LinearProgressIndicator(
+                                        progress = { 0.5f },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        color = ColorCyan,
+                                        trackColor = ColorSurfaceVariant
+                                    )
+                                    Text("Waiting for opponent or timeout...", style = MaterialTheme.typography.labelMedium)
+                                }
                             }
                         }
                         MatchPhase.CONUNDRUM_SOLVING -> {
@@ -636,6 +659,48 @@ private fun LetterSlots(letters: List<String>, doubleIndex: Int? = null, tripleI
                 revealed = index < letters.size,
                 index = index,
                 accentColor = if (letter == "_") ColorDimText.copy(alpha = 0.4f) else tileAccent(index, doubleIndex, tripleIndex)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoundEndingTransitionCard() {
+    val transition = rememberInfiniteTransition(label = "roundEnding")
+    val pulse by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 650, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "roundEndingPulse"
+    )
+    val sweep by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "roundEndingSweep"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(ColorSurfaceVariant, RoundedCornerShape(sdp(8.dp)))
+            .border(sdp(1.dp), ColorCyan.copy(alpha = 0.45f), RoundedCornerShape(sdp(8.dp)))
+            .padding(sdp(12.dp))
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(sdp(8.dp))) {
+            Text("TIME UP", style = MaterialTheme.typography.headlineSmall, color = ColorGold.copy(alpha = pulse))
+            Text("Calculating round result...", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+            LinearProgressIndicator(
+                progress = { sweep },
+                modifier = Modifier.fillMaxWidth(),
+                color = ColorGold,
+                trackColor = ColorCyan.copy(alpha = 0.2f)
             )
         }
     }

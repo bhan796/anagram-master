@@ -81,6 +81,64 @@
   }
 }
 
+.round-ending-transition {
+  display: grid;
+  gap: 10px;
+  padding: 18px 14px;
+  border: 1px solid rgba(0, 245, 255, 0.38);
+  border-radius: 8px;
+  background:
+    linear-gradient(120deg, rgba(0, 245, 255, 0.06), rgba(255, 215, 0, 0.05)),
+    var(--surface-variant);
+  animation: roundEndPop 180ms ease-out both;
+}
+
+.round-ending-title {
+  font-family: var(--font-pixel);
+  font-size: var(--text-headline);
+  color: var(--gold);
+  text-shadow: 0 0 14px rgba(255, 215, 0, 0.35);
+  letter-spacing: 0.08em;
+}
+
+.round-ending-subtitle {
+  font-size: var(--text-label);
+  color: var(--dim);
+}
+
+.round-ending-bars {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.round-ending-bars > span {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 245, 255, 0.25);
+  transform-origin: left center;
+  animation: roundEndBar 650ms ease-in-out infinite;
+}
+
+.round-ending-bars > span:nth-child(2) {
+  animation-delay: 100ms;
+}
+
+.round-ending-bars > span:nth-child(3) {
+  animation-delay: 200ms;
+}
+
+@keyframes roundEndBar {
+  0%, 100% { transform: scaleX(0.22); opacity: 0.45; }
+  50% { transform: scaleX(1); opacity: 1; background: rgba(255, 215, 0, 0.5); }
+}
+
+@keyframes roundEndPop {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* -- How To Play tabs --------------------------------------------------- */
 .htp-tabs {
   display: flex;

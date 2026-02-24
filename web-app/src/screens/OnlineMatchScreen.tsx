@@ -145,7 +145,9 @@ export const OnlineMatchScreen = ({
   const match = state.matchState;
   const previousPhaseRef = useRef<MatchStatePayload["phase"] | undefined>(undefined);
   const opponentSubmittedConundrumRef = useRef(false);
+  const lettersEndingTransitionRef = useRef(false);
   const isFinished = match?.phase === "finished";
+  const isLettersRoundEndingTransition = match?.phase === "letters_solving" && state.secondsRemaining <= 2;
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   useEffect(() => {
@@ -216,6 +218,13 @@ export const OnlineMatchScreen = ({
     }
     opponentSubmittedConundrumRef.current = nowSubmitted;
   }, [state.matchState?.phase, state.opponentSubmittedConundrumGuess]);
+
+  useEffect(() => {
+    if (isLettersRoundEndingTransition && !lettersEndingTransitionRef.current) {
+      void SoundManager.playTimerUrgent();
+    }
+    lettersEndingTransitionRef.current = isLettersRoundEndingTransition;
+  }, [isLettersRoundEndingTransition]);
 
   return (
     <ArcadeScaffold>
@@ -294,26 +303,40 @@ export const OnlineMatchScreen = ({
 
           {match.phase === "letters_solving" ? (
             <>
-              <TapLetterComposer
-                letters={match.letters}
-                tileAccents={buildTileAccents(match.bonusTiles)}
-                tileMultipliers={buildTileMultipliers(match.bonusTiles)}
-                value={state.wordInput}
-                onValueChange={onWordChange}
-                disabled={state.hasSubmittedWord}
-                onSubmit={() => {
-                  void SoundManager.playWordSubmit();
-                  onSubmitWord();
-                }}
-              />
-              <ArcadeButton
-                text={state.hasSubmittedWord ? "Submitted" : "Submit Word"}
-                onClick={() => {
-                  void SoundManager.playWordSubmit();
-                  onSubmitWord();
-                }}
-                disabled={state.hasSubmittedWord}
-              />
+              {isLettersRoundEndingTransition ? (
+                <div className="round-ending-transition">
+                  <div className="round-ending-title">TIME UP</div>
+                  <div className="round-ending-subtitle">Calculating round result...</div>
+                  <div className="round-ending-bars" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <TapLetterComposer
+                    letters={match.letters}
+                    tileAccents={buildTileAccents(match.bonusTiles)}
+                    tileMultipliers={buildTileMultipliers(match.bonusTiles)}
+                    value={state.wordInput}
+                    onValueChange={onWordChange}
+                    disabled={state.hasSubmittedWord}
+                    onSubmit={() => {
+                      void SoundManager.playWordSubmit();
+                      onSubmitWord();
+                    }}
+                  />
+                  <ArcadeButton
+                    text={state.hasSubmittedWord ? "Submitted" : "Submit Word"}
+                    onClick={() => {
+                      void SoundManager.playWordSubmit();
+                      onSubmitWord();
+                    }}
+                    disabled={state.hasSubmittedWord}
+                  />
+                </>
+              )}
             </>
           ) : null}
 
