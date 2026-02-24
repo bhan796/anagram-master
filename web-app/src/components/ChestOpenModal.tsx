@@ -29,12 +29,16 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   const [loading, setLoading] = useState(true);
   const [wonItem, setWonItem] = useState<CosmeticItem | null>(null);
   const [alreadyOwned, setAlreadyOwned] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [x, setX] = useState(0);
   const stripRef = useRef<HTMLDivElement | null>(null);
+  const hasOpenedRef = useRef(false);
   const viewportWidth = 640;
 
   useEffect(() => {
+    if (hasOpenedRef.current) return;
+    hasOpenedRef.current = true;
     let cancelled = false;
     const run = async () => {
       try {
@@ -50,9 +54,10 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
         if (!cancelled) {
           setWonItem(payload.item);
           setAlreadyOwned(payload.alreadyOwned);
+          setErrorMessage(null);
         }
       } catch {
-        if (!cancelled) onClose();
+        if (!cancelled) setErrorMessage("Could not open chest. Please try again.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -61,7 +66,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
     return () => {
       cancelled = true;
     };
-  }, [accessToken, onClose]);
+  }, [accessToken]);
 
   const carouselItems = useMemo(() => {
     if (!wonItem) return [] as CosmeticItem[];
@@ -101,9 +106,16 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(10,10,24,0.95)", zIndex: 100, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
       {loading ? <div className="headline">Opening chest...</div> : null}
+      {!loading && errorMessage ? (
+        <div style={{ width: 360, maxWidth: "92vw", display: "grid", gap: 10, textAlign: "center" }}>
+          <div className="headline" style={{ color: "var(--red)" }}>Chest Error</div>
+          <div className="text-dim">{errorMessage}</div>
+          <ArcadeButton text="Close" onClick={onClose} />
+        </div>
+      ) : null}
       {!loading && wonItem ? (
         <>
-          <div style={{ color: "var(--gold)", fontFamily: "var(--font-pixel)" }}>?</div>
+          <div style={{ color: "var(--gold)", fontFamily: "var(--font-pixel)" }}>\u25BC</div>
           <div style={{ width: viewportWidth, maxWidth: "92vw", overflow: "hidden", border: "1px solid rgba(0,245,255,.3)", borderRadius: 8, padding: "10px 0", background: "var(--surface)" }}>
             <div ref={stripRef} style={{ display: "flex", gap: 3, transform: `translateX(${x}px)` }}>
               {carouselItems.map((item, index) => {
