@@ -13,6 +13,20 @@ import type { MatchHistoryStore } from "../store/matchHistoryStore.js";
 import type { PresenceStore } from "../store/presenceStore.js";
 import { SocketEvents, toActionError } from "./contracts.js";
 
+export const resolveAuthenticatedUserIdFromAccessToken = async (
+  accessToken: string | undefined,
+  authService: Pick<AuthService, "userExists">,
+  verifier: (token: string) => { sub: string } = verifyAccessToken
+): Promise<string | null> => {
+  if (!accessToken) return null;
+  try {
+    const decoded = verifier(accessToken);
+    return (await authService.userExists(decoded.sub)) ? decoded.sub : null;
+  } catch {
+    return null;
+  }
+};
+
 export const createSocketServer = (
   httpServer: HttpServer,
   matchHistoryStore: MatchHistoryStore,
@@ -85,14 +99,7 @@ export const createSocketServer = (
       let authenticatedUserId: string | null = null;
       let resolvedPlayerId = payload.playerId;
       let persistedDisplayName: string | null = null;
-      if (payload.accessToken) {
-        try {
-          const decoded = verifyAccessToken(payload.accessToken);
-          authenticatedUserId = (await authService.userExists(decoded.sub)) ? decoded.sub : null;
-        } catch {
-          authenticatedUserId = null;
-        }
-      }
+      authenticatedUserId = await resolveAuthenticatedUserIdFromAccessToken(payload.accessToken, authService);
 
       if (authenticatedUserId) {
         resolvedPlayerId = (await authService.resolvePrimaryPlayerIdForUser(authenticatedUserId)) ?? undefined;

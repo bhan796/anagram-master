@@ -18,6 +18,19 @@ export const canMutateProfile = (requestingUserId: string | undefined, ownerUser
   return Boolean(requestingUserId && (!ownerUserId || requestingUserId === ownerUserId));
 };
 
+const ensureActiveUser = async (req: Request, res: Response, authService: AuthService): Promise<boolean> => {
+  if (!req.auth?.userId) {
+    res.status(401).json({ code: "AUTH_REQUIRED", message: "Authentication required." });
+    return false;
+  }
+  const exists = await authService.userExists(req.auth.userId);
+  if (!exists) {
+    res.status(401).json({ code: "AUTH_INVALID_SESSION", message: "Session is no longer valid." });
+    return false;
+  }
+  return true;
+};
+
 export const createApiRouter = (
   matchHistoryStore: MatchHistoryStore,
   presenceStore: PresenceStore,
@@ -27,6 +40,8 @@ export const createApiRouter = (
   const router = Router();
   const authLimiter = createRateLimiter("auth", 20, 60);
   const refreshLimiter = createRateLimiter("refresh", 40, 60);
+  const profileMutationLimiter = createRateLimiter("profile_mutation", 30, 60);
+  const destructiveActionLimiter = createRateLimiter("destructive_action", 10, 60);
 
   router.use(attachOptionalAuth);
 
@@ -112,7 +127,8 @@ export const createApiRouter = (
     }
   });
 
-  router.delete("/auth/account", requireAuth, async (req: Request, res: Response) => {
+  router.delete("/auth/account", requireAuth, destructiveActionLimiter, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
     try {
       await authService.deleteAccount(req.auth!.userId);
       res.status(204).send();
@@ -123,6 +139,7 @@ export const createApiRouter = (
   });
 
   router.get("/auth/me", requireAuth, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
     const me = await authService.me(req.auth!.userId);
     if (!me) {
       res.status(404).json({ code: "AUTH_USER_NOT_FOUND", message: "User not found." });
@@ -132,6 +149,7 @@ export const createApiRouter = (
   });
 
   router.post("/auth/claim-guest", requireAuth, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
     try {
       const playerId = String(req.body?.playerId ?? "").trim();
       if (!playerId) {
@@ -195,7 +213,7 @@ export const createApiRouter = (
     });
   });
 
-  router.post("/profiles/:playerId/display-name", async (req: Request, res: Response) => {
+  router.post("/profiles/:playerId/display-name", profileMutationLimiter, async (req: Request, res: Response) => {
     const nextDisplayName = String(req.body?.displayName ?? "");
     const normalized = nextDisplayName.trim();
     if (!normalized || normalized.length < 3 || normalized.length > 20 || !/^[A-Za-z0-9_ ]+$/.test(normalized)) {
@@ -207,6 +225,11 @@ export const createApiRouter = (
     const requestingUserId = req.auth?.userId;
     if (!requestingUserId) {
       res.status(401).json({ code: "AUTH_REQUIRED", message: "Authentication required." });
+      return;
+    }
+    const active = await authService.userExists(requestingUserId);
+    if (!active) {
+      res.status(401).json({ code: "AUTH_INVALID_SESSION", message: "Session is no longer valid." });
       return;
     }
     if (!canMutateProfile(requestingUserId, ownerUserId)) {
@@ -263,7 +286,8 @@ export const createApiRouter = (
     });
   });
 
-  router.get("/leaderboard", requireAuth, (req: Request, res: Response) => {
+  router.get("/leaderboard", requireAuth, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
     const limit = Number(req.query.limit ?? 50);
     const entries = matchHistoryStore.getLeaderboard(Number.isFinite(limit) ? limit : 50);
     res.json({
