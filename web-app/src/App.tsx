@@ -205,6 +205,7 @@ export const App = () => {
   const [googleReady, setGoogleReady] = useState(false);
   const [facebookReady, setFacebookReady] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   const online = useOnlineMatch();
 
@@ -418,7 +419,9 @@ export const App = () => {
           auth.status === "authenticated"
             ? fetchWithAuth(`/api/profiles/${targetPlayerId}/stats`)
             : fetch(`${apiBaseUrl}/api/profiles/${targetPlayerId}/stats`),
-          fetch(`${apiBaseUrl}/api/profiles/${targetPlayerId}/matches`)
+          auth.status === "authenticated"
+            ? fetchWithAuth(`/api/profiles/${targetPlayerId}/matches`)
+            : fetch(`${apiBaseUrl}/api/profiles/${targetPlayerId}/matches`)
         ]);
 
         if (!statsRes.ok || !historyRes.ok) {
@@ -445,7 +448,7 @@ export const App = () => {
         throw new Error("Play online once to create a player profile.");
       }
 
-      const response = await fetch(`${apiBaseUrl}/api/profiles/${online.state.playerId}/display-name`, {
+      const response = await fetchWithAuth(`/api/profiles/${online.state.playerId}/display-name`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ displayName })
@@ -556,8 +559,6 @@ export const App = () => {
   const deleteAccount = useMemo(
     () => async () => {
       if (auth.status !== "authenticated") return;
-      const confirmed = window.confirm("Delete your account? This cannot be undone.");
-      if (!confirmed) return;
 
       setDeletingAccount(true);
       try {
@@ -569,6 +570,7 @@ export const App = () => {
 
         clearAuthSession();
         online.actions.resetIdentity();
+        setShowDeleteAccountModal(false);
         setRoute("home");
       } catch (error) {
         setAuth((previous) => ({
@@ -860,10 +862,13 @@ export const App = () => {
       sfxVolume={settings.sfxVolume}
       isAuthenticated={auth.status === "authenticated"}
       deletingAccount={deletingAccount}
+      showDeleteModal={showDeleteAccountModal}
       onBack={() => setRoute("home")}
       onTimerToggle={(value) => setSettings((previous) => ({ ...previous, timerEnabled: value }))}
       onMasterMuteToggle={(value) => setSettings((previous) => ({ ...previous, masterMuted: value }))}
       onSfxVolumeChange={(value) => setSettings((previous) => ({ ...previous, sfxVolume: value }))}
+      onOpenDeleteModal={() => setShowDeleteAccountModal(true)}
+      onCloseDeleteModal={() => setShowDeleteAccountModal(false)}
       onDeleteAccount={() => void deleteAccount()}
     />
   );
