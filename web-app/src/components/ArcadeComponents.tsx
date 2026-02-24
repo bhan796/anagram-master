@@ -127,11 +127,13 @@ export const TileLogo = () => (
 export const WordTiles = ({
   word,
   accent = "var(--cyan)",
-  label
+  label,
+  letterAccents
 }: {
   word: string;
   accent?: string;
   label?: string;
+  letterAccents?: string[];
 }) => {
   const cleaned = word.toUpperCase().replace(/[^A-Z]/g, "");
   const letters = cleaned.length ? cleaned.split("") : ["-"];
@@ -141,7 +143,7 @@ export const WordTiles = ({
       {label ? <div className="text-dim">{label}</div> : null}
       <div className="letter-row">
         {letters.map((letter, index) => (
-          <LetterTile key={`${letter}-${index}`} letter={letter} accent={accent} />
+          <LetterTile key={`${letter}-${index}`} letter={letter} accent={letterAccents?.[index] ?? accent} />
         ))}
       </div>
     </div>

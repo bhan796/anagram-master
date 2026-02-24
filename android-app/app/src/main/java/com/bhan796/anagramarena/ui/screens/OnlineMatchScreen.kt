@@ -82,7 +82,7 @@ private fun multiplierBreakdown(
     letters: List<String>,
     doubleIndex: Int?,
     tripleIndex: Int?
-): String? {
+): List<Color>? {
     if (doubleIndex == null || tripleIndex == null) return null
     val normalized = word.trim().uppercase()
     if (normalized.isBlank() || normalized == "-") return null
@@ -99,23 +99,17 @@ private fun multiplierBreakdown(
     }
     slots.values.forEach { it.sortDescending() }
 
-    var tripleHits = 0
-    var doubleHits = 0
+    val accents = mutableListOf<Color>()
     for (ch in normalized) {
         val values = slots[ch] ?: return null
         if (values.isEmpty()) return null
         when (values.removeAt(0)) {
-            3 -> tripleHits += 1
-            2 -> doubleHits += 1
+            3 -> accents += ColorGold
+            2 -> accents += Color(0xFFC0C0C0)
+            else -> accents += ColorCyan
         }
     }
-
-    return when {
-        tripleHits == 0 && doubleHits == 0 -> "No bonus tiles used"
-        tripleHits > 0 && doubleHits > 0 -> "Bonuses: ${tripleHits}x gold (3pt), ${doubleHits}x silver (2pt)"
-        tripleHits > 0 -> "Bonus: ${tripleHits}x gold (3pt)"
-        else -> "Bonus: ${doubleHits}x silver (2pt)"
-    }
+    return accents
 }
 
 @Composable
@@ -310,7 +304,7 @@ fun OnlineMatchScreen(
                                                 val word = submission?.word?.takeIf { it.isNotBlank() } ?: "-"
                                                 val points = result.awardedScores[player.playerId] ?: 0
                                                 val isValid = submission?.isValid ?: false
-                                                val breakdown = if (isValid && submission != null) {
+                                                val letterAccents = if (isValid && submission != null) {
                                                     multiplierBreakdown(
                                                         word = submission.normalizedWord.ifBlank { submission.word },
                                                         letters = result.letters.orEmpty(),
@@ -321,11 +315,12 @@ fun OnlineMatchScreen(
                                                 RoundResultPlayerRow(
                                                     name = player.displayName,
                                                     word = word,
+                                                    wordAccents = letterAccents,
                                                     points = points,
                                                     extra = if (submission == null) {
                                                         "No submission"
                                                     } else if (isValid) {
-                                                        if (breakdown != null) "Valid · $breakdown" else "Valid"
+                                                        "Valid"
                                                     } else {
                                                         "Invalid"
                                                     },
@@ -449,10 +444,17 @@ fun OnlineMatchScreen(
                                                 match.players.forEach { player ->
                                                     val submission = result.submissions?.get(player.playerId)
                                                     val submittedWord = submission?.word?.takeIf { it.isNotBlank() } ?: "-"
+                                                    val letterAccents = multiplierBreakdown(
+                                                        word = submission?.normalizedWord?.ifBlank { submittedWord } ?: submittedWord,
+                                                        letters = result.letters.orEmpty(),
+                                                        doubleIndex = result.bonusTiles?.doubleIndex,
+                                                        tripleIndex = result.bonusTiles?.tripleIndex
+                                                    )
                                                     val points = result.awardedScores[player.playerId] ?: 0
                                                     RoundPlayerRow(
                                                         name = playersById[player.playerId]?.displayName ?: "Player",
                                                         word = submittedWord,
+                                                        wordAccents = letterAccents,
                                                         points = points
                                                     )
                                                 }
@@ -727,7 +729,7 @@ private fun RisingWordTile(letter: String, index: Int, accentColor: Color) {
 }
 
 @Composable
-private fun RoundPlayerRow(name: String, word: String, points: Int) {
+private fun RoundPlayerRow(name: String, word: String, points: Int, wordAccents: List<Color>? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -736,12 +738,19 @@ private fun RoundPlayerRow(name: String, word: String, points: Int) {
             Text(name, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
             Text("$points pts", style = MaterialTheme.typography.labelMedium, color = ColorCyan)
         }
-        WordTiles(label = null, word = word, accentColor = ColorCyan)
+        WordTiles(label = null, word = word, accentColor = ColorCyan, letterAccents = wordAccents)
     }
 }
 
 @Composable
-private fun RoundResultPlayerRow(name: String, word: String, points: Int, extra: String, extraColor: androidx.compose.ui.graphics.Color) {
+private fun RoundResultPlayerRow(
+    name: String,
+    word: String,
+    points: Int,
+    extra: String,
+    extraColor: androidx.compose.ui.graphics.Color,
+    wordAccents: List<Color>? = null
+) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -750,13 +759,18 @@ private fun RoundResultPlayerRow(name: String, word: String, points: Int, extra:
             Text(name, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
             Text("$points pts", style = MaterialTheme.typography.labelMedium, color = ColorCyan)
         }
-        WordTiles(label = null, word = word, accentColor = ColorCyan)
+        WordTiles(label = null, word = word, accentColor = ColorCyan, letterAccents = wordAccents)
         Text(extra, style = MaterialTheme.typography.labelSmall, color = extraColor)
     }
 }
 
 @Composable
-private fun WordTiles(label: String?, word: String, accentColor: androidx.compose.ui.graphics.Color) {
+private fun WordTiles(
+    label: String?,
+    word: String,
+    accentColor: androidx.compose.ui.graphics.Color,
+    letterAccents: List<Color>? = null
+) {
     val cleaned = word.uppercase().filter { it in 'A'..'Z' }.take(9)
     val letters = if (cleaned.isEmpty()) "-" else cleaned
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -769,7 +783,7 @@ private fun WordTiles(label: String?, word: String, accentColor: androidx.compos
                     letter = ch.toString(),
                     revealed = true,
                     index = idx,
-                    accentColor = accentColor
+                    accentColor = letterAccents?.getOrNull(idx) ?: accentColor
                 )
             }
         }

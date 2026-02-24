@@ -73,13 +73,15 @@ const PlayerResultRow = ({
   word,
   points,
   extra,
-  extraColor
+  extraColor,
+  wordAccents
 }: {
   name: string;
   word: string;
   points: number;
   extra: string;
   extraColor: string;
+  wordAccents?: string[];
 }) => (
   <div style={{ display: "grid", gap: 6 }}>
     <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
@@ -88,18 +90,18 @@ const PlayerResultRow = ({
         {points} pts
       </div>
     </div>
-    <WordTiles word={word || "-"} accent="var(--cyan)" />
+    <WordTiles word={word || "-"} accent="var(--cyan)" letterAccents={wordAccents} />
     <div className="text-dim" style={{ color: extraColor }}>
       {extra}
     </div>
   </div>
 );
 
-const buildMultiplierBreakdown = (
+const buildWordTileAccents = (
   word: string,
   letters: string[],
   bonusTiles: MatchStatePayload["bonusTiles"] | null | undefined
-): string | null => {
+): string[] | null => {
   if (!bonusTiles) return null;
   const normalized = word.trim().toUpperCase();
   if (!normalized || normalized === "-") return null;
@@ -117,20 +119,14 @@ const buildMultiplierBreakdown = (
     values.sort((a, b) => b - a);
   }
 
-  let triplesUsed = 0;
-  let doublesUsed = 0;
+  const accents: string[] = [];
   for (const ch of normalized) {
     const values = letterSlots.get(ch);
     if (!values || values.length === 0) return null;
     const score = values.shift() ?? 1;
-    if (score === 3) triplesUsed += 1;
-    if (score === 2) doublesUsed += 1;
+    accents.push(score === 3 ? "var(--gold)" : score === 2 ? "#c0c0c0" : "var(--cyan)");
   }
-
-  if (triplesUsed === 0 && doublesUsed === 0) return "No bonus tiles used";
-  if (triplesUsed > 0 && doublesUsed > 0) return `Bonuses: ${triplesUsed}x gold (3pt), ${doublesUsed}x silver (2pt)`;
-  if (triplesUsed > 0) return `Bonus: ${triplesUsed}x gold (3pt)`;
-  return `Bonus: ${doublesUsed}x silver (2pt)`;
+  return accents;
 };
 
 export const OnlineMatchScreen = ({
@@ -341,9 +337,9 @@ export const OnlineMatchScreen = ({
                         const submission = match.roundResults.at(-1)?.submissions?.[player.playerId];
                         const points = match.roundResults.at(-1)?.awardedScores[player.playerId] ?? 0;
                         const valid = submission?.isValid ?? false;
-                        const multiplierBreakdown =
+                        const wordAccents =
                           valid && submission
-                            ? buildMultiplierBreakdown(
+                            ? buildWordTileAccents(
                                 submission.normalizedWord || submission.word,
                                 match.roundResults.at(-1)?.letters ?? [],
                                 match.roundResults.at(-1)?.bonusTiles ?? null
@@ -354,13 +350,12 @@ export const OnlineMatchScreen = ({
                             key={player.playerId}
                             name={player.displayName}
                             word={submission?.word ?? "-"}
+                            wordAccents={wordAccents ?? undefined}
                             points={points}
                             extra={
                               submission
                                 ? valid
-                                  ? multiplierBreakdown
-                                    ? `Valid · ${multiplierBreakdown}`
-                                    : "Valid"
+                                  ? "Valid"
                                   : "Invalid"
                                 : "No submission"
                             }
@@ -450,8 +445,26 @@ export const OnlineMatchScreen = ({
                           : round.firstCorrectPlayerId === player.playerId
                             ? (round.answer ?? "-")
                             : "-";
+                      const wordAccents =
+                        round.type === "letters"
+                          ? buildWordTileAccents(
+                              round.submissions?.[player.playerId]?.normalizedWord ?? word,
+                              round.letters ?? [],
+                              round.bonusTiles ?? null
+                            )
+                          : null;
                       const points = round.awardedScores[player.playerId] ?? 0;
-                      return <PlayerResultRow key={`${round.roundNumber}-${player.playerId}`} name={player.displayName} word={word} points={points} extra="" extraColor="var(--dim)" />;
+                      return (
+                        <PlayerResultRow
+                          key={`${round.roundNumber}-${player.playerId}`}
+                          name={player.displayName}
+                          word={word}
+                          wordAccents={wordAccents ?? undefined}
+                          points={points}
+                          extra=""
+                          extraColor="var(--dim)"
+                        />
+                      );
                     })}
                   </div>
                 ))}
