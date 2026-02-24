@@ -5,6 +5,7 @@ interface TapLetterComposerProps {
   letters: string[];
   value: string;
   onValueChange: (value: string) => void;
+  tileAccents?: Record<number, string>;
   disabled?: boolean;
   placeholder?: string;
   onSubmit?: () => void;
@@ -31,6 +32,7 @@ export const TapLetterComposer = ({
   letters,
   value,
   onValueChange,
+  tileAccents,
   disabled,
   placeholder = "Tap letters to build your word",
   onSubmit
@@ -149,6 +151,11 @@ export const TapLetterComposer = ({
                 key={`selected-${index}`}
                 letter={letter}
                 empty={letter === "_"}
+                accent={
+                  letter === "_"
+                    ? undefined
+                    : tileAccents?.[selectedIndices[index] ?? -1]
+                }
                 style={{
                   transform: letter === "_" ? "none" : "translateY(0)",
                   transition: "transform 180ms ease"
@@ -164,6 +171,7 @@ export const TapLetterComposer = ({
           <LetterTile
             key={`${letters[sourceIndex]}-${sourceIndex}`}
             letter={letters[sourceIndex]}
+            accent={tileAccents?.[sourceIndex]}
             selected={selectedIndices.includes(sourceIndex)}
             onClick={disabled ? undefined : () => handleTap(sourceIndex)}
           />

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { LetterTile, RankBadge, ScoreBadge } from "./ArcadeComponents";
 
 const TABS = [
@@ -106,7 +106,7 @@ export const HowToPlayTabs = () => {
             </div>
 
             <div className="text-dim">
-              Rounds 1�4 are Letters rounds. Round 5 is the Conundrum. Highest total score wins.
+              Rounds 1â€“4 are Letters rounds. Round 5 is the Conundrum. Highest total score wins.
             </div>
           </div>
         ) : null}
@@ -137,7 +137,7 @@ export const HowToPlayTabs = () => {
                 ["3 letters", "3 pts"],
                 ["5 letters", "5 pts"],
                 ["7 letters", "7 pts"],
-                ["9 letters", "12 pts ?"]
+                ["9 letters", "9 pts"]
               ].map(([key, value]) => (
                 <div key={key} className="htp-stat-row">
                   <span className="htp-stat-key">{key}</span>
@@ -147,7 +147,7 @@ export const HowToPlayTabs = () => {
             </div>
 
             <div className="text-dim">
-              Picker chooses Vowel or Consonant to build 9 letters. Both players get 30s to submit their best word.
+              Each letters round has one silver tile (2 pts) and one gold tile (3 pts). Word score is the sum of the tile values used in your submitted word.
             </div>
           </div>
         ) : null}
@@ -172,7 +172,7 @@ export const HowToPlayTabs = () => {
               ))}
             </div>
 
-            <div className="text-dim">Unscramble the 9-letter word in 30 seconds. First correct answer scores 12 points.</div>
+            <div className="text-dim">Unscramble the 9-letter word in 30 seconds. First correct answer scores 10 points.</div>
           </div>
         ) : null}
 
@@ -206,3 +206,4 @@ export const HowToPlayTabs = () => {
     </>
   );
 };
+

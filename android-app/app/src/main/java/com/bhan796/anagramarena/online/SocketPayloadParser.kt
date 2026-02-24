@@ -51,6 +51,7 @@ object SocketPayloadParser {
             players = players,
             pickerPlayerId = obj.optStringOrNull("pickerPlayerId"),
             letters = obj.optJSONArray("letters")?.toStringList().orEmpty(),
+            bonusTiles = obj.optJSONObject("bonusTiles")?.toBonusTiles(),
             scrambled = obj.optStringOrNull("scrambled"),
             roundResults = roundResults,
             winnerPlayerId = obj.optStringOrNull("winnerPlayerId"),
@@ -111,6 +112,7 @@ object SocketPayloadParser {
                         type = type,
                         awardedScores = awardedScores,
                         letters = details?.optJSONArray("letters")?.toStringList(),
+                        bonusTiles = details?.optJSONObject("bonusTiles")?.toBonusTiles(),
                         submissions = details?.optJSONObject("submissions")?.toSubmissionMap(),
                         scrambled = details?.optStringOrNull("scrambled"),
                         answer = details?.optStringOrNull("answer"),
@@ -142,6 +144,13 @@ object SocketPayloadParser {
 
     private fun JSONObject.toIntMap(): Map<String, Int> {
         return keys().asSequence().associateWith { key -> optInt(key) }
+    }
+
+    private fun JSONObject.toBonusTiles(): BonusTiles {
+        return BonusTiles(
+            doubleIndex = optInt("doubleIndex"),
+            tripleIndex = optInt("tripleIndex")
+        )
     }
 
     private fun JSONArray.toStringList(): List<String> {

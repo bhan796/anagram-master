@@ -47,6 +47,10 @@ export interface LettersRoundState {
   pickerPlayerId: string;
   picks: PickKind[];
   letters: string[];
+  bonusTiles: {
+    doubleIndex: number;
+    tripleIndex: number;
+  };
   submissions: Record<string, WordSubmission>;
 }
 
@@ -69,6 +73,10 @@ export interface RoundResult {
   details:
     | {
         letters: string[];
+        bonusTiles: {
+          doubleIndex: number;
+          tripleIndex: number;
+        };
         submissions: Record<string, WordSubmission>;
       }
     | {
@@ -120,6 +128,10 @@ export interface SerializedMatchState {
   players: SerializedPlayer[];
   pickerPlayerId?: string;
   letters?: string[];
+  bonusTiles?: {
+    doubleIndex: number;
+    tripleIndex: number;
+  };
   scrambled?: string;
   roundResults: SerializedRoundResult[];
   winnerPlayerId: string | null;

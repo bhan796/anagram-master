@@ -57,11 +57,17 @@ data class WordSubmissionSnapshot(
     val submittedAtMs: Long
 )
 
+data class BonusTiles(
+    val doubleIndex: Int,
+    val tripleIndex: Int
+)
+
 data class RoundResultSnapshot(
     val roundNumber: Int,
     val type: RoundType,
     val awardedScores: Map<String, Int>,
     val letters: List<String>? = null,
+    val bonusTiles: BonusTiles? = null,
     val submissions: Map<String, WordSubmissionSnapshot>? = null,
     val scrambled: String? = null,
     val answer: String? = null,
@@ -80,10 +86,11 @@ data class MatchStatePayload(
     val players: List<PlayerSnapshot>,
     val pickerPlayerId: String?,
     val letters: List<String>,
+    val bonusTiles: BonusTiles? = null,
     val scrambled: String?,
     val roundResults: List<RoundResultSnapshot>,
     val winnerPlayerId: String?,
-    val matchEndReason: String?,
+    val matchEndReason: String? = null,
     val ratingChanges: Map<String, Int> = emptyMap()
 )
 

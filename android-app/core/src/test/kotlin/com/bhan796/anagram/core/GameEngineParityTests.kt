@@ -22,12 +22,12 @@ import org.junit.Test
 
 class GameEngineParityTests {
     @Test
-    fun scoringRulesIncludeNineLetterBonus() {
+    fun scoringRulesUseWordLength() {
         val scorer = WordScorer()
 
         assertEquals(0, scorer.scoreLettersWord(0))
         assertEquals(7, scorer.scoreLettersWord(7))
-        assertEquals(12, scorer.scoreLettersWord(9))
+        assertEquals(9, scorer.scoreLettersWord(9))
     }
 
     @Test

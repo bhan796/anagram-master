@@ -174,7 +174,7 @@ describe("MatchService", () => {
     expect(["ALREADY_SOLVED", "LATE_SUBMISSION"]).toContain(second.code);
 
     const after = service.getMatchByPlayer(p1);
-    expect(after?.scores[p1]).toBe(12);
+    expect(after?.scores[p1]).toBe(10);
     expect(after?.scores[p2]).toBe(0);
   });
 

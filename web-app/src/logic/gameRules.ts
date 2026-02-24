@@ -38,7 +38,7 @@ export const isAlphabetical = (value: string): boolean => /^[a-z]+$/i.test(value
 
 export const scoreWord = (length: number): number => {
   if (length <= 0) return 0;
-  return length === 9 ? 12 : length;
+  return length;
 };
 
 export const canConstructFromLetters = (word: string, letters: string[]): boolean => {

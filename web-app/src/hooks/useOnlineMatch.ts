@@ -45,6 +45,10 @@ const normalizeMatchPayload = (payload: MatchStatePayload): MatchStatePayload =>
     return {
       ...result,
       letters: result.letters ?? ((details.letters as string[] | undefined) ?? []),
+      bonusTiles:
+        result.bonusTiles ??
+        ((details.bonusTiles as { doubleIndex: number; tripleIndex: number } | undefined) ??
+          null),
       submissions:
         result.submissions ??
         ((details.submissions as Record<
@@ -71,6 +75,7 @@ const normalizeMatchPayload = (payload: MatchStatePayload): MatchStatePayload =>
     ...payload,
     pickerPlayerId: payload.pickerPlayerId ?? null,
     letters: payload.letters ?? [],
+    bonusTiles: payload.bonusTiles ?? null,
     scrambled: payload.scrambled ?? null,
     roundResults: normalizedRoundResults
   };

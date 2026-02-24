@@ -14,7 +14,7 @@ class InMemoryDictionaryProvider(private val words: Set<String>) : DictionaryPro
 class WordScorer {
     fun scoreLettersWord(length: Int): Int {
         if (length <= 0) return 0
-        return if (length == 9) 12 else length
+        return length
     }
 }
 

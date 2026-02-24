@@ -36,14 +36,27 @@ const phaseTotalSeconds = (phase: MatchStatePayload["phase"]): number => {
   return 0;
 };
 
-const LetterSlots = ({ letters }: { letters: string[] }) => (
+const buildTileAccents = (
+  bonusTiles: MatchStatePayload["bonusTiles"] | null | undefined
+): Record<number, string> => {
+  if (!bonusTiles) return {};
+  return {
+    [bonusTiles.doubleIndex]: "#c0c0c0",
+    [bonusTiles.tripleIndex]: "var(--gold)"
+  };
+};
+
+const LetterSlots = ({ letters, bonusTiles }: { letters: string[]; bonusTiles?: MatchStatePayload["bonusTiles"] | null }) => {
+  const tileAccents = useMemo(() => buildTileAccents(bonusTiles), [bonusTiles]);
+  return (
   <div className="letter-row">
     {Array.from({ length: 9 }).map((_, index) => {
       const letter = letters[index] ?? "_";
-      return <LetterTile key={`slot-${index}`} letter={letter} empty={letter === "_"} />;
+      return <LetterTile key={`slot-${index}`} letter={letter} empty={letter === "_"} accent={tileAccents[index]} />;
     })}
   </div>
-);
+  );
+};
 
 const PlayerResultRow = ({
   name,
@@ -203,7 +216,7 @@ export const OnlineMatchScreen = ({
           {match.phase === "awaiting_letters_pick" ? (
             <>
               <div className="headline">{state.isMyTurnToPick ? "Your turn to pick" : "Opponent is picking"}</div>
-              <LetterSlots letters={match.letters} />
+              <LetterSlots letters={match.letters} bonusTiles={match.bonusTiles} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <ArcadeButton
                   text="Vowel"
@@ -229,6 +242,7 @@ export const OnlineMatchScreen = ({
             <>
               <TapLetterComposer
                 letters={match.letters}
+                tileAccents={buildTileAccents(match.bonusTiles)}
                 value={state.wordInput}
                 onValueChange={onWordChange}
                 disabled={state.hasSubmittedWord}
@@ -269,7 +283,11 @@ export const OnlineMatchScreen = ({
                 <div className="card" style={{ display: "grid", gap: 12 }}>
                   {match.roundResults.at(-1)?.type === "letters" ? (
                     <>
-                      <WordTiles label="Letters" word={match.roundResults.at(-1)?.letters?.join("") ?? ""} accent="var(--gold)" />
+                      <div className="text-dim">Letters</div>
+                      <LetterSlots
+                        letters={match.roundResults.at(-1)?.letters ?? []}
+                        bonusTiles={match.roundResults.at(-1)?.bonusTiles ?? null}
+                      />
                       {match.players.map((player) => {
                         const submission = match.roundResults.at(-1)?.submissions?.[player.playerId];
                         const points = match.roundResults.at(-1)?.awardedScores[player.playerId] ?? 0;
@@ -353,7 +371,10 @@ export const OnlineMatchScreen = ({
                       Round {round.roundNumber} {round.type.toLowerCase()}
                     </div>
                     {round.type === "letters" ? (
-                      <WordTiles label="Letters" word={round.letters?.join("") ?? ""} accent="var(--gold)" />
+                      <>
+                        <div className="text-dim">Letters</div>
+                        <LetterSlots letters={round.letters ?? []} bonusTiles={round.bonusTiles ?? null} />
+                      </>
                     ) : (
                       <WordTiles label="Answer" word={round.answer ?? ""} accent="var(--gold)" />
                     )}

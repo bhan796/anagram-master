@@ -39,7 +39,57 @@ export const isAlphabetical = (value: string): boolean => /^[a-z]+$/i.test(value
 
 export const scoreWord = (length: number): number => {
   if (length <= 0) return 0;
-  return length === 9 ? 12 : length;
+  return length;
+};
+
+export interface LetterBonusTiles {
+  doubleIndex: number;
+  tripleIndex: number;
+}
+
+export const pickLetterBonusTiles = (slotCount = 9, random: () => number = Math.random): LetterBonusTiles => {
+  const tripleIndex = Math.floor(random() * slotCount);
+  let doubleIndex = Math.floor(random() * slotCount);
+  while (doubleIndex === tripleIndex) {
+    doubleIndex = Math.floor(random() * slotCount);
+  }
+  return { doubleIndex, tripleIndex };
+};
+
+const tileScoreMultiplier = (index: number, bonusTiles: LetterBonusTiles): number => {
+  if (index === bonusTiles.tripleIndex) return 3;
+  if (index === bonusTiles.doubleIndex) return 2;
+  return 1;
+};
+
+export const scoreWordFromLetters = (word: string, letters: string[], bonusTiles: LetterBonusTiles): number => {
+  const normalized = normalizeWord(word);
+  if (!normalized) return 0;
+
+  const weightedLetters = new Map<string, number[]>();
+  for (let index = 0; index < letters.length; index += 1) {
+    const letter = letters[index]?.toUpperCase();
+    if (!letter) continue;
+
+    const values = weightedLetters.get(letter) ?? [];
+    values.push(tileScoreMultiplier(index, bonusTiles));
+    weightedLetters.set(letter, values);
+  }
+
+  for (const values of weightedLetters.values()) {
+    values.sort((a, b) => b - a);
+  }
+
+  let total = 0;
+  for (const char of normalized) {
+    const upper = char.toUpperCase();
+    const values = weightedLetters.get(upper);
+    if (!values || values.length === 0) return 0;
+    const value = values.shift();
+    total += value ?? 0;
+  }
+
+  return total;
 };
 
 export const canConstructFromLetters = (word: string, letters: string[]): boolean => {

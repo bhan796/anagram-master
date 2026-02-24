@@ -50,7 +50,7 @@ class OnlineMatchReducerTest {
         val reduced = OnlineMatchReducer.reduce(
             previous = OnlineUiState(),
             connection = SocketConnectionState.Connected,
-            session = SessionIdentifyPayload("p1", "Me", 10_000),
+            session = SessionIdentifyPayload("p1", "Me", serverNowMs = 10_000),
             matchmaking = MatchmakingStatusPayload(0, "idle"),
             matchState = state,
             actionError = null,
@@ -82,7 +82,7 @@ class OnlineMatchReducerTest {
         val reduced = OnlineMatchReducer.reduce(
             previous = OnlineUiState(),
             connection = SocketConnectionState.Disconnected,
-            session = SessionIdentifyPayload("p1", "Me", 9_000),
+            session = SessionIdentifyPayload("p1", "Me", serverNowMs = 9_000),
             matchmaking = MatchmakingStatusPayload(0, "idle"),
             matchState = state,
             actionError = null,

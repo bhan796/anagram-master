@@ -77,7 +77,7 @@ class ConundrumPracticeViewModel(
             conundrum = conundrum,
             submittedGuess = current.guess,
             solved = solved,
-            score = if (solved) 12 else 0
+            score = if (solved) 10 else 0
         )
 
         _state.update {

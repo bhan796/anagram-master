@@ -43,6 +43,11 @@ export interface PlayerSnapshot {
   rankTier?: string;
 }
 
+export interface BonusTilesSnapshot {
+  doubleIndex: number;
+  tripleIndex: number;
+}
+
 export interface WordSubmissionSnapshot {
   word: string;
   normalizedWord: string;
@@ -57,6 +62,7 @@ export interface RoundResultSnapshot {
   type: RoundType;
   awardedScores: Record<string, number>;
   letters?: string[];
+  bonusTiles?: BonusTilesSnapshot | null;
   submissions?: Record<string, WordSubmissionSnapshot>;
   scrambled?: string | null;
   answer?: string | null;
@@ -75,6 +81,7 @@ export interface MatchStatePayload {
   players: PlayerSnapshot[];
   pickerPlayerId: string | null;
   letters: string[];
+  bonusTiles: BonusTilesSnapshot | null;
   scrambled: string | null;
   roundResults: RoundResultSnapshot[];
   winnerPlayerId: string | null;

@@ -35,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,6 +67,14 @@ private fun phaseTotalSeconds(phase: MatchPhase): Int = when (phase) {
     MatchPhase.ROUND_RESULT -> 5
     MatchPhase.LETTERS_SOLVING, MatchPhase.CONUNDRUM_SOLVING -> 30
     else -> 0
+}
+
+private fun tileAccent(index: Int, doubleIndex: Int?, tripleIndex: Int?): Color {
+    return when (index) {
+        tripleIndex -> ColorGold
+        doubleIndex -> Color(0xFFC0C0C0)
+        else -> ColorCyan
+    }
 }
 
 @Composable
@@ -203,10 +212,19 @@ fun OnlineMatchScreen(
                                 if (state.isMyTurnToPick) "YOUR TURN TO PICK" else "OPPONENT IS PICKING",
                                 style = MaterialTheme.typography.headlineSmall
                             )
-                            LetterSlots(match.letters)
+                            LetterSlots(
+                                letters = match.letters,
+                                doubleIndex = match.bonusTiles?.doubleIndex,
+                                tripleIndex = match.bonusTiles?.tripleIndex
+                            )
                         }
                         MatchPhase.LETTERS_SOLVING -> {
-                            WordTargetRow(letters = selectedIndices.map { selectableLetters[it] })
+                            WordTargetRow(
+                                sourceLetters = selectableLetters,
+                                selectedIndices = selectedIndices.toList(),
+                                doubleIndex = match.bonusTiles?.doubleIndex,
+                                tripleIndex = match.bonusTiles?.tripleIndex
+                            )
                         }
                         MatchPhase.CONUNDRUM_SOLVING -> {
                             Box(
@@ -240,10 +258,11 @@ fun OnlineMatchScreen(
                                     Column(verticalArrangement = Arrangement.spacedBy(sdp(8.dp))) {
                                         Text("Round ${result.roundNumber} - ${result.type.name.lowercase()}", style = MaterialTheme.typography.headlineSmall)
                                         if (result.type == RoundType.LETTERS) {
-                                            WordTiles(
-                                                label = "Letters",
-                                                word = result.letters?.joinToString(separator = "").orEmpty(),
-                                                accentColor = ColorGold
+                                            Text("Letters", style = MaterialTheme.typography.labelSmall, color = ColorDimText)
+                                            LetterSlots(
+                                                letters = result.letters.orEmpty(),
+                                                doubleIndex = result.bonusTiles?.doubleIndex,
+                                                tripleIndex = result.bonusTiles?.tripleIndex
                                             )
                                             match.players.forEach { player ->
                                                 val submission = result.submissions?.get(player.playerId)
@@ -367,6 +386,11 @@ fun OnlineMatchScreen(
                                             )
 
                                             if (result.type == RoundType.LETTERS) {
+                                                LetterSlots(
+                                                    letters = result.letters.orEmpty(),
+                                                    doubleIndex = result.bonusTiles?.doubleIndex,
+                                                    tripleIndex = result.bonusTiles?.tripleIndex
+                                                )
                                                 match.players.forEach { player ->
                                                     val submission = result.submissions?.get(player.playerId)
                                                     val submittedWord = submission?.word?.takeIf { it.isNotBlank() } ?: "-"
@@ -450,6 +474,8 @@ fun OnlineMatchScreen(
                             SelectableLetterSlots(
                                 letters = match.letters,
                                 selectedIndices = selectedIndices.toSet(),
+                                doubleIndex = match.bonusTiles?.doubleIndex,
+                                tripleIndex = match.bonusTiles?.tripleIndex,
                                 enabled = !state.hasSubmittedWord,
                                 onLetterTapped = { index ->
                                     if (!selectedIndices.contains(index)) {
@@ -525,11 +551,16 @@ fun OnlineMatchScreen(
 }
 
 @Composable
-private fun LetterSlots(letters: List<String>) {
+private fun LetterSlots(letters: List<String>, doubleIndex: Int? = null, tripleIndex: Int? = null) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         repeat(9) { index ->
             val letter = if (index < letters.size) letters[index] else "_"
-            LetterTile(letter = letter, revealed = index < letters.size, index = index)
+            LetterTile(
+                letter = letter,
+                revealed = index < letters.size,
+                index = index,
+                accentColor = if (letter == "_") ColorDimText.copy(alpha = 0.4f) else tileAccent(index, doubleIndex, tripleIndex)
+            )
         }
     }
 }
@@ -538,6 +569,8 @@ private fun LetterSlots(letters: List<String>) {
 private fun SelectableLetterSlots(
     letters: List<String>,
     selectedIndices: Set<Int>,
+    doubleIndex: Int?,
+    tripleIndex: Int?,
     enabled: Boolean,
     onLetterTapped: (Int) -> Unit
 ) {
@@ -562,7 +595,7 @@ private fun SelectableLetterSlots(
                         sdp(1.5.dp),
                         if (selected) ColorDimText
                         else if (letter == "_") ColorDimText.copy(alpha = 0.3f)
-                        else ColorCyan.copy(alpha = 0.8f),
+                        else tileAccent(index, doubleIndex, tripleIndex).copy(alpha = 0.8f),
                         RoundedCornerShape(sdp(6.dp))
                     )
                     .clickable(enabled = selectable) { onLetterTapped(index) }
@@ -572,7 +605,7 @@ private fun SelectableLetterSlots(
                     style = MaterialTheme.typography.headlineMedium,
                     color = if (selected) ColorDimText
                     else if (letter == "_") ColorDimText.copy(alpha = 0.3f)
-                    else ColorCyan,
+                    else tileAccent(index, doubleIndex, tripleIndex),
                     textAlign = TextAlign.Center
                 )
             }
@@ -581,7 +614,12 @@ private fun SelectableLetterSlots(
 }
 
 @Composable
-private fun WordTargetRow(letters: List<Char>) {
+private fun WordTargetRow(
+    sourceLetters: List<Char>,
+    selectedIndices: List<Int>,
+    doubleIndex: Int?,
+    tripleIndex: Int?
+) {
     val maxLetters = 9
     Box(
         modifier = Modifier
@@ -592,14 +630,19 @@ private fun WordTargetRow(letters: List<Char>) {
             .padding(sdp(10.dp))
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (letters.isEmpty()) {
+            if (selectedIndices.isEmpty()) {
                 Text("Tap big letters to build your word", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
                 repeat(maxLetters) { index ->
-                    val ch = letters.getOrNull(index)
+                    val sourceIndex = selectedIndices.getOrNull(index)
+                    val ch = sourceIndex?.let { sourceLetters.getOrNull(it) }
                     if (ch != null) {
-                        RisingWordTile(letter = ch.toString(), index = index)
+                        RisingWordTile(
+                            letter = ch.toString(),
+                            index = index,
+                            accentColor = tileAccent(sourceIndex, doubleIndex, tripleIndex)
+                        )
                     } else {
                         LetterTile(letter = "_", revealed = true, index = index, accentColor = ColorDimText)
                     }
@@ -610,7 +653,7 @@ private fun WordTargetRow(letters: List<Char>) {
 }
 
 @Composable
-private fun RisingWordTile(letter: String, index: Int) {
+private fun RisingWordTile(letter: String, index: Int, accentColor: Color) {
     var dropped by remember(index) { mutableStateOf(false) }
     val offsetY by animateFloatAsState(
         targetValue = if (dropped) 0f else 20f,
@@ -623,6 +666,7 @@ private fun RisingWordTile(letter: String, index: Int) {
         letter = letter,
         revealed = true,
         index = index,
+        accentColor = accentColor,
         modifier = Modifier.graphicsLayer { translationY = offsetY }
     )
 }

@@ -7,8 +7,9 @@ import {
   drawWeightedLetter,
   isAlphabetical,
   normalizeWord,
+  pickLetterBonusTiles,
   scrambleWord,
-  scoreWord
+  scoreWordFromLetters
 } from "./rules.js";
 import { computeEloDelta, ratingToTier } from "./ranking.js";
 import type {
@@ -332,7 +333,7 @@ export class MatchService {
     if (match.liveRound.type !== "letters") return { ok: false, code: "INVALID_ROUND" };
     if (match.liveRound.submissions[playerId]) return { ok: false, code: "DUPLICATE_SUBMISSION" };
 
-    const submission = this.evaluateWordSubmission(rawWord, match.liveRound.letters);
+    const submission = this.evaluateWordSubmission(rawWord, match.liveRound.letters, match.liveRound.bonusTiles);
     match.liveRound.submissions[playerId] = submission;
     match.updatedAtMs = this.options.now();
 
@@ -430,6 +431,7 @@ export class MatchService {
     if (match.liveRound.type === "letters") {
       payload.letters = [...match.liveRound.letters];
       payload.pickerPlayerId = match.liveRound.pickerPlayerId;
+      payload.bonusTiles = { ...match.liveRound.bonusTiles };
     } else {
       payload.scrambled = match.liveRound.scrambled;
       if (match.phase !== "conundrum_solving") {
@@ -563,6 +565,7 @@ export class MatchService {
       pickerPlayerId: firstRound.pickerPlayerId ?? playerAId,
       picks: [],
       letters: [],
+      bonusTiles: pickLetterBonusTiles(),
       submissions: {}
     };
 
@@ -687,7 +690,11 @@ export class MatchService {
 
     for (const playerId of match.players) {
       if (!match.liveRound.submissions[playerId]) {
-        match.liveRound.submissions[playerId] = this.evaluateWordSubmission("", match.liveRound.letters);
+        match.liveRound.submissions[playerId] = this.evaluateWordSubmission(
+          "",
+          match.liveRound.letters,
+          match.liveRound.bonusTiles
+        );
       }
     }
 
@@ -704,6 +711,7 @@ export class MatchService {
       awardedScores,
       details: {
         letters: [...match.liveRound.letters],
+        bonusTiles: { ...match.liveRound.bonusTiles },
         submissions: { ...match.liveRound.submissions }
       }
     };
@@ -733,8 +741,8 @@ export class MatchService {
     };
 
     if (match.liveRound.firstCorrectPlayerId) {
-      awardedScores[match.liveRound.firstCorrectPlayerId] = 12;
-      match.scores[match.liveRound.firstCorrectPlayerId] += 12;
+      awardedScores[match.liveRound.firstCorrectPlayerId] = 10;
+      match.scores[match.liveRound.firstCorrectPlayerId] += 10;
     }
 
     const roundResult: RoundResult = {
@@ -830,6 +838,7 @@ export class MatchService {
         pickerPlayerId: nextPlan.pickerPlayerId ?? match.players[0],
         picks: [],
         letters: [],
+        bonusTiles: pickLetterBonusTiles(),
         submissions: {}
       };
       this.startLettersPickPhase(match);
@@ -897,7 +906,11 @@ export class MatchService {
     });
   }
 
-  private evaluateWordSubmission(rawWord: string, letters: string[]): WordSubmission {
+  private evaluateWordSubmission(
+    rawWord: string,
+    letters: string[],
+    bonusTiles: { doubleIndex: number; tripleIndex: number }
+  ): WordSubmission {
     const submittedAtMs = this.options.now();
     const normalizedWord = normalizeWord(rawWord);
 
@@ -949,7 +962,7 @@ export class MatchService {
       word: rawWord,
       normalizedWord,
       isValid: true,
-      score: scoreWord(normalizedWord.length),
+      score: scoreWordFromLetters(normalizedWord, letters, bonusTiles),
       submittedAtMs
     };
   }

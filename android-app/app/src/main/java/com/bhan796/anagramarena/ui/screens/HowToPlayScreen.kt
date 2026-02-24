@@ -167,7 +167,7 @@ private fun LettersCard(revealedCount: Int) {
             "3 letters" to "3 pts",
             "5 letters" to "5 pts",
             "7 letters" to "7 pts",
-            "9 letters" to "12 pts ?"
+            "9 letters" to "9 pts"
         ).forEach { (key, value) ->
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(key, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
@@ -176,7 +176,7 @@ private fun LettersCard(revealedCount: Int) {
             NeonDivider(color = ColorDimText.copy(alpha = 0.2f))
         }
         Text(
-            "Picker chooses Vowel or Consonant to build 9 letters. Both players get 30s to submit their best word.",
+            "Each letters round has one silver tile (2 pts) and one gold tile (3 pts). Word score is the sum of tile values used.",
             style = MaterialTheme.typography.bodySmall,
             color = ColorDimText
         )
@@ -209,7 +209,7 @@ private fun ConundrumCard() {
             }
         }
         Text(
-            "Unscramble the 9-letter word in 30 seconds. First correct answer scores 12 points.",
+            "Unscramble the 9-letter word in 30 seconds. First correct answer scores 10 points.",
             style = MaterialTheme.typography.bodySmall,
             color = ColorDimText
         )
