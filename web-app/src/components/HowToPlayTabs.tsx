@@ -2,10 +2,10 @@
 import { LetterTile, RankBadge, ScoreBadge } from "./ArcadeComponents";
 
 const TABS = [
-  { id: "match", label: "MATCH", icon: "?" },
+  { id: "match", label: "MATCH", icon: "M" },
   { id: "letters", label: "LETTERS", icon: "A" },
-  { id: "conundrum", label: "COND'M", icon: "?" },
-  { id: "winning", label: "WINNING", icon: "?" }
+  { id: "conundrum", label: "COND'M", icon: "C" },
+  { id: "winning", label: "WINNING", icon: "W" }
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -68,7 +68,7 @@ export const HowToPlayTabs = () => {
           <div className="htp-card" style={{ borderColor: "rgba(255,0,204,.35)" }}>
             <div className="htp-card-header">
               <span className="htp-icon" style={{ color: "var(--magenta)" }}>
-                ?
+                M
               </span>
               <span className="headline" style={{ color: "var(--magenta)" }}>
                 Match Format
@@ -106,7 +106,7 @@ export const HowToPlayTabs = () => {
             </div>
 
             <div className="text-dim">
-              Rounds 1â€“4 are Letters rounds. Round 5 is the Conundrum. Highest total score wins.
+              Rounds 1-4 are Letters rounds. Round 5 is the Conundrum. Highest total score wins.
             </div>
           </div>
         ) : null}
@@ -146,6 +146,24 @@ export const HowToPlayTabs = () => {
               ))}
             </div>
 
+            <div style={{ display: "grid", gap: 6 }}>
+              <div className="text-dim">Bonus tile examples</div>
+              <div className="letter-row" style={{ justifyContent: "flex-start", gap: 8 }}>
+                <div style={{ display: "grid", justifyItems: "center", gap: 4 }}>
+                  <LetterTile letter="A" accent="var(--gold)" />
+                  <span className="htp-stat-key" style={{ color: "var(--gold)" }}>
+                    Gold = 3 pts
+                  </span>
+                </div>
+                <div style={{ display: "grid", justifyItems: "center", gap: 4 }}>
+                  <LetterTile letter="A" accent="#c0c0c0" />
+                  <span className="htp-stat-key" style={{ color: "#c0c0c0" }}>
+                    Silver = 2 pts
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <div className="text-dim">
               Each letters round has one silver tile (2 pts) and one gold tile (3 pts). Word score is the sum of the tile values used in your submitted word.
             </div>
@@ -156,7 +174,7 @@ export const HowToPlayTabs = () => {
           <div className="htp-card" style={{ borderColor: "rgba(255,215,0,.35)" }}>
             <div className="htp-card-header">
               <span className="htp-icon" style={{ color: "var(--gold)" }}>
-                ?
+                C
               </span>
               <span className="headline" style={{ color: "var(--gold)" }}>
                 Conundrum
@@ -164,7 +182,7 @@ export const HowToPlayTabs = () => {
             </div>
 
             <div className="htp-conundrum-scramble">RANALUGAM</div>
-            <div className="htp-reveal-arrow">?</div>
+            <div className="htp-reveal-arrow">{">"}</div>
 
             <div className="letter-row" style={{ justifyContent: "flex-start" }}>
               {"ANAGRAM".split("").map((letter, index) => (
@@ -180,7 +198,7 @@ export const HowToPlayTabs = () => {
           <div className="htp-card" style={{ borderColor: "rgba(255,215,0,.35)" }}>
             <div className="htp-card-header">
               <span className="htp-icon" style={{ color: "var(--gold)" }}>
-                ?
+                W
               </span>
               <span className="headline" style={{ color: "var(--gold)" }}>
                 Winning
