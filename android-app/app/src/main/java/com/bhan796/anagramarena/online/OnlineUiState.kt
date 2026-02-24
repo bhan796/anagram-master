@@ -21,6 +21,8 @@ data class OnlineUiState(
     val wordInput: String = "",
     val conundrumGuessInput: String = "",
     val hasSubmittedWord: Boolean = false,
+    val hasSubmittedConundrumGuess: Boolean = false,
+    val opponentSubmittedConundrumGuess: Boolean = false,
     val lastError: ActionErrorPayload? = null,
     val statusMessage: String = "",
     val localValidationMessage: String? = null
@@ -39,11 +41,16 @@ object OnlineMatchReducer {
     ): OnlineUiState {
         val updatedMatch = matchState ?: previous.matchState
         val effectiveError = if (updatedMatch != null) null else actionError
-        val me = updatedMatch?.players?.firstOrNull { it.playerId == (session?.playerId ?: previous.playerId) }
-        val opponent = updatedMatch?.players?.firstOrNull { it.playerId != (session?.playerId ?: previous.playerId) }
+        val resolvedPlayerId = session?.playerId ?: previous.playerId
+        val me = updatedMatch?.players?.firstOrNull { it.playerId == resolvedPlayerId }
+        val opponent = updatedMatch?.players?.firstOrNull { it.playerId != resolvedPlayerId }
 
         val remaining = computeRemainingSeconds(updatedMatch, nowMs, serverClockOffsetMs)
         val inQueue = (matchmaking?.state ?: previous.queueState) == "searching"
+        val conundrumSubmittedPlayerIds = updatedMatch?.conundrumGuessSubmittedPlayerIds.orEmpty()
+        val hasSubmittedConundrumGuess = resolvedPlayerId?.let { conundrumSubmittedPlayerIds.contains(it) } ?: false
+        val opponentSubmittedConundrumGuess =
+            resolvedPlayerId?.let { id -> conundrumSubmittedPlayerIds.any { it != id } } ?: false
 
         val message = when {
             connection is SocketConnectionState.Reconnecting -> "Reconnecting..."
@@ -64,7 +71,7 @@ object OnlineMatchReducer {
         }
 
         val isMyTurnToPick = updatedMatch?.phase == MatchPhase.AWAITING_LETTERS_PICK &&
-            updatedMatch.pickerPlayerId == (session?.playerId ?: previous.playerId)
+            updatedMatch.pickerPlayerId == resolvedPlayerId
 
         return previous.copy(
             connectionState = connection,
@@ -81,6 +88,8 @@ object OnlineMatchReducer {
             opponentPlayer = opponent,
             isMyTurnToPick = isMyTurnToPick,
             secondsRemaining = remaining,
+            hasSubmittedConundrumGuess = hasSubmittedConundrumGuess,
+            opponentSubmittedConundrumGuess = opponentSubmittedConundrumGuess,
             lastError = effectiveError,
             statusMessage = message
         )

@@ -144,6 +144,7 @@ export const OnlineMatchScreen = ({
 }: OnlineMatchScreenProps) => {
   const match = state.matchState;
   const previousPhaseRef = useRef<MatchStatePayload["phase"] | undefined>(undefined);
+  const opponentSubmittedConundrumRef = useRef(false);
   const isFinished = match?.phase === "finished";
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
@@ -206,6 +207,15 @@ export const OnlineMatchScreen = ({
 
     previousPhaseRef.current = phase;
   }, [state.matchState?.phase, state.matchState?.winnerPlayerId, state.playerId]);
+
+  useEffect(() => {
+    const inConundrum = state.matchState?.phase === "conundrum_solving";
+    const nowSubmitted = inConundrum && state.opponentSubmittedConundrumGuess;
+    if (nowSubmitted && !opponentSubmittedConundrumRef.current) {
+      void SoundManager.playTimerTick();
+    }
+    opponentSubmittedConundrumRef.current = nowSubmitted;
+  }, [state.matchState?.phase, state.opponentSubmittedConundrumGuess]);
 
   return (
     <ArcadeScaffold>
@@ -315,9 +325,21 @@ export const OnlineMatchScreen = ({
                 value={state.conundrumGuessInput.toUpperCase()}
                 onValueChange={onConundrumGuessChange}
                 onSubmit={onSubmitConundrumGuess}
+                disabled={state.hasSubmittedConundrumGuess}
               />
-              <ArcadeButton text="Submit Guess" onClick={onSubmitConundrumGuess} />
-              <div className="text-dim">Multiple guesses allowed. Respect rate limit.</div>
+              <ArcadeButton
+                text={state.hasSubmittedConundrumGuess ? "Guess Locked" : "Submit Guess"}
+                onClick={onSubmitConundrumGuess}
+                disabled={state.hasSubmittedConundrumGuess}
+              />
+              <div className="text-dim">
+                {state.hasSubmittedConundrumGuess ? "Your guess is locked in." : "One guess only. Make it count."}
+              </div>
+              {state.opponentSubmittedConundrumGuess ? (
+                <div className="text-dim" style={{ color: "var(--gold)" }}>
+                  Opponent has locked in their guess.
+                </div>
+              ) : null}
             </>
           ) : null}
 
@@ -370,14 +392,14 @@ export const OnlineMatchScreen = ({
                       <WordTiles label="Answer" word={match.roundResults.at(-1)?.answer ?? ""} accent="var(--cyan)" />
                       {match.players.map((player) => {
                         const points = match.roundResults.at(-1)?.awardedScores[player.playerId] ?? 0;
-                        const solved = match.roundResults.at(-1)?.firstCorrectPlayerId === player.playerId;
+                        const solved = (match.roundResults.at(-1)?.correctPlayerIds ?? []).includes(player.playerId);
                         return (
                           <PlayerResultRow
                             key={player.playerId}
                             name={player.displayName}
                             word={solved ? (match.roundResults.at(-1)?.answer ?? "") : "-"}
                             points={points}
-                            extra={solved ? "Solved first" : "Not solved"}
+                            extra={solved ? "Solved" : "Not solved"}
                             extraColor={solved ? "var(--green)" : "var(--dim)"}
                           />
                         );
@@ -442,7 +464,7 @@ export const OnlineMatchScreen = ({
                       const word =
                         round.type === "letters"
                           ? (round.submissions?.[player.playerId]?.word ?? "-")
-                          : round.firstCorrectPlayerId === player.playerId
+                          : (round.correctPlayerIds ?? []).includes(player.playerId)
                             ? (round.answer ?? "-")
                             : "-";
                       const wordAccents =

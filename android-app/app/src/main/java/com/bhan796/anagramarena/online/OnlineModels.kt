@@ -71,8 +71,15 @@ data class RoundResultSnapshot(
     val submissions: Map<String, WordSubmissionSnapshot>? = null,
     val scrambled: String? = null,
     val answer: String? = null,
-    val firstCorrectPlayerId: String? = null,
-    val firstCorrectAtMs: Long? = null
+    val conundrumSubmissions: Map<String, ConundrumSubmissionSnapshot> = emptyMap(),
+    val correctPlayerIds: List<String> = emptyList()
+)
+
+data class ConundrumSubmissionSnapshot(
+    val guess: String,
+    val normalizedGuess: String,
+    val isCorrect: Boolean,
+    val submittedAtMs: Long
 )
 
 data class MatchStatePayload(
@@ -88,6 +95,7 @@ data class MatchStatePayload(
     val letters: List<String>,
     val bonusTiles: BonusTiles? = null,
     val scrambled: String?,
+    val conundrumGuessSubmittedPlayerIds: List<String> = emptyList(),
     val roundResults: List<RoundResultSnapshot>,
     val winnerPlayerId: String?,
     val matchEndReason: String? = null,

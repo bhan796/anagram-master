@@ -59,9 +59,14 @@ export interface ConundrumRoundState {
   roundNumber: number;
   scrambled: string;
   answer: string;
-  firstCorrectPlayerId: string | null;
-  firstCorrectAtMs: number | null;
-  guessesByPlayer: Record<string, number>;
+  submissions: Record<string, ConundrumSubmission>;
+}
+
+export interface ConundrumSubmission {
+  guess: string;
+  normalizedGuess: string;
+  isCorrect: boolean;
+  submittedAtMs: number;
 }
 
 export type LiveRoundState = LettersRoundState | ConundrumRoundState;
@@ -82,8 +87,8 @@ export interface RoundResult {
     | {
         scrambled: string;
         answer: string;
-        firstCorrectPlayerId: string | null;
-        firstCorrectAtMs: number | null;
+        conundrumSubmissions: Record<string, ConundrumSubmission>;
+        correctPlayerIds: string[];
       };
 }
 
@@ -133,6 +138,7 @@ export interface SerializedMatchState {
     tripleIndex: number;
   };
   scrambled?: string;
+  conundrumGuessSubmittedPlayerIds?: string[];
   roundResults: SerializedRoundResult[];
   winnerPlayerId: string | null;
   matchEndReason?: "completed" | "forfeit_disconnect" | "forfeit_manual";

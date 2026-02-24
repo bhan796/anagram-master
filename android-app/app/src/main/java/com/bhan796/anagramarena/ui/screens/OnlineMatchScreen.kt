@@ -130,6 +130,7 @@ fun OnlineMatchScreen(
     val match = state.matchState
     var showLeaveDialog by remember { mutableStateOf(false) }
     var previousPhase by rememberSaveable { mutableStateOf<MatchPhase?>(null) }
+    var opponentConundrumSubmittedPrevious by rememberSaveable { mutableStateOf(false) }
     val isFinished = match?.phase == MatchPhase.FINISHED
     val me = state.myPlayer
     val opponent = state.opponentPlayer
@@ -149,6 +150,15 @@ fun OnlineMatchScreen(
             if (match.winnerPlayerId == state.playerId) SoundManager.playWin() else SoundManager.playLose()
         }
         previousPhase = phase
+    }
+
+    LaunchedEffect(match?.phase, state.opponentSubmittedConundrumGuess) {
+        val inConundrum = match?.phase == MatchPhase.CONUNDRUM_SOLVING
+        val nowSubmitted = inConundrum && state.opponentSubmittedConundrumGuess
+        if (nowSubmitted && !opponentConundrumSubmittedPrevious) {
+            SoundManager.playTimerTick()
+        }
+        opponentConundrumSubmittedPrevious = nowSubmitted
     }
 
     Box(
@@ -340,12 +350,12 @@ fun OnlineMatchScreen(
                                             )
                                             match.players.forEach { player ->
                                                 val points = result.awardedScores[player.playerId] ?: 0
-                                                val solved = result.firstCorrectPlayerId == player.playerId
+                                                val solved = result.correctPlayerIds.contains(player.playerId)
                                                 RoundResultPlayerRow(
                                                     name = player.displayName,
                                                     word = if (solved) result.answer.orEmpty() else "-",
                                                     points = points,
-                                                    extra = if (solved) "Solved first" else "Not solved",
+                                                    extra = if (solved) "Solved" else "Not solved",
                                                     extraColor = if (solved) ColorCyan else ColorDimText
                                                 )
                                             }
@@ -466,7 +476,7 @@ fun OnlineMatchScreen(
                                                 )
                                                 match.players.forEach { player ->
                                                     val points = result.awardedScores[player.playerId] ?: 0
-                                                    val wasSolver = result.firstCorrectPlayerId == player.playerId
+                                                    val wasSolver = result.correctPlayerIds.contains(player.playerId)
                                                     RoundPlayerRow(
                                                         name = playersById[player.playerId]?.displayName ?: "Player",
                                                         word = if (wasSolver) result.answer ?: "-" else "-",
@@ -587,15 +597,24 @@ fun OnlineMatchScreen(
                                 letters = match.scrambled?.toList().orEmpty(),
                                 value = state.conundrumGuessInput,
                                 onValueChange = onConundrumGuessChange,
-                                enabled = true,
+                                enabled = !state.hasSubmittedConundrumGuess,
                                 modifier = Modifier.fillMaxWidth()
                             )
                             ArcadeButton(
-                                "SUBMIT GUESS",
+                                if (state.hasSubmittedConundrumGuess) "GUESS LOCKED" else "SUBMIT GUESS",
                                 onClick = onSubmitConundrumGuess,
+                                enabled = !state.hasSubmittedConundrumGuess,
                                 modifier = Modifier.fillMaxWidth().heightIn(min = sdp(52.dp))
                             )
-                            Text("Multiple guesses allowed. Respect rate limit.", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+                            Text(
+                                if (state.hasSubmittedConundrumGuess) "Your guess is locked in."
+                                else "One guess only. Make it count.",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = ColorDimText
+                            )
+                            if (state.opponentSubmittedConundrumGuess) {
+                                Text("Opponent has locked in their guess.", style = MaterialTheme.typography.labelMedium, color = ColorGold)
+                            }
                         }
                         else -> Unit
                     }

@@ -65,9 +65,19 @@ const normalizeMatchPayload = (payload: MatchStatePayload): MatchStatePayload =>
           {}),
       scrambled: result.scrambled ?? ((details.scrambled as string | undefined) ?? null),
       answer: result.answer ?? ((details.answer as string | undefined) ?? null),
-      firstCorrectPlayerId:
-        result.firstCorrectPlayerId ?? ((details.firstCorrectPlayerId as string | undefined) ?? null),
-      firstCorrectAtMs: result.firstCorrectAtMs ?? ((details.firstCorrectAtMs as number | undefined) ?? null)
+      conundrumSubmissions:
+        result.conundrumSubmissions ??
+        ((details.conundrumSubmissions as Record<
+          string,
+          {
+            guess: string;
+            normalizedGuess: string;
+            isCorrect: boolean;
+            submittedAtMs: number;
+          }
+        >) ??
+          {}),
+      correctPlayerIds: result.correctPlayerIds ?? ((details.correctPlayerIds as string[] | undefined) ?? [])
     };
   });
 
@@ -77,6 +87,7 @@ const normalizeMatchPayload = (payload: MatchStatePayload): MatchStatePayload =>
     letters: payload.letters ?? [],
     bonusTiles: payload.bonusTiles ?? null,
     scrambled: payload.scrambled ?? null,
+    conundrumGuessSubmittedPlayerIds: payload.conundrumGuessSubmittedPlayerIds ?? [],
     roundResults: normalizedRoundResults
   };
 };
@@ -113,6 +124,11 @@ const reduceOnlineState = (
   const opponent = updatedMatch?.players.find((player) => player.playerId !== resolvedPlayerId) ?? null;
   const queueState = updatedMatch ? "idle" : (matchmaking?.state ?? previous.queueState);
   const isInMatchmaking = queueState === "searching";
+  const conundrumSubmittedPlayerIds = updatedMatch?.conundrumGuessSubmittedPlayerIds ?? [];
+  const hasSubmittedConundrumGuess = Boolean(resolvedPlayerId && conundrumSubmittedPlayerIds.includes(resolvedPlayerId));
+  const opponentSubmittedConundrumGuess = Boolean(
+    resolvedPlayerId && conundrumSubmittedPlayerIds.some((playerId) => playerId !== resolvedPlayerId)
+  );
 
   const statusMessage = (() => {
     if (connectionState === "reconnecting") return "Reconnecting...";
@@ -160,6 +176,8 @@ const reduceOnlineState = (
     opponentPlayer: opponent,
     isMyTurnToPick: updatedMatch?.phase === "awaiting_letters_pick" && updatedMatch.pickerPlayerId === resolvedPlayerId,
     secondsRemaining: computeRemainingSeconds(updatedMatch, clockOffsetMs),
+    hasSubmittedConundrumGuess,
+    opponentSubmittedConundrumGuess,
     statusMessage,
     lastError: updatedMatch ? null : actionError ?? previous.lastError
   };
@@ -249,6 +267,8 @@ export const useOnlineMatch = () => {
           wordInput: resetWord ? "" : previous.wordInput,
           conundrumGuessInput: resetWord ? "" : previous.conundrumGuessInput,
           hasSubmittedWord: resetWord ? false : previous.hasSubmittedWord,
+          hasSubmittedConundrumGuess: resetWord ? false : reduced.hasSubmittedConundrumGuess,
+          opponentSubmittedConundrumGuess: resetWord ? false : reduced.opponentSubmittedConundrumGuess,
           localValidationMessage: resetWord ? null : previous.localValidationMessage
         };
       });
@@ -342,13 +362,14 @@ export const useOnlineMatch = () => {
   }, [state.wordInput]);
 
   const submitConundrumGuess = useCallback(() => {
+    if (state.hasSubmittedConundrumGuess) return;
     if (!state.conundrumGuessInput.trim()) {
       setState((previous) => ({ ...previous, localValidationMessage: "Enter a guess before submitting." }));
       return;
     }
     socketRef.current?.emit(SocketEventNames.ROUND_SUBMIT_CONUNDRUM_GUESS, { guess: state.conundrumGuessInput });
-    setState((previous) => ({ ...previous, localValidationMessage: null }));
-  }, [state.conundrumGuessInput]);
+    setState((previous) => ({ ...previous, localValidationMessage: null, hasSubmittedConundrumGuess: true }));
+  }, [state.conundrumGuessInput, state.hasSubmittedConundrumGuess]);
 
   const forfeitMatch = useCallback(() => {
     socketRef.current?.emit(SocketEventNames.MATCH_FORFEIT);
@@ -362,6 +383,8 @@ export const useOnlineMatch = () => {
       isMyTurnToPick: false,
       secondsRemaining: 0,
       hasSubmittedWord: false,
+      hasSubmittedConundrumGuess: false,
+      opponentSubmittedConundrumGuess: false,
       wordInput: "",
       conundrumGuessInput: "",
       localValidationMessage: null,
@@ -381,6 +404,8 @@ export const useOnlineMatch = () => {
         isMyTurnToPick: false,
         secondsRemaining: 0,
         hasSubmittedWord: false,
+        hasSubmittedConundrumGuess: false,
+        opponentSubmittedConundrumGuess: false,
         wordInput: "",
         conundrumGuessInput: "",
         localValidationMessage: null,
@@ -412,6 +437,8 @@ export const useOnlineMatch = () => {
       isMyTurnToPick: false,
       secondsRemaining: 0,
       hasSubmittedWord: false,
+      hasSubmittedConundrumGuess: false,
+      opponentSubmittedConundrumGuess: false,
       wordInput: "",
       conundrumGuessInput: "",
       localValidationMessage: null,

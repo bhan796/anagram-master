@@ -53,6 +53,7 @@ object SocketPayloadParser {
             letters = obj.optJSONArray("letters")?.toStringList().orEmpty(),
             bonusTiles = obj.optJSONObject("bonusTiles")?.toBonusTiles(),
             scrambled = obj.optStringOrNull("scrambled"),
+            conundrumGuessSubmittedPlayerIds = obj.optJSONArray("conundrumGuessSubmittedPlayerIds")?.toStringList().orEmpty(),
             roundResults = roundResults,
             winnerPlayerId = obj.optStringOrNull("winnerPlayerId"),
             matchEndReason = obj.optStringOrNull("matchEndReason"),
@@ -116,15 +117,23 @@ object SocketPayloadParser {
                         submissions = details?.optJSONObject("submissions")?.toSubmissionMap(),
                         scrambled = details?.optStringOrNull("scrambled"),
                         answer = details?.optStringOrNull("answer"),
-                        firstCorrectPlayerId = details?.optStringOrNull("firstCorrectPlayerId"),
-                        firstCorrectAtMs = if (details != null && details.has("firstCorrectAtMs") && !details.isNull("firstCorrectAtMs")) {
-                            details.optLong("firstCorrectAtMs")
-                        } else {
-                            null
-                        }
+                        conundrumSubmissions = details?.optJSONObject("conundrumSubmissions")?.toConundrumSubmissionMap().orEmpty(),
+                        correctPlayerIds = details?.optJSONArray("correctPlayerIds")?.toStringList().orEmpty()
                     )
                 )
             }
+        }
+    }
+
+    private fun JSONObject.toConundrumSubmissionMap(): Map<String, ConundrumSubmissionSnapshot> {
+        return keys().asSequence().associateWith { key ->
+            val obj = optJSONObject(key) ?: JSONObject()
+            ConundrumSubmissionSnapshot(
+                guess = obj.optString("guess"),
+                normalizedGuess = obj.optString("normalizedGuess"),
+                isCorrect = obj.optBoolean("isCorrect"),
+                submittedAtMs = obj.optLong("submittedAtMs")
+            )
         }
     }
 

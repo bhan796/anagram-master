@@ -153,7 +153,7 @@ describe("MatchService", () => {
     expect(duplicate.code).toBe("DUPLICATE_SUBMISSION");
   });
 
-  it("resolves conundrum by first correct guess only", () => {
+  it("allows one conundrum guess per player and scores all correct guesses", () => {
     const scheduler = new FakeScheduler();
     const service = makeService(scheduler);
     const { p1, p2 } = startMatch(service);
@@ -170,12 +170,15 @@ describe("MatchService", () => {
     expect(first.ok).toBe(true);
 
     const second = service.submitConundrumGuess(p2, "algorithm");
-    expect(second.ok).toBe(false);
-    expect(["ALREADY_SOLVED", "LATE_SUBMISSION"]).toContain(second.code);
+    expect(second.ok).toBe(true);
+
+    const duplicate = service.submitConundrumGuess(p1, "algorithm");
+    expect(duplicate.ok).toBe(false);
+    expect(["DUPLICATE_SUBMISSION", "LATE_SUBMISSION"]).toContain(duplicate.code);
 
     const after = service.getMatchByPlayer(p1);
     expect(after?.scores[p1]).toBe(10);
-    expect(after?.scores[p2]).toBe(0);
+    expect(after?.scores[p2]).toBe(10);
   });
 
   it("forfeits match on disconnect and awards win to the remaining player", () => {
@@ -305,6 +308,7 @@ describe("MatchService", () => {
     match = service.getMatchByPlayer(p1);
     expect(match?.phase).toBe("conundrum_solving");
     expect(service.submitConundrumGuess(p1, "algorithm").ok).toBe(true);
+    expect(service.submitConundrumGuess(p2, "wrong").ok).toBe(true);
     scheduler.advanceBy(250);
 
     const finished = service.getMatch(match?.matchId ?? "");

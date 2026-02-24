@@ -32,7 +32,7 @@ export const ErrorMessages: Record<string, string> = {
   NOT_PICKER: "Only the designated picker may choose letters.",
   PICK_CONSTRAINT_VIOLATION: "Pick would break vowel/consonant constraints.",
   LATE_SUBMISSION: "Round submission window has ended.",
-  DUPLICATE_SUBMISSION: "Letters round already has a submission from this player.",
+  DUPLICATE_SUBMISSION: "You already submitted for this round.",
   RATE_LIMITED: "Too many guesses. Wait briefly before trying again.",
   ALREADY_SOLVED: "Conundrum round has already been solved.",
   AUTH_REQUIRED_RANKED: "Create an account or sign in to play ranked mode.",

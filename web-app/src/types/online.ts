@@ -66,8 +66,16 @@ export interface RoundResultSnapshot {
   submissions?: Record<string, WordSubmissionSnapshot>;
   scrambled?: string | null;
   answer?: string | null;
-  firstCorrectPlayerId?: string | null;
-  firstCorrectAtMs?: number | null;
+  conundrumSubmissions?: Record<
+    string,
+    {
+      guess: string;
+      normalizedGuess: string;
+      isCorrect: boolean;
+      submittedAtMs: number;
+    }
+  >;
+  correctPlayerIds?: string[];
 }
 
 export interface MatchStatePayload {
@@ -83,6 +91,7 @@ export interface MatchStatePayload {
   letters: string[];
   bonusTiles: BonusTilesSnapshot | null;
   scrambled: string | null;
+  conundrumGuessSubmittedPlayerIds?: string[];
   roundResults: RoundResultSnapshot[];
   winnerPlayerId: string | null;
   matchEndReason?: "completed" | "forfeit_disconnect" | "forfeit_manual";
@@ -109,6 +118,8 @@ export interface OnlineUiState {
   wordInput: string;
   conundrumGuessInput: string;
   hasSubmittedWord: boolean;
+  hasSubmittedConundrumGuess: boolean;
+  opponentSubmittedConundrumGuess: boolean;
   lastError: ActionErrorPayload | null;
   statusMessage: string;
   localValidationMessage: string | null;
@@ -135,6 +146,8 @@ export const initialOnlineUiState: OnlineUiState = {
   wordInput: "",
   conundrumGuessInput: "",
   hasSubmittedWord: false,
+  hasSubmittedConundrumGuess: false,
+  opponentSubmittedConundrumGuess: false,
   lastError: null,
   statusMessage: "",
   localValidationMessage: null,

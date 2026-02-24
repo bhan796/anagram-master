@@ -64,6 +64,8 @@ class OnlineMatchViewModel(
                     wordInput = if (resetWord) "" else previous.wordInput,
                     conundrumGuessInput = if (resetWord) "" else previous.conundrumGuessInput,
                     hasSubmittedWord = if (resetWord) false else previous.hasSubmittedWord,
+                    hasSubmittedConundrumGuess = if (resetWord) false else reduced.hasSubmittedConundrumGuess,
+                    opponentSubmittedConundrumGuess = if (resetWord) false else reduced.opponentSubmittedConundrumGuess,
                     localValidationMessage = if (resetWord) null else previous.localValidationMessage
                 )
             }.collect {}
@@ -125,12 +127,14 @@ class OnlineMatchViewModel(
     }
 
     fun submitConundrumGuess() {
+        if (_state.value.hasSubmittedConundrumGuess) return
         if (_state.value.conundrumGuessInput.trim().isEmpty()) {
             _state.value = _state.value.copy(localValidationMessage = "Enter a guess before submitting.")
             return
         }
         _state.value = _state.value.copy(localValidationMessage = null)
         repository.submitConundrumGuess(_state.value.conundrumGuessInput)
+        _state.value = _state.value.copy(hasSubmittedConundrumGuess = true)
     }
 
     fun clearError() {
@@ -155,6 +159,8 @@ class OnlineMatchViewModel(
                 isMyTurnToPick = false,
                 secondsRemaining = 0,
                 hasSubmittedWord = false,
+                hasSubmittedConundrumGuess = false,
+                opponentSubmittedConundrumGuess = false,
                 wordInput = "",
                 conundrumGuessInput = "",
                 localValidationMessage = null,

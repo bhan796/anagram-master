@@ -365,29 +365,25 @@ export class MatchService {
 
     const player = this.players.get(playerId);
     if (!player) return { ok: false, code: "UNKNOWN_PLAYER" };
+    if (match.liveRound.submissions[playerId]) return { ok: false, code: "DUPLICATE_SUBMISSION" };
 
     const now = this.options.now();
-    if (now - player.lastConundrumGuessAtMs < this.options.conundrumGuessCooldownMs) {
-      return { ok: false, code: "RATE_LIMITED" };
-    }
-
     player.lastConundrumGuessAtMs = now;
-    match.liveRound.guessesByPlayer[playerId] = (match.liveRound.guessesByPlayer[playerId] ?? 0) + 1;
 
     const normalizedGuess = normalizeWord(guess);
-    if (!normalizedGuess || !isAlphabetical(normalizedGuess)) {
-      this.options.onMatchUpdated(match.matchId);
-      return { ok: true };
-    }
+    const isCorrect = Boolean(normalizedGuess && isAlphabetical(normalizedGuess) && normalizedGuess === normalizeWord(match.liveRound.answer));
+    match.liveRound.submissions[playerId] = {
+      guess,
+      normalizedGuess,
+      isCorrect,
+      submittedAtMs: now
+    };
 
-    if (match.liveRound.firstCorrectPlayerId !== null) {
-      return { ok: false, code: "ALREADY_SOLVED" };
-    }
-
-    if (normalizedGuess === normalizeWord(match.liveRound.answer)) {
-      match.liveRound.firstCorrectPlayerId = playerId;
-      match.liveRound.firstCorrectAtMs = now;
+    if (Object.keys(match.liveRound.submissions).length >= match.players.length) {
       this.finalizeConundrumRound(match, true);
+    }
+
+    if (isCorrect) {
       this.options.logEvent("Conundrum solved", { matchId: match.matchId, playerId, guess: normalizedGuess });
     }
 
@@ -434,6 +430,7 @@ export class MatchService {
       payload.bonusTiles = { ...match.liveRound.bonusTiles };
     } else {
       payload.scrambled = match.liveRound.scrambled;
+      payload.conundrumGuessSubmittedPlayerIds = Object.keys(match.liveRound.submissions);
       if (match.phase !== "conundrum_solving") {
         payload.roundResults = match.roundResults;
       }
@@ -740,9 +737,14 @@ export class MatchService {
       [match.players[1]]: 0
     };
 
-    if (match.liveRound.firstCorrectPlayerId) {
-      awardedScores[match.liveRound.firstCorrectPlayerId] = 10;
-      match.scores[match.liveRound.firstCorrectPlayerId] += 10;
+    const correctPlayerIds: string[] = [];
+    for (const playerId of match.players) {
+      const submission = match.liveRound.submissions[playerId];
+      if (submission?.isCorrect) {
+        correctPlayerIds.push(playerId);
+        awardedScores[playerId] = 10;
+        match.scores[playerId] += 10;
+      }
     }
 
     const roundResult: RoundResult = {
@@ -752,8 +754,8 @@ export class MatchService {
       details: {
         scrambled: match.liveRound.scrambled,
         answer: match.liveRound.answer,
-        firstCorrectPlayerId: match.liveRound.firstCorrectPlayerId,
-        firstCorrectAtMs: match.liveRound.firstCorrectAtMs
+        conundrumSubmissions: { ...match.liveRound.submissions },
+        correctPlayerIds
       }
     };
 
@@ -766,7 +768,7 @@ export class MatchService {
       matchId: match.matchId,
       roundNumber: match.liveRound.roundNumber,
       solvedEarly,
-      firstCorrectPlayerId: match.liveRound.firstCorrectPlayerId
+      correctPlayerIds
     });
 
     this.schedulePhaseTimer(match.matchId, this.options.resultDurationMs, () => {
@@ -856,9 +858,7 @@ export class MatchService {
       roundNumber: nextPlan.roundNumber,
       scrambled: scrambleWord(conundrum.answer, Math.random),
       answer: conundrum.answer,
-      firstCorrectPlayerId: null,
-      firstCorrectAtMs: null,
-      guessesByPlayer: {}
+      submissions: {}
     };
 
     this.startConundrumSolving(match, conundrumRound);
