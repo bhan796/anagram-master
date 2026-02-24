@@ -287,12 +287,20 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                     SettingsScreen(
                         contentPadding = innerPadding,
                         state = settings,
+                        isAuthenticated = authState.status == "authenticated",
+                        deletingAccount = authState.deletingAccount,
                         onBack = { navController.popBackStack() },
                         onTimerToggle = settingsViewModel::setTimerEnabled,
                         onSoundToggle = settingsViewModel::setSoundEnabled,
                         onVibrationToggle = settingsViewModel::setVibrationEnabled,
                         onMasterMuteToggle = settingsViewModel::setMasterMuted,
-                        onSfxVolumeChange = settingsViewModel::setSfxVolume
+                        onSfxVolumeChange = settingsViewModel::setSfxVolume,
+                        onDeleteAccount = {
+                            authViewModel.deleteAccount {
+                                onlineMatchViewModel.retryConnect()
+                                navController.popBackStack(Routes.HOME, false)
+                            }
+                        }
                     )
                 }
             }

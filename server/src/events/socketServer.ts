@@ -88,7 +88,7 @@ export const createSocketServer = (
       if (payload.accessToken) {
         try {
           const decoded = verifyAccessToken(payload.accessToken);
-          authenticatedUserId = decoded.sub;
+          authenticatedUserId = (await authService.userExists(decoded.sub)) ? decoded.sub : null;
         } catch {
           authenticatedUserId = null;
         }

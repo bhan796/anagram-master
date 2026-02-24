@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
 import com.bhan796.anagramarena.ui.components.NeonDivider
@@ -38,12 +39,15 @@ import kotlin.math.roundToInt
 fun SettingsScreen(
     contentPadding: PaddingValues,
     state: PracticeSettingsState,
+    isAuthenticated: Boolean,
+    deletingAccount: Boolean,
     onBack: () -> Unit,
     onTimerToggle: (Boolean) -> Unit,
     onSoundToggle: (Boolean) -> Unit,
     onVibrationToggle: (Boolean) -> Unit,
     onMasterMuteToggle: (Boolean) -> Unit,
-    onSfxVolumeChange: (Float) -> Unit
+    onSfxVolumeChange: (Float) -> Unit,
+    onDeleteAccount: () -> Unit
 ) {
     ArcadeScaffold(contentPadding = contentPadding) {
         ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
@@ -86,6 +90,16 @@ fun SettingsScreen(
                     )
                 )
             }
+        }
+
+        if (isAuthenticated) {
+            ArcadeButton(
+                text = if (deletingAccount) "DELETING ACCOUNT..." else "DELETE ACCOUNT",
+                onClick = onDeleteAccount,
+                enabled = !deletingAccount,
+                modifier = Modifier.fillMaxWidth(),
+                accentColor = com.bhan796.anagramarena.ui.theme.ColorRed
+            )
         }
     }
 }

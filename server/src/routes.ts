@@ -112,6 +112,16 @@ export const createApiRouter = (
     }
   });
 
+  router.delete("/auth/account", requireAuth, async (req: Request, res: Response) => {
+    try {
+      await authService.deleteAccount(req.auth!.userId);
+      res.status(204).send();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to delete account.";
+      res.status(500).json({ code: "AUTH_DELETE_ACCOUNT_FAILED", message });
+    }
+  });
+
   router.get("/auth/me", requireAuth, async (req: Request, res: Response) => {
     const me = await authService.me(req.auth!.userId);
     if (!me) {

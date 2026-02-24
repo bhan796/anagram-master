@@ -18,6 +18,7 @@ data class AuthUiState(
     val userId: String? = null,
     val email: String? = null,
     val loading: Boolean = false,
+    val deletingAccount: Boolean = false,
     val error: String? = null
 )
 
@@ -124,6 +125,26 @@ class AuthViewModel(
         clearSession()
     }
 
+    fun deleteAccount(onSuccess: () -> Unit = {}) {
+        if (_state.value.status != "authenticated") return
+        _state.update { it.copy(deletingAccount = true, error = null) }
+        viewModelScope.launch {
+            val result = repository.deleteAccount()
+            if (result.isSuccess) {
+                clearSession()
+                onSuccess()
+                return@launch
+            }
+
+            _state.update {
+                it.copy(
+                    deletingAccount = false,
+                    error = result.exceptionOrNull()?.message ?: "Unable to delete account."
+                )
+            }
+        }
+    }
+
     fun setError(message: String) {
         _state.update { it.copy(loading = false, error = message) }
     }
@@ -153,7 +174,7 @@ class AuthViewModel(
         sessionStore.playerId = null
         sessionStore.displayName = null
         sessionStore.matchId = null
-        _state.value = AuthUiState(status = "guest", loading = false, error = null)
+        _state.value = AuthUiState(status = "guest", loading = false, deletingAccount = false, error = null)
     }
 
     private fun handleAuthResult(result: Result<AuthResultPayload>) {
@@ -161,6 +182,7 @@ class AuthViewModel(
             _state.update {
                 it.copy(
                     loading = false,
+                    deletingAccount = false,
                     error = result.exceptionOrNull()?.message ?: "Authentication failed."
                 )
             }

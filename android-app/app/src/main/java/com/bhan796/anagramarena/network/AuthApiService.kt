@@ -75,6 +75,12 @@ class AuthApiService(private val baseUrl: String) {
         }
     }
 
+    suspend fun deleteAccount(accessToken: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            delete("/api/auth/account", accessToken)
+        }.map { Unit }
+    }
+
     private fun getJson(path: String, accessToken: String?): JSONObject {
         val url = URL(baseUrl.trimEnd('/') + path)
         val connection = (url.openConnection() as HttpURLConnection).apply {
@@ -102,6 +108,19 @@ class AuthApiService(private val baseUrl: String) {
             writer.write(payload.toString())
         }
 
+        return readJson(connection)
+    }
+
+    private fun delete(path: String, accessToken: String?): JSONObject {
+        val url = URL(baseUrl.trimEnd('/') + path)
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            requestMethod = "DELETE"
+            connectTimeout = 10000
+            readTimeout = 10000
+            if (!accessToken.isNullOrBlank()) {
+                setRequestProperty("Authorization", "Bearer $accessToken")
+            }
+        }
         return readJson(connection)
     }
 

@@ -204,6 +204,7 @@ export const App = () => {
   const [playersOnline, setPlayersOnline] = useState(0);
   const [googleReady, setGoogleReady] = useState(false);
   const [facebookReady, setFacebookReady] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const online = useOnlineMatch();
 
@@ -285,7 +286,12 @@ export const App = () => {
   const syncPrimaryPlayerId = async (): Promise<string | null> => {
     try {
       const meRes = await fetchWithAuth("/api/auth/me");
-      if (!meRes.ok) return null;
+      if (!meRes.ok) {
+        if (meRes.status === 404 || meRes.status === 401) {
+          clearAuthSession();
+        }
+        return null;
+      }
       const me = (await meRes.json()) as AuthMePayload;
       const primaryPlayerId = me.primaryPlayerId ?? (Array.isArray(me.playerIds) ? me.playerIds[0] : null) ?? null;
       if (primaryPlayerId) {
@@ -545,6 +551,35 @@ export const App = () => {
       setRoute("home");
     },
     [online.actions]
+  );
+
+  const deleteAccount = useMemo(
+    () => async () => {
+      if (auth.status !== "authenticated") return;
+      const confirmed = window.confirm("Delete your account? This cannot be undone.");
+      if (!confirmed) return;
+
+      setDeletingAccount(true);
+      try {
+        const response = await fetchWithAuth("/api/auth/account", { method: "DELETE" });
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => ({}))) as { message?: string };
+          throw new Error(payload.message ?? "Unable to delete account.");
+        }
+
+        clearAuthSession();
+        online.actions.resetIdentity();
+        setRoute("home");
+      } catch (error) {
+        setAuth((previous) => ({
+          ...previous,
+          error: error instanceof Error ? error.message : "Unable to delete account."
+        }));
+      } finally {
+        setDeletingAccount(false);
+      }
+    },
+    [auth.status, online.actions]
   );
 
   useEffect(() => {
@@ -823,10 +858,13 @@ export const App = () => {
       timerEnabled={settings.timerEnabled}
       masterMuted={settings.masterMuted}
       sfxVolume={settings.sfxVolume}
+      isAuthenticated={auth.status === "authenticated"}
+      deletingAccount={deletingAccount}
       onBack={() => setRoute("home")}
       onTimerToggle={(value) => setSettings((previous) => ({ ...previous, timerEnabled: value }))}
       onMasterMuteToggle={(value) => setSettings((previous) => ({ ...previous, masterMuted: value }))}
       onSfxVolumeChange={(value) => setSettings((previous) => ({ ...previous, sfxVolume: value }))}
+      onDeleteAccount={() => void deleteAccount()}
     />
   );
 };

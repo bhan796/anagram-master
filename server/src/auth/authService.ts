@@ -329,6 +329,14 @@ export class AuthService {
     return player?.userId ?? null;
   }
 
+  async userExists(userId: string): Promise<boolean> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true }
+    });
+    return Boolean(user);
+  }
+
   async resolvePrimaryPlayerIdForUser(userId: string): Promise<string | null> {
     const player = await this.findPreferredPlayerForUser(userId);
     return player?.id ?? null;
@@ -439,5 +447,41 @@ export class AuthService {
         rankedDraws: progress.rankedDraws
       }
     });
+  }
+
+  async deleteAccount(userId: string): Promise<void> {
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        authSessions: { select: { id: true } },
+        players: { select: { id: true } }
+      }
+    });
+    if (!existing) return;
+
+    const redis = await ensureRedisConnected();
+    const sessionKeys = existing.authSessions.map((session) => refreshRedisKey(session.id));
+    if (sessionKeys.length > 0) {
+      await redis.del(...sessionKeys);
+    }
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      for (const player of existing.players) {
+        const guestName = `Guest-${player.id.slice(0, 6)}`;
+        await tx.player.update({
+          where: { id: player.id },
+          data: {
+            userId: null,
+            displayName: guestName,
+            displayNameNormalized: guestName.toLowerCase()
+          }
+        });
+      }
+
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    logger.info({ userId }, "auth_account_deleted");
   }
 }

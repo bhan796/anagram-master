@@ -36,4 +36,9 @@ class AuthRepository(
     }
 
     suspend fun me(accessToken: String): Result<Triple<String, String, String?>> = apiService.me(accessToken)
+
+    suspend fun deleteAccount(): Result<Unit> {
+        val accessToken = sessionStore.accessToken ?: return Result.failure(IllegalStateException("No access token."))
+        return apiService.deleteAccount(accessToken)
+    }
 }
