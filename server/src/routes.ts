@@ -6,7 +6,7 @@ import { createRateLimiter } from "./auth/rateLimit.js";
 import { toActionError } from "./events/contracts.js";
 import { ratingToTier } from "./game/ranking.js";
 import { prisma } from "./config/prisma.js";
-import { ACHIEVEMENTS, COSMETIC_ITEMS, rollChest } from "./game/achievements.js";
+import { ACHIEVEMENTS, COSMETIC_ITEMS, getChestOdds, rollChest } from "./game/achievements.js";
 import type { MatchService } from "./game/matchService.js";
 import type { PresenceStore } from "./store/presenceStore.js";
 import type { MatchHistoryStore } from "./store/matchHistoryStore.js";
@@ -328,6 +328,11 @@ export const createApiRouter = (
         }
       ]
     });
+  });
+
+  router.get("/shop/odds", requireAuth, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
+    res.json({ items: getChestOdds() });
   });
 
   router.post("/shop/purchase", requireAuth, profileMutationLimiter, async (req: Request, res: Response) => {

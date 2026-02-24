@@ -19,6 +19,10 @@ type InventoryResponse = {
   runes: number;
 };
 
+type ChestOddsResponse = {
+  items: Array<CosmeticItem & { weight: number; chancePct: number }>;
+};
+
 interface ShopScreenProps {
   accessToken: string;
   onBack: () => void;
@@ -40,6 +44,8 @@ export const ShopScreen = ({ accessToken, onBack }: ShopScreenProps) => {
     runes: 0
   });
   const [showChestModal, setShowChestModal] = useState(false);
+  const [showOdds, setShowOdds] = useState(false);
+  const [odds, setOdds] = useState<ChestOddsResponse["items"]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
 
@@ -99,6 +105,20 @@ export const ShopScreen = ({ accessToken, onBack }: ShopScreenProps) => {
     setInventory((previous) => ({ ...previous, equippedCosmetic: itemId }));
   };
 
+  const loadOdds = async () => {
+    const response = await fetch(`${apiBaseUrl}/api/shop/odds`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!response.ok) return;
+    const payload = (await response.json()) as ChestOddsResponse;
+    setOdds(
+      (payload.items ?? []).slice().sort((a, b) => {
+        if (b.chancePct !== a.chancePct) return b.chancePct - a.chancePct;
+        return a.name.localeCompare(b.name);
+      })
+    );
+  };
+
   const inventoryCards = useMemo(
     () =>
       inventory.items.map((item) => (
@@ -131,6 +151,34 @@ export const ShopScreen = ({ accessToken, onBack }: ShopScreenProps) => {
         <div className="text-dim" style={{ color: "var(--gold)" }}>200 <RuneIcon /> RUNES</div>
         <ArcadeButton text="Purchase" onClick={() => void handlePurchase()} disabled={purchaseDisabled} />
         <ArcadeButton text={`Open Chest (${inventory.pendingChests})`} onClick={() => setShowChestModal(true)} disabled={inventory.pendingChests < 1} accent="gold" />
+        <ArcadeButton
+          text={showOdds ? "Hide Chest Odds" : "Inspect Chest Odds"}
+          onClick={() => {
+            const next = !showOdds;
+            setShowOdds(next);
+            if (next && odds.length === 0) void loadOdds();
+          }}
+          accent="magenta"
+        />
+        {showOdds ? (
+          <div className="card" style={{ display: "grid", gap: 6 }}>
+            <div className="label">Chest Contents & Odds</div>
+            {odds.length === 0 ? (
+              <div className="text-dim">Loading odds...</div>
+            ) : (
+              odds.map((item) => (
+                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                  <span className={`text-dim ${getCosmeticClass(item.id)}`.trim()}>
+                    {item.name} ({getRarityLabel(item.rarity)})
+                  </span>
+                  <span className="label" style={{ color: "var(--gold)" }}>
+                    {item.chancePct.toFixed(2)}%
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        ) : null}
       </div>
 
       <div className="headline">MY COSMETICS</div>

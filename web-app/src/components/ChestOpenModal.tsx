@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArcadeButton } from "./ArcadeComponents";
 import { COSMETIC_CATALOG, type CosmeticItem } from "../lib/cosmeticCatalog";
 import { getCosmeticClass, getRarityColor, getRarityLabel } from "../lib/cosmetics";
@@ -38,9 +38,23 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [x, setX] = useState(0);
-  const stripRef = useRef<HTMLDivElement | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(640);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const hasOpenedRef = useRef(false);
-  const viewportWidth = 640;
+
+  useLayoutEffect(() => {
+    const node = viewportRef.current;
+    if (!node) return;
+    const update = () => {
+      const next = Math.max(320, Math.round(node.getBoundingClientRect().width));
+      setViewportWidth(next);
+    };
+    update();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (hasOpenedRef.current) return;
@@ -122,6 +136,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
         <>
           <div style={{ color: "var(--gold)", fontFamily: "var(--font-pixel)" }}>\u25BC</div>
           <div
+            ref={viewportRef}
             style={{
               width: viewportWidth,
               maxWidth: "92vw",
@@ -159,7 +174,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
                   "linear-gradient(90deg, rgba(10,10,24,.95) 0%, rgba(10,10,24,0) 8%, rgba(10,10,24,0) 92%, rgba(10,10,24,.95) 100%)"
               }}
             />
-            <div ref={stripRef} style={{ display: "flex", gap: 3, transform: `translateX(${x}px)` }}>
+            <div style={{ display: "flex", gap: 3, transform: `translateX(${x}px)` }}>
               {carouselItems.map((item, index) => {
                 const won = index === WIN_INDEX;
                 return (

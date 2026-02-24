@@ -101,6 +101,29 @@ export const CHEST_WEIGHTS: Record<string, number> = {
   m_aurora_ex: 10
 };
 
+export interface ChestOddsEntry {
+  id: string;
+  name: string;
+  rarity: CosmeticItem["rarity"];
+  cssClass: string;
+  description: string;
+  weight: number;
+  chancePct: number;
+}
+
+export function getChestOdds(): ChestOddsEntry[] {
+  const total = COSMETIC_ITEMS.reduce((sum, item) => sum + (CHEST_WEIGHTS[item.id] ?? 0), 0);
+  if (total <= 0) return [];
+  return COSMETIC_ITEMS.map((item) => {
+    const weight = CHEST_WEIGHTS[item.id] ?? 0;
+    return {
+      ...item,
+      weight,
+      chancePct: (weight / total) * 100
+    };
+  });
+}
+
 export function rollChest(): CosmeticItem {
   const roll = Math.floor(Math.random() * 10000) + 1;
   let acc = 0;
