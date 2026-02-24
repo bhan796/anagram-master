@@ -36,6 +36,9 @@ export const HomeScreen = ({
   playIntro,
   onIntroComplete
 }: HomeScreenProps) => {
+  const runeIcon = (
+    <span style={{ fontFamily: "\"Segoe UI Symbol\", \"Arial Unicode MS\", Arial, sans-serif" }}>\u2666</span>
+  );
   const [logoComplete, setLogoComplete] = useState(!playIntro);
   const handleLogoComplete = useCallback(() => {
     setLogoComplete(true);
@@ -191,10 +194,11 @@ export const HomeScreen = ({
             letterSpacing: "0.08em"
           }}
         >
-          ♦ {runes.toLocaleString()} RUNES
+          {runeIcon} {runes.toLocaleString()} RUNES
         </div>
       ) : null}
       <div style={{ flex: 1 }} />
     </ArcadeScaffold>
   );
 };
+

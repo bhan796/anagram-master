@@ -49,6 +49,10 @@ interface ProfileScreenProps {
 }
 
 export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetry, onUpdateDisplayName, isAuthenticated, runes }: ProfileScreenProps) => {
+  const runeIcon = (
+    <span style={{ fontFamily: '"Segoe UI Symbol", "Arial Unicode MS", Arial, sans-serif' }}>\u2666</span>
+  );
+
   const [nameDraft, setNameDraft] = useState("");
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
@@ -115,7 +119,7 @@ export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetr
       <div className={getCosmeticClass(stats?.equippedCosmetic)}>
         <NeonTitle text={stats?.displayName ?? "Profile"} />
       </div>
-      {isAuthenticated ? <div className="headline" style={{ color: "var(--gold)" }}>♦ {runes.toLocaleString()} RUNES</div> : null}
+      {isAuthenticated ? <div className="headline" style={{ color: "var(--gold)" }}>{runeIcon} {runes.toLocaleString()} RUNES</div> : null}
 
       {stats ? (
         <div className="card" style={{ display: "grid", gap: 10 }}>
@@ -267,3 +271,4 @@ export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetr
     </ArcadeScaffold>
   );
 };
+

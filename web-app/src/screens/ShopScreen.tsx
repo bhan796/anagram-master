@@ -33,6 +33,10 @@ const normalizeBackendUrl = (raw: string | undefined): string => {
 const apiBaseUrl = normalizeBackendUrl(import.meta.env.VITE_SERVER_URL as string | undefined);
 
 export const ShopScreen = ({ accessToken, onBack }: ShopScreenProps) => {
+  const runeIcon = (
+    <span style={{ fontFamily: '"Segoe UI Symbol", "Arial Unicode MS", Arial, sans-serif' }}>\u2666</span>
+  );
+
   const [inventory, setInventory] = useState<InventoryResponse>({
     items: [],
     equippedCosmetic: null,
@@ -123,12 +127,12 @@ export const ShopScreen = ({ accessToken, onBack }: ShopScreenProps) => {
     <ArcadeScaffold>
       <ArcadeBackButton onClick={onBack} />
       <NeonTitle text="SHOP" />
-      <div className="headline" style={{ color: "var(--gold)" }}>\u2666 {inventory.runes.toLocaleString()} RUNES</div>
+      <div className="headline" style={{ color: "var(--gold)" }}>{runeIcon} {inventory.runes.toLocaleString()} RUNES</div>
       {isLoading ? <div className="text-dim">Loading...</div> : null}
       <div className="card" style={{ display: "grid", gap: 8 }}>
         <div className="label">TREASURE CHEST</div>
         <div className="text-dim">Contains a random cosmetic for your display name.</div>
-        <div className="text-dim" style={{ color: "var(--gold)" }}>200 \u2666 RUNES</div>
+        <div className="text-dim" style={{ color: "var(--gold)" }}>200 {runeIcon} RUNES</div>
         <ArcadeButton text="Purchase" onClick={() => void handlePurchase()} disabled={purchaseDisabled} />
         <ArcadeButton text={`Open Chest (${inventory.pendingChests})`} onClick={() => setShowChestModal(true)} disabled={inventory.pendingChests < 1} accent="gold" />
       </div>
