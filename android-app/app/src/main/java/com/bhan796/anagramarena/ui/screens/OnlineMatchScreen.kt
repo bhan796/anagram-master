@@ -77,6 +77,47 @@ private fun tileAccent(index: Int, doubleIndex: Int?, tripleIndex: Int?): Color 
     }
 }
 
+private fun multiplierBreakdown(
+    word: String,
+    letters: List<String>,
+    doubleIndex: Int?,
+    tripleIndex: Int?
+): String? {
+    if (doubleIndex == null || tripleIndex == null) return null
+    val normalized = word.trim().uppercase()
+    if (normalized.isBlank() || normalized == "-") return null
+
+    val slots = mutableMapOf<Char, MutableList<Int>>()
+    letters.forEachIndexed { index, letter ->
+        val ch = letter.firstOrNull()?.uppercaseChar() ?: return@forEachIndexed
+        val value = when (index) {
+            tripleIndex -> 3
+            doubleIndex -> 2
+            else -> 1
+        }
+        slots.getOrPut(ch) { mutableListOf() }.add(value)
+    }
+    slots.values.forEach { it.sortDescending() }
+
+    var tripleHits = 0
+    var doubleHits = 0
+    for (ch in normalized) {
+        val values = slots[ch] ?: return null
+        if (values.isEmpty()) return null
+        when (values.removeAt(0)) {
+            3 -> tripleHits += 1
+            2 -> doubleHits += 1
+        }
+    }
+
+    return when {
+        tripleHits == 0 && doubleHits == 0 -> "No bonus tiles used"
+        tripleHits > 0 && doubleHits > 0 -> "Bonuses: ${tripleHits}x gold (3pt), ${doubleHits}x silver (2pt)"
+        tripleHits > 0 -> "Bonus: ${tripleHits}x gold (3pt)"
+        else -> "Bonus: ${doubleHits}x silver (2pt)"
+    }
+}
+
 @Composable
 fun OnlineMatchScreen(
     contentPadding: PaddingValues,
@@ -269,11 +310,25 @@ fun OnlineMatchScreen(
                                                 val word = submission?.word?.takeIf { it.isNotBlank() } ?: "-"
                                                 val points = result.awardedScores[player.playerId] ?: 0
                                                 val isValid = submission?.isValid ?: false
+                                                val breakdown = if (isValid && submission != null) {
+                                                    multiplierBreakdown(
+                                                        word = submission.normalizedWord.ifBlank { submission.word },
+                                                        letters = result.letters.orEmpty(),
+                                                        doubleIndex = result.bonusTiles?.doubleIndex,
+                                                        tripleIndex = result.bonusTiles?.tripleIndex
+                                                    )
+                                                } else null
                                                 RoundResultPlayerRow(
                                                     name = player.displayName,
                                                     word = word,
                                                     points = points,
-                                                    extra = if (submission == null) "No submission" else if (isValid) "Valid" else "Invalid",
+                                                    extra = if (submission == null) {
+                                                        "No submission"
+                                                    } else if (isValid) {
+                                                        if (breakdown != null) "Valid · $breakdown" else "Valid"
+                                                    } else {
+                                                        "Invalid"
+                                                    },
                                                     extraColor = if (isValid) ColorCyan else ColorRed
                                                 )
                                             }

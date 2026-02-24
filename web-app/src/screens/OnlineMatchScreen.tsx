@@ -85,6 +85,44 @@ const PlayerResultRow = ({
   </div>
 );
 
+const buildMultiplierBreakdown = (
+  word: string,
+  letters: string[],
+  bonusTiles: MatchStatePayload["bonusTiles"] | null | undefined
+): string | null => {
+  if (!bonusTiles) return null;
+  const normalized = word.trim().toUpperCase();
+  if (!normalized || normalized === "-") return null;
+
+  const letterSlots = new Map<string, number[]>();
+  letters.forEach((letter, index) => {
+    const upper = letter.toUpperCase();
+    const score = index === bonusTiles.tripleIndex ? 3 : index === bonusTiles.doubleIndex ? 2 : 1;
+    const existing = letterSlots.get(upper) ?? [];
+    existing.push(score);
+    letterSlots.set(upper, existing);
+  });
+
+  for (const values of letterSlots.values()) {
+    values.sort((a, b) => b - a);
+  }
+
+  let triplesUsed = 0;
+  let doublesUsed = 0;
+  for (const ch of normalized) {
+    const values = letterSlots.get(ch);
+    if (!values || values.length === 0) return null;
+    const score = values.shift() ?? 1;
+    if (score === 3) triplesUsed += 1;
+    if (score === 2) doublesUsed += 1;
+  }
+
+  if (triplesUsed === 0 && doublesUsed === 0) return "No bonus tiles used";
+  if (triplesUsed > 0 && doublesUsed > 0) return `Bonuses: ${triplesUsed}x gold (3pt), ${doublesUsed}x silver (2pt)`;
+  if (triplesUsed > 0) return `Bonus: ${triplesUsed}x gold (3pt)`;
+  return `Bonus: ${doublesUsed}x silver (2pt)`;
+};
+
 export const OnlineMatchScreen = ({
   state,
   onPickVowel,
@@ -292,13 +330,29 @@ export const OnlineMatchScreen = ({
                         const submission = match.roundResults.at(-1)?.submissions?.[player.playerId];
                         const points = match.roundResults.at(-1)?.awardedScores[player.playerId] ?? 0;
                         const valid = submission?.isValid ?? false;
+                        const multiplierBreakdown =
+                          valid && submission
+                            ? buildMultiplierBreakdown(
+                                submission.normalizedWord || submission.word,
+                                match.roundResults.at(-1)?.letters ?? [],
+                                match.roundResults.at(-1)?.bonusTiles ?? null
+                              )
+                            : null;
                         return (
                           <PlayerResultRow
                             key={player.playerId}
                             name={player.displayName}
                             word={submission?.word ?? "-"}
                             points={points}
-                            extra={submission ? (valid ? "Valid" : "Invalid") : "No submission"}
+                            extra={
+                              submission
+                                ? valid
+                                  ? multiplierBreakdown
+                                    ? `Valid · ${multiplierBreakdown}`
+                                    : "Valid"
+                                  : "Invalid"
+                                : "No submission"
+                            }
                             extraColor={valid ? "var(--green)" : "var(--red)"}
                           />
                         );
