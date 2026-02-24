@@ -189,7 +189,7 @@ class OnlineMatchViewModel(
                     var nextState = current.copy(secondsRemaining = remaining)
                     if (
                         matchState.phase == MatchPhase.LETTERS_SOLVING &&
-                        remaining <= 1 &&
+                        remaining <= 2 &&
                         !current.hasSubmittedWord
                     ) {
                         repository.submitWord(current.wordInput)
