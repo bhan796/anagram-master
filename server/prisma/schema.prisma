@@ -19,9 +19,16 @@ model Player {
   rankedWins  Int           @default(0)
   rankedLosses Int          @default(0)
   rankedDraws Int           @default(0)
+  runes       Int           @default(0)
+  equippedCosmetic String?
+  currentWinStreak Int      @default(0)
+  conundrumSolves Int       @default(0)
+  pendingChests Int         @default(0)
   userId      String?
   user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   authSessions AuthSession[]
+  achievements PlayerAchievement[]
+  inventory   PlayerInventory[]
 }
 
 model User {
@@ -63,4 +70,26 @@ model OauthAccount {
 
   @@unique([provider, providerUserId])
   @@index([userId])
+}
+
+model PlayerAchievement {
+  id            String   @id @default(cuid())
+  playerId      String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, achievementId])
+  @@index([playerId])
+}
+
+model PlayerInventory {
+  id         String   @id @default(cuid())
+  playerId   String
+  itemId     String
+  obtainedAt DateTime @default(now())
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, itemId])
+  @@index([playerId])
 }

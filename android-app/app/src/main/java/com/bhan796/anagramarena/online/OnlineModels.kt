@@ -42,6 +42,7 @@ data class ActionErrorPayload(
 data class PlayerSnapshot(
     val playerId: String,
     val displayName: String,
+    val equippedCosmetic: String? = null,
     val connected: Boolean,
     val score: Int,
     val rating: Int = 1000,

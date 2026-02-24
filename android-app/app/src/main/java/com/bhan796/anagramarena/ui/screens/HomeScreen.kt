@@ -22,10 +22,13 @@ import com.bhan796.anagramarena.ui.theme.ColorGreen
 fun HomeScreen(
     contentPadding: PaddingValues,
     playersOnline: Int,
+    runes: Int,
     onPlayOnline: () -> Unit,
     onPracticeMode: () -> Unit,
     onHowToPlay: () -> Unit,
     onProfile: () -> Unit,
+    onShop: () -> Unit,
+    onAchievements: () -> Unit,
     onSettings: () -> Unit,
     isAuthenticated: Boolean,
     authLabel: String,
@@ -81,6 +84,20 @@ fun HomeScreen(
                 onProfile()
             }, accentColor = ColorGold)
         }
+        if (isAuthenticated) {
+            AnimatedVisibility(logoComplete, enter = fadeIn(tween(400, delayMillis = 350)) + expandVertically(tween(400, delayMillis = 350))) {
+                ArcadeButton("ACHIEVEMENTS", onClick = {
+                    SoundManager.playClick()
+                    onAchievements()
+                }, accentColor = ColorGold)
+            }
+            AnimatedVisibility(logoComplete, enter = fadeIn(tween(400, delayMillis = 400)) + expandVertically(tween(400, delayMillis = 400))) {
+                ArcadeButton("SHOP", onClick = {
+                    SoundManager.playClick()
+                    onShop()
+                })
+            }
+        }
         AnimatedVisibility(logoComplete, enter = fadeIn(tween(400, delayMillis = 400)) + expandVertically(tween(400, delayMillis = 400))) {
             ArcadeButton("SETTINGS", onClick = {
                 SoundManager.playClick()
@@ -109,6 +126,15 @@ fun HomeScreen(
                 authLabel,
                 style = MaterialTheme.typography.labelLarge,
                 color = if (isAuthenticated) ColorCyan else ColorGold
+            )
+        }
+        if (isAuthenticated) {
+            Text(
+                "♦ ${runes} RUNES",
+                style = MaterialTheme.typography.labelLarge,
+                color = ColorGold,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
 

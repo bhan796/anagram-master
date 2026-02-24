@@ -354,6 +354,9 @@ export class AuthService {
         rankedWins: number;
         rankedLosses: number;
         rankedDraws: number;
+        equippedCosmetic: string | null;
+        runes: number;
+        pendingChests: number;
       }
     | null
   > {
@@ -367,7 +370,10 @@ export class AuthService {
         rankedGames: true,
         rankedWins: true,
         rankedLosses: true,
-        rankedDraws: true
+        rankedDraws: true,
+        equippedCosmetic: true,
+        runes: true,
+        pendingChests: true
       }
     });
     if (!player) return null;
@@ -379,7 +385,10 @@ export class AuthService {
       rankedGames: player.rankedGames ?? 0,
       rankedWins: player.rankedWins ?? 0,
       rankedLosses: player.rankedLosses ?? 0,
-      rankedDraws: player.rankedDraws ?? 0
+      rankedDraws: player.rankedDraws ?? 0,
+      equippedCosmetic: player.equippedCosmetic ?? null,
+      runes: player.runes ?? 0,
+      pendingChests: player.pendingChests ?? 0
     };
   }
 

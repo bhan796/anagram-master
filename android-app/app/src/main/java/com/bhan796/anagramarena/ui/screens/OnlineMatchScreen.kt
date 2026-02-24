@@ -51,6 +51,7 @@ import com.bhan796.anagramarena.online.MatchPhase
 import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.online.RoundType
 import com.bhan796.anagramarena.ui.components.ArcadeButton
+import com.bhan796.anagramarena.ui.components.CosmeticName
 import com.bhan796.anagramarena.ui.components.LetterTile
 import com.bhan796.anagramarena.ui.components.NeonTitle
 import com.bhan796.anagramarena.ui.components.RankBadge
@@ -229,8 +230,8 @@ fun OnlineMatchScreen(
 
                     if (me != null && opponent != null) {
                         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                            ScoreBadge(label = me.displayName, score = me.score, color = ColorCyan)
-                            ScoreBadge(label = opponent.displayName, score = opponent.score, color = ColorGold)
+                            ScoreBadge(label = me.displayName, score = me.score, color = ColorCyan, equippedCosmetic = me.equippedCosmetic)
+                            ScoreBadge(label = opponent.displayName, score = opponent.score, color = ColorGold, equippedCosmetic = opponent.equippedCosmetic)
                         }
                     }
 
@@ -342,6 +343,7 @@ fun OnlineMatchScreen(
                                                 } else null
                                                 RoundResultPlayerRow(
                                                     name = player.displayName,
+                                                    equippedCosmetic = player.equippedCosmetic,
                                                     word = word,
                                                     wordAccents = letterAccents,
                                                     points = points,
@@ -371,6 +373,7 @@ fun OnlineMatchScreen(
                                                 val solved = result.correctPlayerIds.contains(player.playerId)
                                                 RoundResultPlayerRow(
                                                     name = player.displayName,
+                                                    equippedCosmetic = player.equippedCosmetic,
                                                     word = if (solved) result.answer.orEmpty() else "-",
                                                     points = points,
                                                     extra = if (solved) "Solved" else "Not solved",
@@ -443,6 +446,22 @@ fun OnlineMatchScreen(
                                     }
                                 }
                             }
+                            state.pendingRewards?.let { rewards ->
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(ColorSurfaceVariant, RoundedCornerShape(sdp(6.dp)))
+                                        .border(sdp(1.dp), ColorCyan.copy(alpha = 0.3f), RoundedCornerShape(sdp(6.dp)))
+                                        .padding(sdp(12.dp))
+                                ) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
+                                        Text("♦ +${rewards.runesEarned} RUNES", color = ColorGold, style = MaterialTheme.typography.labelLarge)
+                                        rewards.newAchievements.forEach { achievement ->
+                                            Text("🏆 ${achievement.name} +♦${achievement.runesReward}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                                        }
+                                    }
+                                }
+                            }
 
                             val playersById = match.players.associateBy { it.playerId }
                             Column(
@@ -481,6 +500,7 @@ fun OnlineMatchScreen(
                                                     val points = result.awardedScores[player.playerId] ?: 0
                                                     RoundPlayerRow(
                                                         name = playersById[player.playerId]?.displayName ?: "Player",
+                                                        equippedCosmetic = playersById[player.playerId]?.equippedCosmetic,
                                                         word = submittedWord,
                                                         wordAccents = letterAccents,
                                                         points = points
@@ -497,6 +517,7 @@ fun OnlineMatchScreen(
                                                     val wasSolver = result.correctPlayerIds.contains(player.playerId)
                                                     RoundPlayerRow(
                                                         name = playersById[player.playerId]?.displayName ?: "Player",
+                                                        equippedCosmetic = playersById[player.playerId]?.equippedCosmetic,
                                                         word = if (wasSolver) result.answer ?: "-" else "-",
                                                         points = points
                                                     )
@@ -813,13 +834,13 @@ private fun RisingWordTile(letter: String, index: Int, accentColor: Color) {
 }
 
 @Composable
-private fun RoundPlayerRow(name: String, word: String, points: Int, wordAccents: List<Color>? = null) {
+private fun RoundPlayerRow(name: String, equippedCosmetic: String?, word: String, points: Int, wordAccents: List<Color>? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(name, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+            CosmeticName(name, equippedCosmetic, style = MaterialTheme.typography.labelMedium.copy(color = ColorDimText))
             Text("$points pts", style = MaterialTheme.typography.labelMedium, color = ColorCyan)
         }
         WordTiles(label = null, word = word, accentColor = ColorCyan, letterAccents = wordAccents)
@@ -829,6 +850,7 @@ private fun RoundPlayerRow(name: String, word: String, points: Int, wordAccents:
 @Composable
 private fun RoundResultPlayerRow(
     name: String,
+    equippedCosmetic: String?,
     word: String,
     points: Int,
     extra: String,
@@ -840,7 +862,7 @@ private fun RoundResultPlayerRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(name, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+            CosmeticName(name, equippedCosmetic, style = MaterialTheme.typography.labelMedium.copy(color = ColorDimText))
             Text("$points pts", style = MaterialTheme.typography.labelMedium, color = ColorCyan)
         }
         WordTiles(label = null, word = word, accentColor = ColorCyan, letterAccents = wordAccents)

@@ -7,6 +7,7 @@ import {
   type MatchStatePayload,
   type MatchmakingStatusPayload,
   type OnlineUiState,
+  type PlayerRewardsPayload,
   type SessionIdentifyPayload
 } from "../types/online";
 
@@ -278,6 +279,10 @@ export const useOnlineMatch = () => {
       setState((previous) => reduceOnlineState(previous, { actionError: payload, clockOffsetMs }));
     });
 
+    socket.on(SocketEventNames.PLAYER_REWARDS, (payload: PlayerRewardsPayload) => {
+      setState((previous) => ({ ...previous, playerRewards: payload }));
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -388,7 +393,8 @@ export const useOnlineMatch = () => {
       wordInput: "",
       conundrumGuessInput: "",
       localValidationMessage: null,
-      lastError: null
+      lastError: null,
+      playerRewards: null
     }));
   }, []);
 
@@ -409,7 +415,8 @@ export const useOnlineMatch = () => {
         wordInput: "",
         conundrumGuessInput: "",
         localValidationMessage: null,
-        lastError: null
+        lastError: null,
+        playerRewards: null
       };
     });
     localStorage.removeItem(MATCH_ID_KEY);
@@ -442,13 +449,18 @@ export const useOnlineMatch = () => {
       wordInput: "",
       conundrumGuessInput: "",
       localValidationMessage: null,
-      lastError: null
+      lastError: null,
+      playerRewards: null
     }));
 
     const socket = socketRef.current;
     if (!socket) return;
     const identifyPayload = buildIdentifyPayload(null, null);
     socket.emit(SocketEventNames.SESSION_IDENTIFY, identifyPayload);
+  }, []);
+
+  const clearRewards = useCallback(() => {
+    setState((previous) => ({ ...previous, playerRewards: null }));
   }, []);
 
   const value = useMemo(
@@ -468,7 +480,8 @@ export const useOnlineMatch = () => {
         clearError,
         forfeitMatch,
         clearFinishedMatch,
-        resetIdentity
+        resetIdentity,
+        clearRewards
       }
     }),
     [
@@ -486,7 +499,8 @@ export const useOnlineMatch = () => {
       clearError,
       forfeitMatch,
       clearFinishedMatch,
-      resetIdentity
+      resetIdentity,
+      clearRewards
     ]
   );
 

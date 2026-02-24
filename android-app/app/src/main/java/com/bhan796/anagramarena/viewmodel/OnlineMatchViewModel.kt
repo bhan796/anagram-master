@@ -40,6 +40,9 @@ class OnlineMatchViewModel(
                 repository.matchState,
                 repository.actionError
             ) { connection, session, matchmaking, matchState, actionError ->
+                Quintuple(connection, session, matchmaking, matchState, actionError)
+            }.combine(repository.playerRewards) { combined, rewards ->
+                val (connection, session, matchmaking, matchState, actionError) = combined
                 if (matchState != null) {
                     updateClockOffset(matchState.serverNowMs)
                 }
@@ -66,7 +69,8 @@ class OnlineMatchViewModel(
                     hasSubmittedWord = if (resetWord) false else previous.hasSubmittedWord,
                     hasSubmittedConundrumGuess = if (resetWord) false else reduced.hasSubmittedConundrumGuess,
                     opponentSubmittedConundrumGuess = if (resetWord) false else reduced.opponentSubmittedConundrumGuess,
-                    localValidationMessage = if (resetWord) null else previous.localValidationMessage
+                    localValidationMessage = if (resetWord) null else previous.localValidationMessage,
+                    pendingRewards = rewards ?: previous.pendingRewards
                 )
             }.collect {}
         }
@@ -142,9 +146,14 @@ class OnlineMatchViewModel(
         _state.value = _state.value.copy(lastError = null, localValidationMessage = null)
     }
 
+    fun clearRewards() {
+        repository.clearPlayerRewards()
+        _state.value = _state.value.copy(pendingRewards = null)
+    }
+
     fun leaveActiveMatch() {
         repository.forfeitActiveMatch()
-        _state.value = _state.value.copy(lastError = null, localValidationMessage = null)
+        _state.value = _state.value.copy(lastError = null, localValidationMessage = null, pendingRewards = null)
     }
 
     fun queuePlayAgain() {
@@ -164,7 +173,8 @@ class OnlineMatchViewModel(
                 wordInput = "",
                 conundrumGuessInput = "",
                 localValidationMessage = null,
-                lastError = null
+                lastError = null,
+                pendingRewards = null
             )
         }
         telemetry.log("queue_play_again")
@@ -230,3 +240,11 @@ class OnlineMatchViewModel(
         }
     }
 }
+
+private data class Quintuple<A, B, C, D, E>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D,
+    val fifth: E
+)

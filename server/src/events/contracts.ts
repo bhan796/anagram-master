@@ -10,7 +10,8 @@ export const SocketEvents = {
   matchState: "match:state",
   matchmakingStatus: "matchmaking:status",
   matchFound: "match:found",
-  actionError: "action:error"
+  actionError: "action:error",
+  playerRewards: "player:rewards"
 } as const;
 
 export type SocketEventName = (typeof SocketEvents)[keyof typeof SocketEvents];
@@ -19,6 +20,17 @@ export interface ActionErrorPayload {
   code: string;
   message: string;
   action: string;
+}
+
+export interface PlayerRewardsPayload {
+  runesEarned: number;
+  newAchievements: Array<{
+    id: string;
+    name: string;
+    description: string;
+    tier: string;
+    runesReward: number;
+  }>;
 }
 
 export const ErrorMessages: Record<string, string> = {

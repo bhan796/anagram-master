@@ -29,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
+import com.bhan796.anagramarena.ui.components.CosmeticName
 import com.bhan796.anagramarena.ui.components.NeonDivider
 import com.bhan796.anagramarena.ui.components.NeonTitle
 import com.bhan796.anagramarena.ui.components.RankBadge
@@ -52,7 +53,12 @@ fun ProfileScreen(
 
     ArcadeScaffold(contentPadding = contentPadding) {
         ArcadeBackButton(onClick = onBack, modifier = Modifier.fillMaxWidth())
-        NeonTitle(state.stats?.displayName ?: "PLAYER", color = ColorGold)
+        val stats = state.stats
+        if (stats != null) {
+            CosmeticName(stats.displayName, stats.equippedCosmetic, style = MaterialTheme.typography.displayMedium.copy(color = ColorGold))
+        } else {
+            NeonTitle("PLAYER", color = ColorGold)
+        }
 
         if (state.isLoading) {
             CircularProgressIndicator()
@@ -67,7 +73,6 @@ fun ProfileScreen(
             )
         }
 
-        val stats = state.stats
         if (stats != null) {
             RankProgressCard(
                 rating = stats.rating,

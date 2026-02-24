@@ -79,6 +79,7 @@ export class MatchService {
       existing ?? {
         playerId,
         displayName: requestedDisplayName?.trim() || createGuestName(),
+        equippedCosmetic: null,
         userId: userId ?? null,
         socketId,
         connected: true,
@@ -108,6 +109,7 @@ export class MatchService {
     playerId: string,
     profile: {
       displayName?: string;
+      equippedCosmetic?: string | null;
       rating: number;
       peakRating: number;
       rankedGames: number;
@@ -121,6 +123,9 @@ export class MatchService {
 
     if (profile.displayName && profile.displayName.trim().length > 0) {
       player.displayName = profile.displayName.trim();
+    }
+    if (typeof profile.equippedCosmetic !== "undefined") {
+      player.equippedCosmetic = profile.equippedCosmetic ?? null;
     }
     player.rating = profile.rating;
     player.peakRating = Math.max(profile.peakRating, profile.rating);
@@ -399,6 +404,7 @@ export class MatchService {
       return {
         playerId,
         displayName: player?.displayName ?? "Guest",
+        equippedCosmetic: player?.equippedCosmetic ?? null,
         connected: player?.connected ?? false,
         score: match.scores[playerId] ?? 0,
         rating,

@@ -60,9 +60,9 @@ export const LetterTile = ({
   </button>
 );
 
-export const ScoreBadge = ({ label, score, color = "var(--cyan)" }: { label: string; score: number; color?: string }) => (
+export const ScoreBadge = ({ label, score, color = "var(--cyan)", labelClassName }: { label: string; score: number; color?: string; labelClassName?: string }) => (
   <div className="score-badge">
-    <div className="name">{label}</div>
+    <div className={`name ${labelClassName ?? ""}`.trim()}>{label}</div>
     <div className="value" style={{ color }}>
       {score}
     </div>

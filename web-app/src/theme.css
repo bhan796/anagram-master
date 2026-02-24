@@ -409,3 +409,196 @@
   from { opacity: 0; transform: scale(0.5); }
   to   { opacity: 1; transform: scale(1); }
 }
+
+/* ===== COSMETIC KEYFRAMES ===== */
+@keyframes colorWave {
+  0%, 100% { filter: hue-rotate(0deg); }
+  50% { filter: hue-rotate(30deg); }
+}
+@keyframes spectrumSlow {
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(360deg); }
+}
+@keyframes neonFlicker {
+  0%, 100% { opacity: 1; }
+  10% { opacity: 0.85; }
+  30% { opacity: 1; }
+  50% { opacity: 0.7; }
+  70% { opacity: 1; }
+  90% { opacity: 0.9; }
+}
+@keyframes goldShimmer {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5); }
+}
+@keyframes glitchEffect {
+  0%, 100% { transform: skewX(0deg); text-shadow: none; }
+  20% { transform: skewX(2deg); text-shadow: -2px 0 #ff00cc, 2px 0 #00f5ff; }
+  40% { transform: skewX(-1deg); opacity: 0.9; }
+  60% { transform: skewX(1deg); text-shadow: 2px 0 #ff00cc; }
+}
+@keyframes plasmaRipple {
+  0% { filter: hue-rotate(0deg); transform: translateX(0); }
+  25% { filter: hue-rotate(90deg); transform: translateX(-1px); }
+  50% { filter: hue-rotate(180deg); transform: translateX(1px); }
+  75% { filter: hue-rotate(270deg); transform: translateX(-1px); }
+  100% { filter: hue-rotate(360deg); transform: translateX(0); }
+}
+@keyframes solarFlare {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes auroraShift {
+  0%, 100% { filter: hue-rotate(120deg) brightness(1); }
+  50% { filter: hue-rotate(240deg) brightness(1.3); }
+}
+@keyframes iceShimmer {
+  0%, 100% { filter: brightness(1); text-shadow: 0 0 4px #ffffff; }
+  50% { filter: brightness(1.6); text-shadow: 0 0 12px #aaeeff, 0 0 20px #ffffff; }
+}
+@keyframes holoShift {
+  from { filter: hue-rotate(0deg) brightness(1); }
+  to { filter: hue-rotate(360deg) brightness(1.3); }
+}
+@keyframes prismaticStorm {
+  0% { filter: hue-rotate(0deg); transform: scale(1); }
+  50% { filter: hue-rotate(180deg); transform: scale(1.04); }
+  100% { filter: hue-rotate(360deg); transform: scale(1); }
+}
+@keyframes voidPulse {
+  0%, 100% { text-shadow: 0 0 4px #9900ff; }
+  50% { text-shadow: 0 0 16px #cc00ff, 0 0 32px #9900ff; }
+}
+@keyframes matrixGlow {
+  0%, 100% { color: #39ff14; text-shadow: 0 0 8px #39ff14; }
+  50% { color: #005500; text-shadow: none; }
+}
+@keyframes mythicBadge {
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(360deg); }
+}
+@keyframes phoenixFlame {
+  0%, 100% { filter: hue-rotate(0deg) brightness(1.1); color: #ff4400; }
+  33% { filter: hue-rotate(20deg) brightness(1.4); color: #ff8800; }
+  66% { filter: hue-rotate(-10deg) brightness(1.2); color: #ff2200; }
+}
+@keyframes auroraExStorm {
+  0% { filter: hue-rotate(160deg) brightness(1.2); }
+  33% { filter: hue-rotate(200deg) brightness(1.5); }
+  66% { filter: hue-rotate(140deg) brightness(1.3); }
+  100% { filter: hue-rotate(160deg) brightness(1.2); }
+}
+
+/* ===== COSMETIC CLASSES ===== */
+.cosmetic-c_silver { color: #c0c0c0; }
+.cosmetic-c_mint { color: #aaffdd; }
+.cosmetic-c_crimson { color: #ff4444; }
+.cosmetic-c_amber { color: #ffb300; }
+.cosmetic-c_pulse {
+  color: var(--cyan);
+  animation: neonPulse 0.9s ease-in-out infinite;
+}
+.cosmetic-u_royal { color: #4488ff; }
+.cosmetic-u_violet { color: #9933ff; }
+.cosmetic-u_forest { color: #39ff14; }
+.cosmetic-u_glow {
+  color: #ffffff;
+  text-shadow: 0 0 8px #ffffff, 0 0 16px rgba(255,255,255,0.5);
+}
+.cosmetic-u_wave {
+  color: var(--cyan);
+  animation: colorWave 4s ease-in-out infinite;
+}
+.cosmetic-r_electric {
+  color: #0088ff;
+  text-shadow: 0 0 8px #00aaff, 0 0 16px #0088ff;
+}
+.cosmetic-r_neon_green {
+  color: #39ff14;
+  text-shadow: 0 0 8px #39ff14, 0 0 16px rgba(57,255,20,0.5);
+  animation: neonPulse 1.2s ease-in-out infinite;
+}
+.cosmetic-r_spectrum {
+  color: var(--cyan);
+  animation: spectrumSlow 8s linear infinite;
+}
+.cosmetic-r_flicker {
+  color: var(--cyan);
+  animation: neonFlicker 1.5s ease-in-out infinite;
+}
+.cosmetic-r_dual {
+  background: linear-gradient(90deg, #00f5ff, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.cosmetic-e_magenta {
+  color: #ff00cc;
+  text-shadow: 0 0 10px #ff00cc, 0 0 20px rgba(255,0,204,0.6);
+}
+.cosmetic-e_gold_rush {
+  color: #ffd700;
+  animation: goldShimmer 2s ease-in-out infinite;
+}
+.cosmetic-e_glitch {
+  color: var(--cyan);
+  animation: glitchEffect 0.8s steps(1) infinite;
+}
+.cosmetic-e_plasma {
+  color: var(--cyan);
+  animation: plasmaRipple 1.5s linear infinite;
+}
+.cosmetic-l_solar {
+  background: linear-gradient(90deg, #ff4400, #ffaa00, #ffdd00, #ff4400);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: solarFlare 2s linear infinite;
+}
+.cosmetic-l_aurora {
+  color: #00ff88;
+  animation: auroraShift 6s ease-in-out infinite;
+}
+.cosmetic-l_ice {
+  color: #aaeeff;
+  animation: iceShimmer 3s ease-in-out infinite;
+}
+.cosmetic-l_obsidian {
+  color: #220033;
+  text-shadow: 0 0 6px #9900ff, 0 0 12px #cc00ff;
+}
+.cosmetic-l_holo {
+  color: #ff88ff;
+  animation: holoShift 2s linear infinite;
+}
+.cosmetic-l_crown::before {
+  content: "? ";
+  color: #ffd700;
+}
+.cosmetic-l_crown {
+  color: #ffd700;
+  animation: goldShimmer 2s ease-in-out infinite;
+}
+.cosmetic-m_prism {
+  color: var(--cyan);
+  animation: prismaticStorm 0.8s linear infinite;
+}
+.cosmetic-m_void {
+  color: #cc66ff;
+  animation: voidPulse 2s ease-in-out infinite;
+}
+.cosmetic-m_matrix {
+  animation: matrixGlow 0.2s steps(1) infinite;
+}
+.cosmetic-m_phoenix {
+  animation: phoenixFlame 1s ease-in-out infinite;
+}
+.cosmetic-m_aurora_ex {
+  color: #00ffaa;
+  animation: auroraExStorm 2s ease-in-out infinite;
+}
+
+.rarity-mythic {
+  animation: mythicBadge 1.5s linear infinite;
+}

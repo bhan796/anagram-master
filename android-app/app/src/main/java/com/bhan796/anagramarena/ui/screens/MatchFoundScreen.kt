@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.bhan796.anagramarena.audio.SoundManager
 import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
+import com.bhan796.anagramarena.ui.components.CosmeticName
 import com.bhan796.anagramarena.ui.components.RankBadge
 import com.bhan796.anagramarena.ui.theme.ColorBackground
 import com.bhan796.anagramarena.ui.theme.ColorCyan
@@ -227,7 +228,7 @@ fun MatchFoundScreen(contentPadding: PaddingValues, state: OnlineUiState, onDone
                         verticalArrangement = Arrangement.spacedBy(sdp(6.dp))
                     ) {
                         Text("YOU", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
-                        Text(me?.displayName ?: "You", style = MaterialTheme.typography.labelMedium, color = ColorWhite)
+                        CosmeticName(me?.displayName ?: "You", me?.equippedCosmetic, style = MaterialTheme.typography.labelMedium.copy(color = ColorWhite))
                         AnimatedRating(target = me?.rating ?: 1000, color = ColorCyan)
                         RankBadge(tier = me?.rankTier ?: "silver")
                     }
@@ -242,7 +243,7 @@ fun MatchFoundScreen(contentPadding: PaddingValues, state: OnlineUiState, onDone
                         verticalArrangement = Arrangement.spacedBy(sdp(6.dp))
                     ) {
                         Text("OPP", style = MaterialTheme.typography.labelMedium, color = ColorDimText)
-                        Text(opp?.displayName ?: "Opponent", style = MaterialTheme.typography.labelMedium, color = ColorWhite)
+                        CosmeticName(opp?.displayName ?: "Opponent", opp?.equippedCosmetic, style = MaterialTheme.typography.labelMedium.copy(color = ColorWhite))
                         AnimatedRating(target = opp?.rating ?: 1000, color = ColorGold)
                         RankBadge(tier = opp?.rankTier ?: "silver")
                     }

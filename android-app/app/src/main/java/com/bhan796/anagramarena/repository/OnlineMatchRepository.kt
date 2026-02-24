@@ -6,6 +6,7 @@ import com.bhan796.anagramarena.online.ActionErrorPayload
 import com.bhan796.anagramarena.online.MatchFoundPayload
 import com.bhan796.anagramarena.online.MatchStatePayload
 import com.bhan796.anagramarena.online.MatchmakingStatusPayload
+import com.bhan796.anagramarena.online.PlayerRewardsPayload
 import com.bhan796.anagramarena.online.SessionIdentifyPayload
 import com.bhan796.anagramarena.online.SocketEventNames
 import com.bhan796.anagramarena.storage.SessionStore
@@ -25,6 +26,7 @@ class OnlineMatchRepository(
     private val _matchFound = MutableStateFlow<MatchFoundPayload?>(null)
     private val _matchState = MutableStateFlow<MatchStatePayload?>(null)
     private val _actionError = MutableStateFlow<ActionErrorPayload?>(null)
+    private val _playerRewards = MutableStateFlow<PlayerRewardsPayload?>(null)
 
     val connectionState: StateFlow<SocketConnectionState> = _connectionState.asStateFlow()
     val session: StateFlow<SessionIdentifyPayload?> = _session.asStateFlow()
@@ -32,6 +34,7 @@ class OnlineMatchRepository(
     val matchFound: StateFlow<MatchFoundPayload?> = _matchFound.asStateFlow()
     val matchState: StateFlow<MatchStatePayload?> = _matchState.asStateFlow()
     val actionError: StateFlow<ActionErrorPayload?> = _actionError.asStateFlow()
+    val playerRewards: StateFlow<PlayerRewardsPayload?> = _playerRewards.asStateFlow()
 
     init {
         socketClient.connectionStateListener = { state ->
@@ -85,6 +88,10 @@ class OnlineMatchRepository(
             } else {
                 _actionError.value = payload
             }
+        }
+
+        socketClient.playerRewardsListener = { payload ->
+            _playerRewards.value = payload
         }
     }
 
@@ -144,5 +151,9 @@ class OnlineMatchRepository(
 
     fun clearActionError() {
         _actionError.value = null
+    }
+
+    fun clearPlayerRewards() {
+        _playerRewards.value = null
     }
 }

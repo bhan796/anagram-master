@@ -4,6 +4,7 @@ import com.bhan796.anagramarena.online.ActionErrorPayload
 import com.bhan796.anagramarena.online.MatchFoundPayload
 import com.bhan796.anagramarena.online.MatchStatePayload
 import com.bhan796.anagramarena.online.MatchmakingStatusPayload
+import com.bhan796.anagramarena.online.PlayerRewardsPayload
 import com.bhan796.anagramarena.online.SessionIdentifyPayload
 
 sealed class SocketConnectionState {
@@ -21,6 +22,7 @@ interface MultiplayerSocketClient {
     var matchFoundListener: ((MatchFoundPayload) -> Unit)?
     var matchStateListener: ((MatchStatePayload) -> Unit)?
     var actionErrorListener: ((ActionErrorPayload) -> Unit)?
+    var playerRewardsListener: ((PlayerRewardsPayload) -> Unit)?
 
     fun connect(baseUrl: String)
     fun disconnect()

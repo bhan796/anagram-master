@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { OnlineUiState } from "../types/online";
 import { ArcadeBackButton, ArcadeButton, ArcadeScaffold, NeonTitle, RankBadge } from "../components/ArcadeComponents";
+import { getCosmeticClass } from "../lib/cosmetics";
 
 interface MatchmakingScreenProps {
   state: OnlineUiState;
@@ -9,6 +10,7 @@ interface MatchmakingScreenProps {
     displayName: string;
     rating: number;
     rankTier: string;
+    equippedCosmetic?: string | null;
     rankedGames: number;
     wins: number;
     losses: number;
@@ -137,7 +139,7 @@ export const MatchmakingScreen = ({
           ) : (
             leaderboard.slice(0, 8).map((entry, index) => (
               <div key={entry.playerId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span className="text-dim">
+                <span className={`text-dim ${getCosmeticClass(entry.equippedCosmetic)}`.trim()}>
                   #{index + 1} {entry.displayName}
                 </span>
                 <span className="label" style={{ color: "var(--green)" }}>

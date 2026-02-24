@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { OnlineUiState } from "../types/online";
 import { RankBadge } from "../components/ArcadeComponents";
 import * as SoundManager from "../sound/SoundManager";
+import { getCosmeticClass } from "../lib/cosmetics";
 
 interface MatchFoundScreenProps {
   state: OnlineUiState;
@@ -199,7 +200,7 @@ export const MatchFoundScreen = ({ state, onDone }: MatchFoundScreenProps) => {
           <div className="mf-player-card you">
             <div className="text-dim">YOU</div>
             <div
-              className="label"
+              className={`label ${getCosmeticClass(me?.equippedCosmetic)}`.trim()}
               style={{
                 color: "var(--white)",
                 fontSize: "clamp(8px,1vw,10px)",
@@ -217,7 +218,7 @@ export const MatchFoundScreen = ({ state, onDone }: MatchFoundScreenProps) => {
           <div className="mf-player-card opp">
             <div className="text-dim">OPP</div>
             <div
-              className="label"
+              className={`label ${getCosmeticClass(opp?.equippedCosmetic)}`.trim()}
               style={{
                 color: "var(--white)",
                 fontSize: "clamp(8px,1vw,10px)",

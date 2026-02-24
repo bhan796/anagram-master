@@ -28,6 +28,7 @@ class ProfileApiService(private val baseUrl: String) {
                 rating = response.optInt("rating", 1000),
                 peakRating = response.optInt("peakRating", 1000),
                 rankTier = response.optString("rankTier", "silver"),
+                equippedCosmetic = response.optString("equippedCosmetic", "").takeIf { it.isNotBlank() },
                 rankedGames = response.optInt("rankedGames", 0),
                 rankedWins = response.optInt("rankedWins", 0),
                 rankedLosses = response.optInt("rankedLosses", 0),
@@ -92,6 +93,7 @@ class ProfileApiService(private val baseUrl: String) {
                 LeaderboardEntry(
                     playerId = item.getString("playerId"),
                     displayName = item.getString("displayName"),
+                    equippedCosmetic = item.optString("equippedCosmetic", "").takeIf { it.isNotEmpty() },
                     rating = item.getInt("rating"),
                     rankTier = item.optString("rankTier", "silver"),
                     rankedGames = item.optInt("rankedGames", 0),

@@ -10,6 +10,8 @@ import { SettingsScreen } from "./screens/SettingsScreen";
 import { HowToPlayScreen } from "./screens/HowToPlayScreen";
 import { MatchFoundScreen } from "./screens/MatchFoundScreen";
 import { AuthScreen } from "./screens/AuthScreen";
+import { ShopScreen } from "./screens/ShopScreen";
+import { AchievementsScreen } from "./screens/AchievementsScreen";
 import { loadConundrums, loadDictionary } from "./logic/loaders";
 import { useOnlineMatch } from "./hooks/useOnlineMatch";
 import * as SoundManager from "./sound/SoundManager";
@@ -50,7 +52,9 @@ type Route =
   | "online_match"
   | "profile"
   | "settings"
-  | "how_to_play";
+  | "how_to_play"
+  | "shop"
+  | "achievements";
 
 interface SettingsState {
   timerEnabled: boolean;
@@ -75,6 +79,8 @@ interface StatsSummary {
   rankedWins: number;
   rankedLosses: number;
   rankedDraws: number;
+  equippedCosmetic?: string | null;
+  runes?: number;
 }
 
 interface MatchHistoryItem {
@@ -189,10 +195,12 @@ export const App = () => {
   const [history, setHistory] = useState<MatchHistoryItem[]>([]);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [runes, setRunes] = useState(0);
   const [leaderboard, setLeaderboard] = useState<
     Array<{
       playerId: string;
       displayName: string;
+      equippedCosmetic?: string | null;
       rating: number;
       rankTier: string;
       rankedGames: number;
@@ -431,6 +439,7 @@ export const App = () => {
         const statsPayload = (await statsRes.json()) as StatsSummary;
         const historyPayload = (await historyRes.json()) as { matches: MatchHistoryItem[] };
         setStats(statsPayload);
+        if (typeof statsPayload.runes === "number") setRunes(statsPayload.runes);
         setHistory(historyPayload.matches ?? []);
 
       } catch (error) {
@@ -590,6 +599,26 @@ export const App = () => {
     setHistory([]);
     setProfileError(null);
     setLeaderboard([]);
+    setRunes(0);
+  }, [auth.status]);
+
+  useEffect(() => {
+    if (auth.status !== "authenticated") return;
+    let cancelled = false;
+    const pullRunes = async () => {
+      try {
+        const response = await fetchWithAuth("/api/player/runes");
+        if (!response.ok) return;
+        const payload = (await response.json()) as { runes?: number };
+        if (!cancelled) setRunes(payload.runes ?? 0);
+      } catch {
+        // ignore
+      }
+    };
+    void pullRunes();
+    return () => {
+      cancelled = true;
+    };
   }, [auth.status]);
 
   useEffect(() => {
@@ -662,8 +691,11 @@ export const App = () => {
         onProfile={() => setRoute("profile")}
         onSettings={() => setRoute("settings")}
         onHowToPlay={() => setRoute("how_to_play")}
+        onShop={() => setRoute("shop")}
+        onAchievements={() => setRoute("achievements")}
         isAuthenticated={auth.status === "authenticated"}
         authEmail={auth.email}
+        runes={runes}
         onAuthAction={() => {
           if (auth.status === "authenticated") {
             void logout();
@@ -829,15 +861,33 @@ export const App = () => {
         onPlayAgain={() => {
           const mode = online.state.matchState?.mode ?? "casual";
           online.actions.clearFinishedMatch();
+          online.actions.clearRewards();
           setRoute("online_matchmaking");
           online.actions.startQueue(mode);
         }}
         onBackToHome={() => {
           online.actions.clearFinishedMatch();
+          online.actions.clearRewards();
           setRoute("home");
         }}
       />
     );
+  }
+
+  if (route === "shop") {
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!token) {
+      return renderWithMute(<div className="card">Sign in required.</div>);
+    }
+    return renderWithMute(<ShopScreen accessToken={token} onBack={() => setRoute("home")} />);
+  }
+
+  if (route === "achievements") {
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!token) {
+      return renderWithMute(<div className="card">Sign in required.</div>);
+    }
+    return renderWithMute(<AchievementsScreen accessToken={token} onBack={() => setRoute("home")} />);
   }
 
   if (route === "profile") {
@@ -851,6 +901,7 @@ export const App = () => {
         onRetry={() => void loadProfile()}
         onUpdateDisplayName={updateDisplayName}
         isAuthenticated={auth.status === "authenticated"}
+        runes={runes}
       />
     );
   }

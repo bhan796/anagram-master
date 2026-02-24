@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ArcadeBackButton, ArcadeScaffold, NeonDivider, NeonTitle, RankBadge } from "../components/ArcadeComponents";
+import { getCosmeticClass } from "../lib/cosmetics";
 
 interface StatsSummary {
   playerId: string;
@@ -16,6 +17,8 @@ interface StatsSummary {
   rankedWins: number;
   rankedLosses: number;
   rankedDraws: number;
+  equippedCosmetic?: string | null;
+  runes?: number;
 }
 
 interface HistoryPlayer {
@@ -42,9 +45,10 @@ interface ProfileScreenProps {
   onRetry: () => void;
   onUpdateDisplayName: (value: string) => Promise<void>;
   isAuthenticated: boolean;
+  runes: number;
 }
 
-export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetry, onUpdateDisplayName, isAuthenticated }: ProfileScreenProps) => {
+export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetry, onUpdateDisplayName, isAuthenticated, runes }: ProfileScreenProps) => {
   const [nameDraft, setNameDraft] = useState("");
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
@@ -108,7 +112,10 @@ export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetr
   return (
     <ArcadeScaffold className="accent-gold">
       <ArcadeBackButton onClick={onBack} />
-      <NeonTitle text={stats?.displayName ?? "Profile"} />
+      <div className={getCosmeticClass(stats?.equippedCosmetic)}>
+        <NeonTitle text={stats?.displayName ?? "Profile"} />
+      </div>
+      {isAuthenticated ? <div className="headline" style={{ color: "var(--gold)" }}>♦ {runes.toLocaleString()} RUNES</div> : null}
 
       {stats ? (
         <div className="card" style={{ display: "grid", gap: 10 }}>

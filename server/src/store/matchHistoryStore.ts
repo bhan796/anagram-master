@@ -60,6 +60,7 @@ export interface PlayerStats {
 export interface LeaderboardEntry {
   playerId: string;
   displayName: string;
+  equippedCosmetic?: string | null;
   rating: number;
   rankTier: string;
   rankedGames: number;

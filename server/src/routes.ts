@@ -5,6 +5,8 @@ import { attachOptionalAuth, requireAuth } from "./auth/httpAuth.js";
 import { createRateLimiter } from "./auth/rateLimit.js";
 import { toActionError } from "./events/contracts.js";
 import { ratingToTier } from "./game/ranking.js";
+import { prisma } from "./config/prisma.js";
+import { ACHIEVEMENTS, COSMETIC_ITEMS, rollChest } from "./game/achievements.js";
 import type { MatchService } from "./game/matchService.js";
 import type { PresenceStore } from "./store/presenceStore.js";
 import type { MatchHistoryStore } from "./store/matchHistoryStore.js";
@@ -196,6 +198,8 @@ export const createApiRouter = (
         rating: runtimePlayer?.rating ?? persistedProfile?.rating ?? 1000,
         peakRating: runtimePlayer?.peakRating ?? persistedProfile?.peakRating ?? 1000,
         rankTier: ratingToTier(runtimePlayer?.rating ?? persistedProfile?.rating ?? 1000),
+        equippedCosmetic: persistedProfile?.equippedCosmetic ?? runtimePlayer?.equippedCosmetic ?? null,
+        runes: persistedProfile?.runes ?? 0,
         rankedGames: canViewRanked ? (runtimePlayer?.rankedGames ?? persistedProfile?.rankedGames ?? 0) : 0,
         rankedWins: canViewRanked ? (runtimePlayer?.rankedWins ?? persistedProfile?.rankedWins ?? 0) : 0,
         rankedLosses: canViewRanked ? (runtimePlayer?.rankedLosses ?? persistedProfile?.rankedLosses ?? 0) : 0,
@@ -204,8 +208,11 @@ export const createApiRouter = (
       return;
     }
 
+    const persistedProfile = await authService.getPlayerProfile(req.params.playerId);
     res.json({
       ...stats,
+      equippedCosmetic: persistedProfile?.equippedCosmetic ?? null,
+      runes: persistedProfile?.runes ?? 0,
       rankedGames: canViewRanked ? stats.rankedGames : 0,
       rankedWins: canViewRanked ? stats.rankedWins : 0,
       rankedLosses: canViewRanked ? stats.rankedLosses : 0,
@@ -286,13 +293,178 @@ export const createApiRouter = (
     });
   });
 
+  router.get("/achievements", requireAuth, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
+    const playerId = await authService.resolvePrimaryPlayerIdForUser(req.auth!.userId);
+    if (!playerId) {
+      res.json({ achievements: [] });
+      return;
+    }
+
+    const unlocked = await prisma.playerAchievement.findMany({
+      where: { playerId },
+      select: { achievementId: true, unlockedAt: true }
+    });
+    const unlockedMap = new Map(unlocked.map((u) => [u.achievementId, u.unlockedAt] as const));
+
+    res.json({
+      achievements: ACHIEVEMENTS.map((a) => ({
+        ...a,
+        unlocked: unlockedMap.has(a.id),
+        unlockedAt: unlockedMap.get(a.id)?.toISOString() ?? null
+      }))
+    });
+  });
+
+  router.get("/shop", requireAuth, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
+    res.json({
+      items: [
+        {
+          id: "treasure_chest",
+          name: "Treasure Chest",
+          cost: 200,
+          description: "Contains a random cosmetic for your display name. Opens with a reveal animation."
+        }
+      ]
+    });
+  });
+
+  router.post("/shop/purchase", requireAuth, profileMutationLimiter, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
+    const playerId = await authService.resolvePrimaryPlayerIdForUser(req.auth!.userId);
+    if (!playerId) {
+      res.status(404).json({ code: "PLAYER_NOT_FOUND", message: "No player profile found." });
+      return;
+    }
+
+    try {
+      const updated = await prisma.$transaction(async (tx) => {
+        const player = await tx.player.findUnique({ where: { id: playerId }, select: { runes: true } });
+        if (!player || player.runes < 200) {
+          throw new Error("INSUFFICIENT_RUNES");
+        }
+        return tx.player.update({
+          where: { id: playerId },
+          data: { runes: { decrement: 200 }, pendingChests: { increment: 1 } },
+          select: { runes: true, pendingChests: true }
+        });
+      });
+
+      res.json({ remainingRunes: updated.runes, pendingChests: updated.pendingChests });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Purchase failed.";
+      res
+        .status(msg === "INSUFFICIENT_RUNES" ? 402 : 500)
+        .json({ code: msg, message: msg === "INSUFFICIENT_RUNES" ? "Not enough Runes." : "Purchase failed." });
+    }
+  });
+
+  router.post("/shop/open-chest", requireAuth, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
+    const playerId = await authService.resolvePrimaryPlayerIdForUser(req.auth!.userId);
+    if (!playerId) {
+      res.status(404).json({ code: "PLAYER_NOT_FOUND", message: "No player profile found." });
+      return;
+    }
+
+    const player = await prisma.player.findUnique({ where: { id: playerId }, select: { pendingChests: true } });
+    if (!player || player.pendingChests < 1) {
+      res.status(400).json({ code: "NO_CHEST", message: "No chest available to open." });
+      return;
+    }
+
+    await prisma.player.update({ where: { id: playerId }, data: { pendingChests: { decrement: 1 } } });
+    let item = rollChest();
+    const existing = await prisma.playerInventory.findUnique({ where: { playerId_itemId: { playerId, itemId: item.id } } });
+    const alreadyOwned = Boolean(existing);
+    if (existing) {
+      item = rollChest();
+    }
+
+    await prisma.playerInventory.upsert({
+      where: { playerId_itemId: { playerId, itemId: item.id } },
+      update: {},
+      create: { playerId, itemId: item.id }
+    });
+
+    res.json({ item, alreadyOwned });
+  });
+
+  router.get("/inventory", requireAuth, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
+    const playerId = await authService.resolvePrimaryPlayerIdForUser(req.auth!.userId);
+    if (!playerId) {
+      res.json({ items: [], equippedCosmetic: null, pendingChests: 0, runes: 0 });
+      return;
+    }
+
+    const [inventory, player] = await Promise.all([
+      prisma.playerInventory.findMany({ where: { playerId }, select: { itemId: true, obtainedAt: true } }),
+      prisma.player.findUnique({ where: { id: playerId }, select: { equippedCosmetic: true, pendingChests: true, runes: true } })
+    ]);
+    const catalogMap = new Map(COSMETIC_ITEMS.map((c) => [c.id, c] as const));
+    res.json({
+      items: inventory
+        .map((item) => {
+          const catalog = catalogMap.get(item.itemId);
+          if (!catalog) return null;
+          return { ...catalog, obtainedAt: item.obtainedAt.toISOString() };
+        })
+        .filter(Boolean),
+      equippedCosmetic: player?.equippedCosmetic ?? null,
+      pendingChests: player?.pendingChests ?? 0,
+      runes: player?.runes ?? 0
+    });
+  });
+
+  router.post("/inventory/equip", requireAuth, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
+    const playerId = await authService.resolvePrimaryPlayerIdForUser(req.auth!.userId);
+    if (!playerId) {
+      res.status(404).json({ code: "PLAYER_NOT_FOUND", message: "No player profile found." });
+      return;
+    }
+
+    const itemId: string | null = req.body?.itemId ?? null;
+    if (itemId !== null) {
+      const owned = await prisma.playerInventory.findUnique({ where: { playerId_itemId: { playerId, itemId } } });
+      if (!owned) {
+        res.status(403).json({ code: "NOT_OWNED", message: "Item not in inventory." });
+        return;
+      }
+    }
+
+    await prisma.player.update({ where: { id: playerId }, data: { equippedCosmetic: itemId } });
+    res.json({ equippedCosmetic: itemId });
+  });
+
+  router.get("/player/runes", requireAuth, async (req: Request, res: Response) => {
+    if (!(await ensureActiveUser(req, res, authService))) return;
+    const playerId = await authService.resolvePrimaryPlayerIdForUser(req.auth!.userId);
+    if (!playerId) {
+      res.json({ runes: 0 });
+      return;
+    }
+    const player = await prisma.player.findUnique({ where: { id: playerId }, select: { runes: true } });
+    res.json({ runes: player?.runes ?? 0 });
+  });
+
   router.get("/leaderboard", requireAuth, async (req: Request, res: Response) => {
     if (!(await ensureActiveUser(req, res, authService))) return;
     const limit = Number(req.query.limit ?? 50);
     const entries = matchHistoryStore.getLeaderboard(Number.isFinite(limit) ? limit : 50);
+    const cosmetics = await prisma.player.findMany({
+      where: { id: { in: entries.map((entry) => entry.playerId) } },
+      select: { id: true, equippedCosmetic: true }
+    });
+    const cosmeticByPlayer = new Map(cosmetics.map((player) => [player.id, player.equippedCosmetic] as const));
     res.json({
       count: entries.length,
-      entries
+      entries: entries.map((entry) => ({
+        ...entry,
+        equippedCosmetic: cosmeticByPlayer.get(entry.playerId) ?? null
+      }))
     });
   });
 

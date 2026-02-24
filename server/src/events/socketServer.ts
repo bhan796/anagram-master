@@ -3,11 +3,13 @@ import { Server } from "socket.io";
 import { createOriginChecker } from "../config/cors.js";
 import { loadEnv } from "../config/env.js";
 import { logger } from "../config/logger.js";
+import { prisma } from "../config/prisma.js";
 import { AuthService } from "../auth/authService.js";
 import { verifyAccessToken } from "../auth/jwt.js";
 import { loadConundrums, loadDictionarySet } from "../game/data.js";
 import { MatchService } from "../game/matchService.js";
 import { ratingToTier } from "../game/ranking.js";
+import { checkAndGrantAchievements, computeMatchRunes } from "../game/achievementService.js";
 import type { MatchMode } from "../game/types.js";
 import type { MatchHistoryStore } from "../store/matchHistoryStore.js";
 import type { PresenceStore } from "../store/presenceStore.js";
@@ -62,6 +64,107 @@ export const createSocketServer = (
             rankedDraws: runtime?.rankedDraws ?? 0
           });
           await authService.upsertPlayerIdentity(entry.playerId, entry.displayName, runtime?.userId ?? null);
+        }
+
+        for (const entry of record.players) {
+          const runtime = service.getPlayer(entry.playerId);
+          if (!runtime?.userId) continue;
+
+          const isWinner = record.winnerPlayerId === entry.playerId;
+          const otherPlayerId = record.players.find((player) => player.playerId !== entry.playerId)?.playerId ?? null;
+
+          let myRunningScore = 0;
+          let oppRunningScore = 0;
+          let trailingBy20 = false;
+          let maxRoundScore = 0;
+          let longestWordLength = 0;
+          let maxVowelsPicked = 0;
+          let submittedAnyWord = false;
+          let conundrumElapsedMs: number | null = null;
+          let solvedConundrum = false;
+
+          for (const roundResult of record.roundResults) {
+            const details = (roundResult as any).details ?? {};
+            const awardedScores = (roundResult as any).awardedScores ?? {};
+            const myRoundScore = Number(awardedScores[entry.playerId] ?? 0);
+            const oppRoundScore = otherPlayerId ? Number(awardedScores[otherPlayerId] ?? 0) : 0;
+            myRunningScore += myRoundScore;
+            oppRunningScore += oppRoundScore;
+            maxRoundScore = Math.max(maxRoundScore, myRoundScore);
+            if (isWinner && oppRunningScore - myRunningScore >= 20) {
+              trailingBy20 = true;
+            }
+
+            if ((roundResult as any).type === "letters") {
+              const letters: string[] = Array.isArray(details.letters) ? details.letters : [];
+              const vowelCount = letters.filter((letter) => "AEIOU".includes(String(letter).toUpperCase())).length;
+              maxVowelsPicked = Math.max(maxVowelsPicked, vowelCount);
+              const submission = details.submissions?.[entry.playerId];
+              if (submission?.isValid) {
+                submittedAnyWord = true;
+                const normalizedWord = String(submission.normalizedWord ?? submission.word ?? "");
+                longestWordLength = Math.max(longestWordLength, normalizedWord.length);
+              }
+            }
+
+            if ((roundResult as any).type === "conundrum") {
+              const correctPlayerIds: string[] = Array.isArray(details.correctPlayerIds) ? details.correctPlayerIds : [];
+              if (correctPlayerIds.includes(entry.playerId)) {
+                solvedConundrum = true;
+                const conundrumSubmission = details.conundrumSubmissions?.[entry.playerId];
+                if (conundrumSubmission && typeof conundrumSubmission.submittedAtMs === "number") {
+                  const submittedAtMs = Number(conundrumSubmission.submittedAtMs);
+                  conundrumElapsedMs = Number.isFinite(submittedAtMs) ? submittedAtMs % 30_000 : null;
+                }
+              }
+            }
+          }
+
+          const updatedPlayer = await prisma.player.update({
+            where: { id: entry.playerId },
+            data: {
+              currentWinStreak: isWinner ? { increment: 1 } : 0,
+              conundrumSolves: solvedConundrum ? { increment: 1 } : undefined
+            },
+            select: {
+              currentWinStreak: true,
+              conundrumSolves: true,
+              rankedGames: true,
+              rankedWins: true,
+              rating: true
+            }
+          });
+
+          const { newAchievements, runesGranted: achievementRunes } = await checkAndGrantAchievements(entry.playerId, {
+            mode: record.mode,
+            won: isWinner,
+            ratingAfter: updatedPlayer.rating,
+            newRankedGames: updatedPlayer.rankedGames,
+            newRankedWins: updatedPlayer.rankedWins,
+            newWinStreak: updatedPlayer.currentWinStreak,
+            newConundrumSolves: updatedPlayer.conundrumSolves,
+            conundrumElapsedMs,
+            trailedBy20AndWon: trailingBy20,
+            maxRoundScore,
+            longestWordLength,
+            maxVowelsPicked,
+            submittedAnyWord
+          });
+
+          const matchRunes = computeMatchRunes(record.mode, isWinner, updatedPlayer.currentWinStreak);
+          const totalRunes = matchRunes + achievementRunes;
+          await prisma.player.update({
+            where: { id: entry.playerId },
+            data: { runes: { increment: totalRunes } }
+          });
+
+          const runtimeAfterMatch = service.getPlayer(entry.playerId);
+          if (runtimeAfterMatch?.socketId) {
+            io.to(runtimeAfterMatch.socketId).emit(SocketEvents.playerRewards, {
+              runesEarned: totalRunes,
+              newAchievements
+            });
+          }
         }
       })().catch((error) => {
         logger.warn({ error, matchId: record.matchId }, "Failed to persist player progress after match");
@@ -119,10 +222,25 @@ export const createSocketServer = (
         authenticatedUserId
       );
 
+      const persistedProfile = await authService.getPlayerProfile(player.playerId);
+      if (persistedProfile) {
+        service.hydratePlayerProfile(player.playerId, {
+          displayName: persistedProfile.displayName ?? undefined,
+          equippedCosmetic: persistedProfile.equippedCosmetic ?? null,
+          rating: persistedProfile.rating,
+          peakRating: persistedProfile.peakRating,
+          rankedGames: persistedProfile.rankedGames,
+          rankedWins: persistedProfile.rankedWins,
+          rankedLosses: persistedProfile.rankedLosses,
+          rankedDraws: persistedProfile.rankedDraws
+        });
+      }
+
       const persistedStats = matchHistoryStore.getPersistedPlayerProfile(player.playerId);
       if (persistedStats) {
         service.hydratePlayerProfile(player.playerId, {
           displayName: persistedStats.displayName,
+          equippedCosmetic: persistedProfile?.equippedCosmetic ?? null,
           rating: persistedStats.rating,
           peakRating: persistedStats.peakRating,
           rankedGames: persistedStats.rankedGames,
@@ -152,7 +270,8 @@ export const createSocketServer = (
         rating: player.rating,
         rankTier: ratingToTier(player.rating),
         isAuthenticated: Boolean(player.userId),
-        serverNowMs: Date.now()
+        serverNowMs: Date.now(),
+        equippedCosmetic: player.equippedCosmetic ?? null
       });
 
       const activeMatch = service.getMatchByPlayer(player.playerId);

@@ -12,6 +12,7 @@ export type MatchMode = "casual" | "ranked";
 export interface PlayerRuntime {
   playerId: string;
   displayName: string;
+  equippedCosmetic: string | null;
   userId: string | null;
   socketId: string | null;
   connected: boolean;
@@ -114,6 +115,7 @@ export interface MatchState {
 export interface SerializedPlayer {
   playerId: string;
   displayName: string;
+  equippedCosmetic: string | null;
   connected: boolean;
   score: number;
   rating: number;

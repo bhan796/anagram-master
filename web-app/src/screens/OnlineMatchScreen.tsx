@@ -12,6 +12,7 @@ import {
 } from "../components/ArcadeComponents";
 import { TapLetterComposer } from "../components/TapLetterComposer";
 import * as SoundManager from "../sound/SoundManager";
+import { getCosmeticClass } from "../lib/cosmetics";
 
 interface OnlineMatchScreenProps {
   state: OnlineUiState;
@@ -70,6 +71,7 @@ const LetterSlots = ({ letters, bonusTiles }: { letters: string[]; bonusTiles?: 
 
 const PlayerResultRow = ({
   name,
+  nameClass,
   word,
   points,
   extra,
@@ -77,6 +79,7 @@ const PlayerResultRow = ({
   wordAccents
 }: {
   name: string;
+  nameClass?: string;
   word: string;
   points: number;
   extra: string;
@@ -85,7 +88,7 @@ const PlayerResultRow = ({
 }) => (
   <div style={{ display: "grid", gap: 6 }}>
     <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-      <div className="text-dim">{name}</div>
+      <div className={`text-dim ${nameClass ?? ""}`.trim()}>{name}</div>
       <div className="label" style={{ color: "var(--cyan)" }}>
         {points} pts
       </div>
@@ -258,8 +261,8 @@ export const OnlineMatchScreen = ({
 
           {state.myPlayer && state.opponentPlayer ? (
             <div className="score-row">
-              <ScoreBadge label={state.myPlayer.displayName} score={state.myPlayer.score} />
-              <ScoreBadge label={state.opponentPlayer.displayName} score={state.opponentPlayer.score} color="var(--gold)" />
+              <ScoreBadge label={state.myPlayer.displayName} labelClassName={getCosmeticClass(state.myPlayer.equippedCosmetic)} score={state.myPlayer.score} />
+              <ScoreBadge label={state.opponentPlayer.displayName} labelClassName={getCosmeticClass(state.opponentPlayer.equippedCosmetic)} score={state.opponentPlayer.score} color="var(--gold)" />
             </div>
           ) : null}
 
@@ -394,6 +397,7 @@ export const OnlineMatchScreen = ({
                           <PlayerResultRow
                             key={player.playerId}
                             name={player.displayName}
+                            nameClass={getCosmeticClass(player.equippedCosmetic)}
                             word={submission?.word ?? "-"}
                             wordAccents={wordAccents ?? undefined}
                             points={points}
@@ -420,6 +424,7 @@ export const OnlineMatchScreen = ({
                           <PlayerResultRow
                             key={player.playerId}
                             name={player.displayName}
+                            nameClass={getCosmeticClass(player.equippedCosmetic)}
                             word={solved ? (match.roundResults.at(-1)?.answer ?? "") : "-"}
                             points={points}
                             extra={solved ? "Solved" : "Not solved"}
@@ -503,6 +508,7 @@ export const OnlineMatchScreen = ({
                         <PlayerResultRow
                           key={`${round.roundNumber}-${player.playerId}`}
                           name={player.displayName}
+                          nameClass={getCosmeticClass(player.equippedCosmetic)}
                           word={word}
                           wordAccents={wordAccents ?? undefined}
                           points={points}
@@ -514,6 +520,18 @@ export const OnlineMatchScreen = ({
                   </div>
                 ))}
               </div>
+              {state.playerRewards ? (
+                <div style={{ marginTop: 16, padding: 12, background: "var(--surface-variant)", borderRadius: 4, border: "1px solid rgba(0,245,255,0.3)" }}>
+                  <div style={{ color: "var(--gold)", fontFamily: "var(--font-pixel)", fontSize: "var(--text-label)" }}>
+                                    +{state.playerRewards.runesEarned} RUNES EARNED
+                  </div>
+                  {state.playerRewards.newAchievements.map((a) => (
+                    <div key={a.id} style={{ marginTop: 8, color: "var(--white)", fontFamily: "var(--font-pixel)", fontSize: "var(--text-label)" }}>
+                                        {a.name} +{a.runesReward}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </>
           ) : null}
         </>
@@ -539,3 +557,4 @@ export const OnlineMatchScreen = ({
     </ArcadeScaffold>
   );
 };
+

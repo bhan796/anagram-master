@@ -41,6 +41,8 @@ import com.bhan796.anagramarena.ui.screens.MatchmakingScreen
 import com.bhan796.anagramarena.ui.screens.OnlineMatchScreen
 import com.bhan796.anagramarena.ui.screens.PracticeMenuScreen
 import com.bhan796.anagramarena.ui.screens.ProfileScreen
+import com.bhan796.anagramarena.ui.screens.ShopScreen
+import com.bhan796.anagramarena.ui.screens.AchievementsScreen
 import com.bhan796.anagramarena.ui.screens.SettingsScreen
 import com.bhan796.anagramarena.ui.theme.ColorCyan
 import com.bhan796.anagramarena.ui.theme.ColorGold
@@ -52,6 +54,8 @@ import com.bhan796.anagramarena.viewmodel.AuthViewModel
 import com.bhan796.anagramarena.viewmodel.OnlineMatchViewModel
 import com.bhan796.anagramarena.viewmodel.PracticeSettingsViewModel
 import com.bhan796.anagramarena.viewmodel.ProfileViewModel
+import com.bhan796.anagramarena.viewmodel.ShopViewModel
+import com.bhan796.anagramarena.viewmodel.AchievementsViewModel
 
 private object Routes {
     const val HOME = "home"
@@ -65,6 +69,8 @@ private object Routes {
     const val HOW_TO_PLAY = "how_to_play"
     const val PROFILE = "profile"
     const val SETTINGS = "settings"
+    const val SHOP = "shop"
+    const val ACHIEVEMENTS = "achievements"
 }
 
 @Composable
@@ -86,7 +92,13 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
         factory = AuthViewModel.factory(dependencies.authRepository, dependencies.sessionStore)
     )
     val homeStatusViewModel: HomeStatusViewModel = viewModel(
-        factory = HomeStatusViewModel.factory(dependencies.profileRepository, dependencies.sessionStore)
+        factory = HomeStatusViewModel.factory(dependencies.profileRepository, dependencies.shopRepository, dependencies.sessionStore)
+    )
+    val shopViewModel: ShopViewModel = viewModel(
+        factory = ShopViewModel.factory(dependencies.shopRepository)
+    )
+    val achievementsViewModel: AchievementsViewModel = viewModel(
+        factory = AchievementsViewModel.factory(dependencies.achievementsRepository)
     )
 
     val settings by settingsViewModel.state.collectAsState()
@@ -131,10 +143,13 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                     HomeScreen(
                         contentPadding = innerPadding,
                         playersOnline = homeStatus.playersOnline,
+                        runes = homeStatus.runes,
                         onPlayOnline = { navController.navigate(Routes.ONLINE_MATCHMAKING) },
                         onPracticeMode = { navController.navigate(Routes.PRACTICE) },
                         onHowToPlay = { navController.navigate(Routes.HOW_TO_PLAY) },
                         onProfile = { navController.navigate(Routes.PROFILE) },
+                        onShop = { navController.navigate(Routes.SHOP) },
+                        onAchievements = { navController.navigate(Routes.ACHIEVEMENTS) },
                         onSettings = { navController.navigate(Routes.SETTINGS) },
                         isAuthenticated = authState.status == "authenticated",
                         authLabel = if (authState.status == "authenticated") (authState.email ?: "SIGNED IN") else "GUEST",
@@ -261,13 +276,18 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                         onDismissError = onlineMatchViewModel::clearError,
                         onPlayAgain = {
                             onlineMatchViewModel.queuePlayAgain()
+                            onlineMatchViewModel.clearRewards()
                             navController.navigate(Routes.ONLINE_MATCHMAKING)
                         },
                         onBack = {
                             onlineMatchViewModel.leaveActiveMatch()
+                            onlineMatchViewModel.clearRewards()
                             navController.popBackStack(Routes.HOME, false)
                         },
-                        onBackToHome = { navController.popBackStack(Routes.HOME, false) }
+                        onBackToHome = {
+                            onlineMatchViewModel.clearRewards()
+                            navController.popBackStack(Routes.HOME, false)
+                        }
                     )
                 }
 
@@ -281,6 +301,14 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                         isAuthenticated = authState.status == "authenticated",
                         viewModel = profileViewModel
                     )
+                }
+
+                composable(Routes.SHOP) {
+                    ShopScreen(navController = navController, viewModel = shopViewModel)
+                }
+
+                composable(Routes.ACHIEVEMENTS) {
+                    AchievementsScreen(navController = navController, viewModel = achievementsViewModel)
                 }
 
                 composable(Routes.SETTINGS) {

@@ -9,8 +9,11 @@ interface HomeScreenProps {
   onProfile: () => void;
   onSettings: () => void;
   onHowToPlay: () => void;
+  onShop: () => void;
+  onAchievements: () => void;
   isAuthenticated: boolean;
   authEmail: string | null;
+  runes: number;
   onAuthAction: () => void;
   playersOnline: number;
   playIntro: boolean;
@@ -23,8 +26,11 @@ export const HomeScreen = ({
   onProfile,
   onSettings,
   onHowToPlay,
+  onShop,
+  onAchievements,
   isAuthenticated,
   authEmail,
+  runes,
   onAuthAction,
   playersOnline,
   playIntro,
@@ -104,7 +110,30 @@ export const HomeScreen = ({
           accent="gold"
         />
       </div>
-      <div style={animatedButtonStyle(400)}>
+      {isAuthenticated ? (
+        <>
+          <div style={animatedButtonStyle(350)}>
+            <ArcadeButton
+              text="Achievements"
+              onClick={() => {
+                void SoundManager.playClick();
+                onAchievements();
+              }}
+              accent="gold"
+            />
+          </div>
+          <div style={animatedButtonStyle(400)}>
+            <ArcadeButton
+              text="Shop"
+              onClick={() => {
+                void SoundManager.playClick();
+                onShop();
+              }}
+            />
+          </div>
+        </>
+      ) : null}
+      <div style={animatedButtonStyle(550)}>
         <ArcadeButton
           text="Settings"
           onClick={() => {
@@ -114,7 +143,7 @@ export const HomeScreen = ({
           accent="magenta"
         />
       </div>
-      <div style={animatedButtonStyle(500)}>
+      <div style={animatedButtonStyle(600)}>
         <ArcadeButton
           text={isAuthenticated ? "Log Out" : "Sign In"}
           onClick={() => {
@@ -151,6 +180,20 @@ export const HomeScreen = ({
       >
         Account: <span style={{ color: isAuthenticated ? "var(--cyan)" : "var(--gold)" }}>{isAuthenticated ? authEmail ?? "Signed In" : "Guest"}</span>
       </div>
+      {isAuthenticated ? (
+        <div
+          style={{
+            color: "var(--gold)",
+            textAlign: "center",
+            marginTop: 2,
+            fontFamily: "var(--font-pixel)",
+            fontSize: "var(--text-label)",
+            letterSpacing: "0.08em"
+          }}
+        >
+          ♦ {runes.toLocaleString()} RUNES
+        </div>
+      ) : null}
       <div style={{ flex: 1 }} />
     </ArcadeScaffold>
   );

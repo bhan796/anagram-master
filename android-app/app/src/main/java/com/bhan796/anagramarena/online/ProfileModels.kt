@@ -13,6 +13,7 @@ data class PlayerStats(
     val rating: Int,
     val peakRating: Int,
     val rankTier: String,
+    val equippedCosmetic: String? = null,
     val rankedGames: Int,
     val rankedWins: Int,
     val rankedLosses: Int,
@@ -43,6 +44,7 @@ data class HistoryPlayerScore(
 data class LeaderboardEntry(
     val playerId: String,
     val displayName: String,
+    val equippedCosmetic: String? = null,
     val rating: Int,
     val rankTier: String,
     val rankedGames: Int,

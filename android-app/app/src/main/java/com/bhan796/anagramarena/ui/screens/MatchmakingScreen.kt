@@ -33,6 +33,7 @@ import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.ui.components.ArcadeBackButton
 import com.bhan796.anagramarena.ui.components.ArcadeButton
 import com.bhan796.anagramarena.ui.components.ArcadeScaffold
+import com.bhan796.anagramarena.ui.components.CosmeticName
 import com.bhan796.anagramarena.ui.components.NeonTitle
 import com.bhan796.anagramarena.ui.theme.ColorCyan
 import com.bhan796.anagramarena.ui.theme.ColorDimText
@@ -158,7 +159,10 @@ fun MatchmakingScreen(
                     } else {
                         leaderboard.take(8).forEachIndexed { index, entry ->
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("#${index + 1} ${entry.displayName}", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
+                                Row(horizontalArrangement = Arrangement.spacedBy(sdp(4.dp))) {
+                                    Text("#${index + 1}", style = MaterialTheme.typography.bodySmall, color = ColorDimText)
+                                    CosmeticName(entry.displayName, entry.equippedCosmetic, style = MaterialTheme.typography.bodySmall)
+                                }
                                 Text(entry.rating.toString(), style = MaterialTheme.typography.labelLarge, color = com.bhan796.anagramarena.ui.theme.ColorGreen)
                             }
                         }

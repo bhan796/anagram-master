@@ -15,6 +15,7 @@ export interface SessionIdentifyPayload {
   rankTier?: string;
   isAuthenticated?: boolean;
   serverNowMs: number;
+  equippedCosmetic?: string | null;
 }
 
 export interface MatchmakingStatusPayload {
@@ -37,6 +38,7 @@ export interface ActionErrorPayload {
 export interface PlayerSnapshot {
   playerId: string;
   displayName: string;
+  equippedCosmetic?: string | null;
   connected: boolean;
   score: number;
   rating?: number;
@@ -124,6 +126,18 @@ export interface OnlineUiState {
   statusMessage: string;
   localValidationMessage: string | null;
   connectionError: string | null;
+  playerRewards: PlayerRewardsPayload | null;
+}
+
+export interface PlayerRewardsPayload {
+  runesEarned: number;
+  newAchievements: Array<{
+    id: string;
+    name: string;
+    description: string;
+    tier: string;
+    runesReward: number;
+  }>;
 }
 
 export const initialOnlineUiState: OnlineUiState = {
@@ -151,7 +165,8 @@ export const initialOnlineUiState: OnlineUiState = {
   lastError: null,
   statusMessage: "",
   localValidationMessage: null,
-  connectionError: null
+  connectionError: null,
+  playerRewards: null
 };
 
 export const SocketEventNames = {
@@ -166,5 +181,6 @@ export const SocketEventNames = {
   MATCH_STATE: "match:state",
   MATCHMAKING_STATUS: "matchmaking:status",
   MATCH_FOUND: "match:found",
-  ACTION_ERROR: "action:error"
+  ACTION_ERROR: "action:error",
+  PLAYER_REWARDS: "player:rewards"
 } as const;

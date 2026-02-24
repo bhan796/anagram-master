@@ -1,12 +1,15 @@
 package com.bhan796.anagramarena.network
 
 import android.util.Log
+import com.bhan796.anagramarena.online.AchievementEntry
+import com.bhan796.anagramarena.online.PlayerRewardsPayload
 import com.bhan796.anagramarena.online.SocketEventNames
 import com.bhan796.anagramarena.online.SocketPayloadParser
 import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
 import java.net.URISyntaxException
+import org.json.JSONArray
 import org.json.JSONObject
 
 class SocketIoMultiplayerClient : MultiplayerSocketClient {
@@ -16,6 +19,7 @@ class SocketIoMultiplayerClient : MultiplayerSocketClient {
     override var matchFoundListener: ((com.bhan796.anagramarena.online.MatchFoundPayload) -> Unit)? = null
     override var matchStateListener: ((com.bhan796.anagramarena.online.MatchStatePayload) -> Unit)? = null
     override var actionErrorListener: ((com.bhan796.anagramarena.online.ActionErrorPayload) -> Unit)? = null
+    override var playerRewardsListener: ((PlayerRewardsPayload) -> Unit)? = null
 
     private var socket: Socket? = null
 
@@ -82,6 +86,25 @@ class SocketIoMultiplayerClient : MultiplayerSocketClient {
         created.on(SocketEventNames.ACTION_ERROR) { args ->
             val obj = args.firstOrNull() as? JSONObject ?: return@on
             actionErrorListener?.invoke(SocketPayloadParser.parseActionError(obj))
+        }
+
+        created.on(PLAYER_REWARDS) { args ->
+            val json = args.getOrNull(0) as? JSONObject ?: return@on
+            val runesEarned = json.optInt("runesEarned", 0)
+            val achievementsJson = json.optJSONArray("newAchievements") ?: JSONArray()
+            val achievements = (0 until achievementsJson.length()).map { index ->
+                val achievement = achievementsJson.getJSONObject(index)
+                AchievementEntry(
+                    id = achievement.getString("id"),
+                    name = achievement.getString("name"),
+                    description = achievement.getString("description"),
+                    tier = achievement.getString("tier"),
+                    runesReward = achievement.getInt("runesReward"),
+                    unlocked = true,
+                    unlockedAt = null
+                )
+            }
+            playerRewardsListener?.invoke(PlayerRewardsPayload(runesEarned, achievements))
         }
 
         socket = created
@@ -154,5 +177,9 @@ class SocketIoMultiplayerClient : MultiplayerSocketClient {
         } catch (err: Exception) {
             Log.e("SocketIoClient", "Failed emit $event", err)
         }
+    }
+
+    private companion object {
+        const val PLAYER_REWARDS = "player:rewards"
     }
 }

@@ -23,6 +23,7 @@ data class OnlineUiState(
     val hasSubmittedWord: Boolean = false,
     val hasSubmittedConundrumGuess: Boolean = false,
     val opponentSubmittedConundrumGuess: Boolean = false,
+    val pendingRewards: PlayerRewardsPayload? = null,
     val lastError: ActionErrorPayload? = null,
     val statusMessage: String = "",
     val localValidationMessage: String? = null

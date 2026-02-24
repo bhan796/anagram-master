@@ -223,7 +223,7 @@ fun TimerBar(secondsRemaining: Int, totalSeconds: Int, modifier: Modifier = Modi
 
 // -- Score badge --------------------------------------------------------------
 @Composable
-fun ScoreBadge(label: String, score: Int, color: Color = ColorCyan) {
+fun ScoreBadge(label: String, score: Int, color: Color = ColorCyan, equippedCosmetic: String? = null) {
     var previousScore by remember { mutableIntStateOf(score) }
     val scale by animateFloatAsState(
         targetValue = if (score != previousScore) 1.35f else 1f,
@@ -233,7 +233,7 @@ fun ScoreBadge(label: String, score: Int, color: Color = ColorCyan) {
     )
     LaunchedEffect(score) { previousScore = score }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = ColorDimText)
+        CosmeticName(label, equippedCosmetic, style = MaterialTheme.typography.labelSmall.copy(color = ColorDimText))
         Text(
             text = score.toString(),
             style = MaterialTheme.typography.headlineMedium,
