@@ -46,6 +46,16 @@ const buildTileAccents = (
   };
 };
 
+const buildTileMultipliers = (
+  bonusTiles: MatchStatePayload["bonusTiles"] | null | undefined
+): Record<number, number> => {
+  if (!bonusTiles) return {};
+  return {
+    [bonusTiles.doubleIndex]: 2,
+    [bonusTiles.tripleIndex]: 3
+  };
+};
+
 const LetterSlots = ({ letters, bonusTiles }: { letters: string[]; bonusTiles?: MatchStatePayload["bonusTiles"] | null }) => {
   const tileAccents = useMemo(() => buildTileAccents(bonusTiles), [bonusTiles]);
   return (
@@ -281,6 +291,7 @@ export const OnlineMatchScreen = ({
               <TapLetterComposer
                 letters={match.letters}
                 tileAccents={buildTileAccents(match.bonusTiles)}
+                tileMultipliers={buildTileMultipliers(match.bonusTiles)}
                 value={state.wordInput}
                 onValueChange={onWordChange}
                 disabled={state.hasSubmittedWord}

@@ -6,12 +6,35 @@ interface TapLetterComposerProps {
   value: string;
   onValueChange: (value: string) => void;
   tileAccents?: Record<number, string>;
+  tileMultipliers?: Record<number, number>;
   disabled?: boolean;
   placeholder?: string;
   onSubmit?: () => void;
 }
 
-const buildIndicesFromValue = (letters: string[], value: string): number[] => {
+const findBestMatchIndex = (
+  letters: string[],
+  char: string,
+  used: Set<number>,
+  tileMultipliers?: Record<number, number>
+): number => {
+  const candidates: number[] = [];
+  for (let idx = 0; idx < letters.length; idx += 1) {
+    if (used.has(idx)) continue;
+    if (letters[idx].toUpperCase() !== char) continue;
+    candidates.push(idx);
+  }
+  if (candidates.length === 0) return -1;
+  candidates.sort((a, b) => {
+    const scoreA = tileMultipliers?.[a] ?? 1;
+    const scoreB = tileMultipliers?.[b] ?? 1;
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    return a - b;
+  });
+  return candidates[0];
+};
+
+const buildIndicesFromValue = (letters: string[], value: string, tileMultipliers?: Record<number, number>): number[] => {
   const used = new Set<number>();
   const normalizedChars = value
     .toUpperCase()
@@ -20,7 +43,7 @@ const buildIndicesFromValue = (letters: string[], value: string): number[] => {
 
   const indices: number[] = [];
   for (const char of normalizedChars) {
-    const index = letters.findIndex((letter, idx) => !used.has(idx) && letter.toUpperCase() === char);
+    const index = findBestMatchIndex(letters, char, used, tileMultipliers);
     if (index < 0) break;
     used.add(index);
     indices.push(index);
@@ -33,13 +56,16 @@ export const TapLetterComposer = ({
   value,
   onValueChange,
   tileAccents,
+  tileMultipliers,
   disabled,
   placeholder = "Tap letters to build your word",
   onSubmit
 }: TapLetterComposerProps) => {
   const selected = useMemo(() => value.split(""), [value]);
   const lettersKey = useMemo(() => letters.join(""), [letters]);
-  const [selectedIndices, setSelectedIndices] = useState<number[]>(() => buildIndicesFromValue(letters, value));
+  const [selectedIndices, setSelectedIndices] = useState<number[]>(() =>
+    buildIndicesFromValue(letters, value, tileMultipliers)
+  );
   const [displayOrder, setDisplayOrder] = useState<number[]>(() => letters.map((_, index) => index));
 
   const syncValue = (indices: number[]) => {
@@ -52,8 +78,10 @@ export const TapLetterComposer = ({
   }, [lettersKey]);
 
   useEffect(() => {
-    setSelectedIndices(buildIndicesFromValue(letters, value));
-  }, [lettersKey, value]);
+    const selectedWord = selectedIndices.map((index) => letters[index] ?? "").join("");
+    if (selectedWord.toUpperCase() === value.toUpperCase()) return;
+    setSelectedIndices(buildIndicesFromValue(letters, value, tileMultipliers));
+  }, [lettersKey, value, tileMultipliers, letters, selectedIndices]);
 
   useEffect(() => {
     if (disabled) return;
@@ -95,7 +123,7 @@ export const TapLetterComposer = ({
       const char = event.key.toUpperCase();
       setSelectedIndices((previous) => {
         const used = new Set(previous);
-        const matchIndex = letters.findIndex((letter, idx) => !used.has(idx) && letter.toUpperCase() === char);
+        const matchIndex = findBestMatchIndex(letters, char, used, tileMultipliers);
         if (matchIndex < 0) return previous;
         const next = [...previous, matchIndex];
         syncValue(next);
@@ -105,7 +133,7 @@ export const TapLetterComposer = ({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [disabled, lettersKey, onSubmit, onValueChange]);
+  }, [disabled, lettersKey, onSubmit, onValueChange, letters, tileMultipliers]);
 
   const handleTap = (index: number) => {
     if (disabled || selectedIndices.includes(index)) return;
