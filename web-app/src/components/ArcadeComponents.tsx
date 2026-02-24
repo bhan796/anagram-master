@@ -15,6 +15,18 @@ export const ArcadeScaffold = ({ children, className }: { children: ReactNode; c
 
 export const NeonTitle = ({ text }: { text: string }) => <div className="neon-title">{text}</div>;
 
+export const RuneIcon = ({ className = "", style }: { className?: string; style?: CSSProperties }) => (
+  <span
+    className={`rune-icon ${className}`.trim()}
+    style={{
+      fontFamily: "\"Segoe UI Symbol\", \"Arial Unicode MS\", Arial, sans-serif",
+      ...style
+    }}
+  >
+    {"\u2666"}
+  </span>
+);
+
 export const ArcadeButton = ({ text, onClick, disabled, accent = "cyan" }: ArcadeButtonProps) => {
   const accentClass =
     accent === "gold" ? "gold" : accent === "magenta" ? "magenta" : accent === "red" ? "red" : accent === "green" ? "green" : "";
@@ -62,7 +74,7 @@ export const LetterTile = ({
 
 export const ScoreBadge = ({ label, score, color = "var(--cyan)", labelClassName }: { label: string; score: number; color?: string; labelClassName?: string }) => (
   <div className="score-badge">
-    <div className={`name ${labelClassName ?? ""}`.trim()}>{label}</div>
+    <div className={`name arena-nameplate ${labelClassName ?? ""}`.trim()}>{label}</div>
     <div className="value" style={{ color }}>
       {score}
     </div>
@@ -151,12 +163,12 @@ export const WordTiles = ({
 };
 
 const rankGlyph: Record<string, string> = {
-  bronze: "▲",
-  silver: "◆",
-  gold: "✦",
-  platinum: "⬢",
-  diamond: "◈",
-  master: "✶"
+  bronze: "\u25b2",
+  silver: "\u25c6",
+  gold: "\u2726",
+  platinum: "\u2b22",
+  diamond: "\u25c8",
+  master: "\u2736"
 };
 
 const rankColor: Record<string, string> = {
@@ -171,7 +183,7 @@ const rankColor: Record<string, string> = {
 export const RankBadge = ({ tier }: { tier?: string }) => {
   const normalized = (tier ?? "bronze").toLowerCase();
   const color = rankColor[normalized] ?? "var(--cyan)";
-  const glyph = rankGlyph[normalized] ?? "▲";
+  const glyph = rankGlyph[normalized] ?? "\u25b2";
   return (
     <div
       className="label"
@@ -190,3 +202,4 @@ export const RankBadge = ({ tier }: { tier?: string }) => {
     </div>
   );
 };
+

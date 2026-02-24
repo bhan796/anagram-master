@@ -139,7 +139,7 @@ export const MatchmakingScreen = ({
           ) : (
             leaderboard.slice(0, 8).map((entry, index) => (
               <div key={entry.playerId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span className={`text-dim ${getCosmeticClass(entry.equippedCosmetic)}`.trim()}>
+                <span className={`arena-nameplate arena-nameplate-leaderboard ${getCosmeticClass(entry.equippedCosmetic)}`.trim()}>
                   #{index + 1} {entry.displayName}
                 </span>
                 <span className="label" style={{ color: "var(--green)" }}>

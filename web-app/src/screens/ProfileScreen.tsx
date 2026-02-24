@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArcadeBackButton, ArcadeScaffold, NeonDivider, NeonTitle, RankBadge } from "../components/ArcadeComponents";
+import { ArcadeBackButton, ArcadeScaffold, NeonDivider, NeonTitle, RankBadge, RuneIcon } from "../components/ArcadeComponents";
 import { getCosmeticClass } from "../lib/cosmetics";
 
 interface StatsSummary {
@@ -49,10 +49,6 @@ interface ProfileScreenProps {
 }
 
 export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetry, onUpdateDisplayName, isAuthenticated, runes }: ProfileScreenProps) => {
-  const runeIcon = (
-    <span style={{ fontFamily: '"Segoe UI Symbol", "Arial Unicode MS", Arial, sans-serif' }}>\u2666</span>
-  );
-
   const [nameDraft, setNameDraft] = useState("");
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
@@ -119,7 +115,7 @@ export const ProfileScreen = ({ isLoading, error, stats, history, onBack, onRetr
       <div className={getCosmeticClass(stats?.equippedCosmetic)}>
         <NeonTitle text={stats?.displayName ?? "Profile"} />
       </div>
-      {isAuthenticated ? <div className="headline" style={{ color: "var(--gold)" }}>{runeIcon} {runes.toLocaleString()} RUNES</div> : null}
+      {isAuthenticated ? <div className="headline" style={{ color: "var(--gold)" }}><RuneIcon /> {runes.toLocaleString()} RUNES</div> : null}
 
       {stats ? (
         <div className="card" style={{ display: "grid", gap: 10 }}>

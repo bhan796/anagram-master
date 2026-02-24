@@ -88,7 +88,7 @@ const PlayerResultRow = ({
 }) => (
   <div style={{ display: "grid", gap: 6 }}>
     <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-      <div className={`text-dim ${nameClass ?? ""}`.trim()}>{name}</div>
+      <div className={`arena-nameplate ${nameClass ?? ""}`.trim()}>{name}</div>
       <div className="label" style={{ color: "var(--cyan)" }}>
         {points} pts
       </div>

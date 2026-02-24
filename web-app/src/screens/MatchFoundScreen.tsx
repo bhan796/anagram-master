@@ -200,10 +200,10 @@ export const MatchFoundScreen = ({ state, onDone }: MatchFoundScreenProps) => {
           <div className="mf-player-card you">
             <div className="text-dim">YOU</div>
             <div
-              className={`label ${getCosmeticClass(me?.equippedCosmetic)}`.trim()}
+              className={`arena-nameplate arena-nameplate-xl ${getCosmeticClass(me?.equippedCosmetic)}`.trim()}
               style={{
                 color: "var(--white)",
-                fontSize: "clamp(8px,1vw,10px)",
+                fontSize: "clamp(10px,1.2vw,12px)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap"
@@ -218,10 +218,10 @@ export const MatchFoundScreen = ({ state, onDone }: MatchFoundScreenProps) => {
           <div className="mf-player-card opp">
             <div className="text-dim">OPP</div>
             <div
-              className={`label ${getCosmeticClass(opp?.equippedCosmetic)}`.trim()}
+              className={`arena-nameplate arena-nameplate-xl ${getCosmeticClass(opp?.equippedCosmetic)}`.trim()}
               style={{
                 color: "var(--white)",
-                fontSize: "clamp(8px,1vw,10px)",
+                fontSize: "clamp(10px,1.2vw,12px)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap"
