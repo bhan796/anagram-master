@@ -134,7 +134,16 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
       ) : null}
       {!loading && wonItem ? (
         <>
-          <div style={{ color: "var(--gold)", fontFamily: "var(--font-pixel)" }}>\u25BC</div>
+          <div
+            style={{
+              color: "var(--gold)",
+              fontFamily: "\"Segoe UI Symbol\", \"Arial Unicode MS\", Arial, sans-serif",
+              fontSize: "22px",
+              lineHeight: 1
+            }}
+          >
+            {"\u25bc"}
+          </div>
           <div
             ref={viewportRef}
             style={{
