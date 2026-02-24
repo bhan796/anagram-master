@@ -294,8 +294,7 @@ export const useOnlineMatch = () => {
   useEffect(() => {
     if (!state.matchState || state.matchState.phase !== "letters_solving") return;
     if (state.hasSubmittedWord) return;
-    // Submit with a small safety buffer to avoid missing the server cutoff on jittery networks.
-    if (state.secondsRemaining > 2) return;
+    if (state.secondsRemaining > 0) return;
 
     socketRef.current?.emit(SocketEventNames.ROUND_SUBMIT_WORD, { word: state.wordInput ?? "" });
     setState((previous) => ({ ...previous, hasSubmittedWord: true, localValidationMessage: null }));

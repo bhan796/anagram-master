@@ -138,7 +138,7 @@ fun OnlineMatchScreen(
     var opponentConundrumSubmittedPrevious by rememberSaveable { mutableStateOf(false) }
     var lettersEndingTransitionPrevious by rememberSaveable { mutableStateOf(false) }
     val isFinished = match?.phase == MatchPhase.FINISHED
-    val isLettersRoundEndingTransition = match?.phase == MatchPhase.LETTERS_SOLVING && state.secondsRemaining <= 2
+    val isLettersRoundEndingTransition = match?.phase == MatchPhase.LETTERS_SOLVING && state.secondsRemaining <= 0
     val me = state.myPlayer
     val opponent = state.opponentPlayer
     val selectableLetters = remember(match?.letters) {

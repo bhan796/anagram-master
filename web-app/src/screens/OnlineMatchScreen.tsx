@@ -147,7 +147,7 @@ export const OnlineMatchScreen = ({
   const opponentSubmittedConundrumRef = useRef(false);
   const lettersEndingTransitionRef = useRef(false);
   const isFinished = match?.phase === "finished";
-  const isLettersRoundEndingTransition = match?.phase === "letters_solving" && state.secondsRemaining <= 2;
+  const isLettersRoundEndingTransition = match?.phase === "letters_solving" && state.secondsRemaining <= 0;
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   useEffect(() => {
