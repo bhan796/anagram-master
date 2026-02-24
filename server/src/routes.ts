@@ -9,6 +9,15 @@ import type { MatchService } from "./game/matchService.js";
 import type { PresenceStore } from "./store/presenceStore.js";
 import type { MatchHistoryStore } from "./store/matchHistoryStore.js";
 
+export const canReadOwnedProfile = (requestingUserId: string | undefined, ownerUserId: string | null): boolean => {
+  if (!ownerUserId) return true;
+  return Boolean(requestingUserId && requestingUserId === ownerUserId);
+};
+
+export const canMutateProfile = (requestingUserId: string | undefined, ownerUserId: string | null): boolean => {
+  return Boolean(requestingUserId && (!ownerUserId || requestingUserId === ownerUserId));
+};
+
 export const createApiRouter = (
   matchHistoryStore: MatchHistoryStore,
   presenceStore: PresenceStore,
@@ -130,7 +139,17 @@ export const createApiRouter = (
   router.get("/profiles/:playerId/stats", async (req: Request, res: Response) => {
     const targetPlayerId = req.params.playerId;
     const ownerUserId = await authService.resolveUserIdForPlayer(targetPlayerId);
-    const canViewRanked = Boolean(req.auth?.userId && ownerUserId && ownerUserId === req.auth.userId);
+    const requestingUserId = req.auth?.userId;
+    if (ownerUserId && !requestingUserId) {
+      res.status(401).json({ code: "AUTH_REQUIRED", message: "Authentication required." });
+      return;
+    }
+    if (!canReadOwnedProfile(requestingUserId, ownerUserId)) {
+      res.status(403).json({ code: "FORBIDDEN", message: "Cannot view another player's profile." });
+      return;
+    }
+
+    const canViewRanked = Boolean(requestingUserId && ownerUserId && ownerUserId === requestingUserId);
 
     const stats = matchHistoryStore.getPlayerStats(req.params.playerId);
     if (!stats) {
@@ -175,11 +194,12 @@ export const createApiRouter = (
     }
 
     const ownerUserId = await authService.resolveUserIdForPlayer(req.params.playerId);
-    if (ownerUserId && !req.auth?.userId) {
-      res.status(403).json({ code: "AUTH_REQUIRED", message: "Authentication required." });
+    const requestingUserId = req.auth?.userId;
+    if (!requestingUserId) {
+      res.status(401).json({ code: "AUTH_REQUIRED", message: "Authentication required." });
       return;
     }
-    if (ownerUserId && req.auth?.userId && ownerUserId !== req.auth.userId) {
+    if (!canMutateProfile(requestingUserId, ownerUserId)) {
       res.status(403).json({ code: "FORBIDDEN", message: "Cannot update another player's profile." });
       return;
     }
@@ -201,7 +221,7 @@ export const createApiRouter = (
       }
     }
 
-    const effectiveOwnerUserId = ownerUserId ?? req.auth?.userId ?? runtimePlayer?.userId ?? null;
+    const effectiveOwnerUserId = ownerUserId ?? requestingUserId ?? runtimePlayer?.userId ?? null;
     await authService.upsertPlayerIdentity(req.params.playerId, normalized, effectiveOwnerUserId);
     matchHistoryStore.updateDisplayName(req.params.playerId, normalized);
 
@@ -211,7 +231,19 @@ export const createApiRouter = (
     });
   });
 
-  router.get("/profiles/:playerId/matches", (req: Request, res: Response) => {
+  router.get("/profiles/:playerId/matches", async (req: Request, res: Response) => {
+    const targetPlayerId = req.params.playerId;
+    const ownerUserId = await authService.resolveUserIdForPlayer(targetPlayerId);
+    const requestingUserId = req.auth?.userId;
+    if (ownerUserId && !requestingUserId) {
+      res.status(401).json({ code: "AUTH_REQUIRED", message: "Authentication required." });
+      return;
+    }
+    if (!canReadOwnedProfile(requestingUserId, ownerUserId)) {
+      res.status(403).json({ code: "FORBIDDEN", message: "Cannot view another player's match history." });
+      return;
+    }
+
     const limit = Number(req.query.limit ?? 20);
     const history = matchHistoryStore.getPlayerMatchHistory(req.params.playerId, Number.isFinite(limit) ? limit : 20);
     res.json({
