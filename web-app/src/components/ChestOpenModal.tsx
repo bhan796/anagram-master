@@ -24,6 +24,12 @@ interface ChestOpenModalProps {
 }
 
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+const CARD_WIDTH = 80;
+const CARD_GAP = 3;
+const CARD_STRIDE = CARD_WIDTH + CARD_GAP;
+const WIN_INDEX = 90;
+const PRE_ITEMS = WIN_INDEX;
+const POST_ITEMS = 30;
 
 export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModalProps) => {
   const [loading, setLoading] = useState(true);
@@ -71,11 +77,11 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   const carouselItems = useMemo(() => {
     if (!wonItem) return [] as CosmeticItem[];
     const items: CosmeticItem[] = [];
-    for (let i = 0; i < 35; i += 1) {
+    for (let i = 0; i < PRE_ITEMS; i += 1) {
       items.push(COSMETIC_CATALOG[i % COSMETIC_CATALOG.length]!);
     }
     items.push(wonItem);
-    for (let i = 0; i < 6; i += 1) {
+    for (let i = 0; i < POST_ITEMS; i += 1) {
       items.push(COSMETIC_CATALOG[(i + 9) % COSMETIC_CATALOG.length]!);
     }
     return items;
@@ -84,8 +90,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   useEffect(() => {
     if (!wonItem || carouselItems.length === 0) return;
     const duration = 3500;
-    const cardWidth = 83;
-    const target = -(35 * cardWidth - viewportWidth / 2 + 40);
+    const target = -(WIN_INDEX * CARD_STRIDE - (viewportWidth / 2 - CARD_WIDTH / 2));
     const started = performance.now();
     let raf = 0;
 
@@ -116,18 +121,56 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
       {!loading && wonItem ? (
         <>
           <div style={{ color: "var(--gold)", fontFamily: "var(--font-pixel)" }}>\u25BC</div>
-          <div style={{ width: viewportWidth, maxWidth: "92vw", overflow: "hidden", border: "1px solid rgba(0,245,255,.3)", borderRadius: 8, padding: "10px 0", background: "var(--surface)" }}>
+          <div
+            style={{
+              width: viewportWidth,
+              maxWidth: "92vw",
+              overflow: "hidden",
+              border: "1px solid rgba(0,245,255,.3)",
+              borderRadius: 8,
+              padding: "10px 0",
+              background: "var(--surface)",
+              position: "relative"
+            }}
+          >
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                left: "50%",
+                width: 2,
+                transform: "translateX(-1px)",
+                background: "linear-gradient(180deg, rgba(255,215,0,0.1), rgba(255,215,0,0.95), rgba(255,215,0,0.1))",
+                boxShadow: "0 0 12px rgba(255,215,0,.75)",
+                pointerEvents: "none",
+                zIndex: 2
+              }}
+            />
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+                zIndex: 2,
+                background:
+                  "linear-gradient(90deg, rgba(10,10,24,.95) 0%, rgba(10,10,24,0) 8%, rgba(10,10,24,0) 92%, rgba(10,10,24,.95) 100%)"
+              }}
+            />
             <div ref={stripRef} style={{ display: "flex", gap: 3, transform: `translateX(${x}px)` }}>
               {carouselItems.map((item, index) => {
-                const won = index === 35;
+                const won = index === WIN_INDEX;
                 return (
                   <div
                     key={`${item.id}-${index}`}
                     style={{
-                      width: 80,
+                      width: CARD_WIDTH,
                       height: 120,
                       borderLeft: `3px solid ${getRarityColor(item.rarity)}`,
                       border: `1px solid ${won && revealed ? getRarityColor(item.rarity) : "rgba(255,255,255,.12)"}`,
+                      boxSizing: "border-box",
                       background: "var(--surface-variant)",
                       display: "grid",
                       alignContent: "center",
