@@ -843,7 +843,14 @@ export const App = () => {
   }
 
   if (route === "online_match_found") {
-    return renderWithMute(<MatchFoundScreen state={online.state} onDone={() => setRoute("online_match")} />);
+    return renderWithMute(
+      <MatchFoundScreen
+        state={online.state}
+        myAvatarId={online.state.myAvatarId}
+        oppAvatarId={online.state.oppAvatarId}
+        onDone={() => setRoute("online_match")}
+      />
+    );
   }
 
   if (route === "online_match") {

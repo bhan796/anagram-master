@@ -1,3 +1,5 @@
+import type { AvatarState } from "../avatars/avatarTypes";
+
 export type MatchPhase =
   | "awaiting_letters_pick"
   | "letters_solving"
@@ -16,6 +18,7 @@ export interface SessionIdentifyPayload {
   isAuthenticated?: boolean;
   serverNowMs: number;
   equippedCosmetic?: string | null;
+  equippedAvatar?: string;
 }
 
 export interface MatchmakingStatusPayload {
@@ -39,6 +42,7 @@ export interface PlayerSnapshot {
   playerId: string;
   displayName: string;
   equippedCosmetic?: string | null;
+  equippedAvatar?: string;
   connected: boolean;
   score: number;
   rating?: number;
@@ -115,6 +119,10 @@ export interface OnlineUiState {
   matchState: MatchStatePayload | null;
   myPlayer: PlayerSnapshot | null;
   opponentPlayer: PlayerSnapshot | null;
+  myAvatarId: string;
+  oppAvatarId: string;
+  myAvatarState: AvatarState;
+  oppAvatarState: AvatarState;
   isMyTurnToPick: boolean;
   secondsRemaining: number;
   wordInput: string;
@@ -155,6 +163,10 @@ export const initialOnlineUiState: OnlineUiState = {
   matchState: null,
   myPlayer: null,
   opponentPlayer: null,
+  myAvatarId: "default_rookie",
+  oppAvatarId: "default_rookie",
+  myAvatarState: "idle",
+  oppAvatarState: "idle",
   isMyTurnToPick: false,
   secondsRemaining: 0,
   wordInput: "",

@@ -355,6 +355,7 @@ export class AuthService {
         rankedLosses: number;
         rankedDraws: number;
         equippedCosmetic: string | null;
+        equippedAvatar: string | null;
         runes: number;
         pendingChests: number;
       }
@@ -372,6 +373,7 @@ export class AuthService {
         rankedLosses: true,
         rankedDraws: true,
         equippedCosmetic: true,
+        equippedAvatar: true,
         runes: true,
         pendingChests: true
       }
@@ -387,6 +389,7 @@ export class AuthService {
       rankedLosses: player.rankedLosses ?? 0,
       rankedDraws: player.rankedDraws ?? 0,
       equippedCosmetic: player.equippedCosmetic ?? null,
+      equippedAvatar: player.equippedAvatar ?? "default_rookie",
       runes: player.runes ?? 0,
       pendingChests: player.pendingChests ?? 0
     };

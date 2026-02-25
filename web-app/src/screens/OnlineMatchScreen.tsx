@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import type { AvatarState } from "../avatars/avatarTypes";
 import type { MatchStatePayload, OnlineUiState } from "../types/online";
 import {
   ArcadeButton,
@@ -13,6 +15,7 @@ import {
 import { TapLetterComposer } from "../components/TapLetterComposer";
 import * as SoundManager from "../sound/SoundManager";
 import { getCosmeticClass } from "../lib/cosmetics";
+import { AvatarSprite } from "../components/AvatarSprite";
 
 interface OnlineMatchScreenProps {
   state: OnlineUiState;
@@ -152,6 +155,11 @@ export const OnlineMatchScreen = ({
   const isFinished = match?.phase === "finished";
   const isLettersRoundEndingTransition = match?.phase === "letters_solving" && state.secondsRemaining <= 0;
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [myAvatarState, setMyAvatarState] = useState<AvatarState>("idle");
+  const [oppAvatarState, setOppAvatarState] = useState<AvatarState>("idle");
+  const [windowWidth, setWindowWidth] = useState<number>(window.innerWidth);
+  const submittedWordRef = useRef(false);
+  const lastOpponentSubmissionCountRef = useRef(0);
 
   useEffect(() => {
     if (isFinished) {
@@ -229,6 +237,81 @@ export const OnlineMatchScreen = ({
     lettersEndingTransitionRef.current = isLettersRoundEndingTransition;
   }, [isLettersRoundEndingTransition]);
 
+  useEffect(() => {
+    const onResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    if (state.hasSubmittedWord && !submittedWordRef.current) {
+      submittedWordRef.current = true;
+      setMyAvatarState("attack");
+      window.setTimeout(() => setMyAvatarState("idle"), 350);
+    }
+    if (!state.hasSubmittedWord) {
+      submittedWordRef.current = false;
+    }
+  }, [state.hasSubmittedWord]);
+
+  useEffect(() => {
+    if (match?.phase !== "round_result" || !state.playerId) return;
+    const result = match.roundResults.at(-1);
+    if (!result) return;
+    const myScore = result.awardedScores[state.playerId] ?? 0;
+    const oppPlayerId = match.players.find((player) => player.playerId !== state.playerId)?.playerId;
+    const oppScore = oppPlayerId ? (result.awardedScores[oppPlayerId] ?? 0) : 0;
+    if (myScore > oppScore) {
+      setMyAvatarState("victory");
+      setOppAvatarState("defeat");
+    } else if (myScore < oppScore) {
+      setMyAvatarState("defeat");
+      setOppAvatarState("victory");
+    } else {
+      setMyAvatarState("idle");
+      setOppAvatarState("idle");
+    }
+  }, [match?.phase, match?.roundResults, match?.players, state.playerId]);
+
+  useEffect(() => {
+    if (match?.phase === "letters_solving" && state.secondsRemaining <= 0) {
+      setMyAvatarState("battle");
+      setOppAvatarState("battle");
+      return;
+    }
+    if (
+      match?.phase === "awaiting_letters_pick" ||
+      match?.phase === "letters_solving" ||
+      match?.phase === "conundrum_solving"
+    ) {
+      setMyAvatarState((prev) => (prev === "attack" ? prev : "idle"));
+      setOppAvatarState((prev) => (prev === "attack" ? prev : "idle"));
+    }
+  }, [match?.phase, state.secondsRemaining]);
+
+  useEffect(() => {
+    if (match?.phase !== "round_result") return;
+    const result = match.roundResults.at(-1);
+    if (!result || result.type !== "letters" || !state.playerId) return;
+    const oppPlayerId = match.players.find((player) => player.playerId !== state.playerId)?.playerId;
+    if (!oppPlayerId) return;
+    const submissionCount = Object.keys(result.submissions ?? {}).length;
+    if (submissionCount > lastOpponentSubmissionCountRef.current && (result.submissions?.[oppPlayerId]?.word ?? "").length > 0) {
+      setOppAvatarState("attack");
+      window.setTimeout(() => setOppAvatarState("idle"), 350);
+    }
+    lastOpponentSubmissionCountRef.current = submissionCount;
+  }, [match?.phase, match?.roundResults, match?.players, state.playerId]);
+
+  const showSideAvatars =
+    windowWidth >= 768 &&
+    (match?.phase === "awaiting_letters_pick" ||
+      match?.phase === "letters_solving" ||
+      match?.phase === "round_result" ||
+      match?.phase === "conundrum_solving");
+  const inMatchScale = windowWidth < 1024 ? 3 : 4;
+  const bobDuration = match?.phase === "letters_solving" && state.secondsRemaining <= 0 ? 0.8 : 1.5;
+
   return (
     <ArcadeScaffold>
       {isFinished ? (
@@ -263,6 +346,30 @@ export const OnlineMatchScreen = ({
             <div className="score-row">
               <ScoreBadge label={state.myPlayer.displayName} labelClassName={getCosmeticClass(state.myPlayer.equippedCosmetic)} score={state.myPlayer.score} />
               <ScoreBadge label={state.opponentPlayer.displayName} labelClassName={getCosmeticClass(state.opponentPlayer.equippedCosmetic)} score={state.opponentPlayer.score} color="var(--gold)" />
+            </div>
+          ) : null}
+
+          {showSideAvatars ? (
+            <div
+              style={{
+                width: "100%",
+                display: "grid",
+                gridTemplateColumns: "1fr auto 1fr",
+                alignItems: "center",
+                gap: 12
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "center", overflow: "hidden", maxWidth: 200 }}>
+                <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: bobDuration, repeat: Infinity, ease: "easeInOut" }}>
+                  <AvatarSprite avatarId={state.myAvatarId} state={myAvatarState} scale={inMatchScale} facing="right" />
+                </motion.div>
+              </div>
+              <div />
+              <div style={{ display: "flex", justifyContent: "center", overflow: "hidden", maxWidth: 200, justifySelf: "end" }}>
+                <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: bobDuration, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}>
+                  <AvatarSprite avatarId={state.oppAvatarId} state={oppAvatarState} scale={inMatchScale} facing="left" />
+                </motion.div>
+              </div>
             </div>
           ) : null}
 
@@ -444,6 +551,37 @@ export const OnlineMatchScreen = ({
             <>
               <NeonTitle text="Final Result" />
               <div className="headline">{winnerLabel}</div>
+              <div style={{ position: "relative", width: "100%", minHeight: 250, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {match.winnerPlayerId ? (
+                  <>
+                    <motion.div
+                      animate={{ y: [0, -30, 0] }}
+                      transition={{ duration: 0.7, repeat: Infinity, ease: [0.33, 0, 0.66, 1] }}
+                      style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}
+                    >
+                      <AvatarSprite
+                        avatarId={match.winnerPlayerId === state.playerId ? state.myAvatarId : state.oppAvatarId}
+                        state="victory"
+                        scale={5}
+                        facing={match.winnerPlayerId === state.playerId ? "right" : "left"}
+                      />
+                    </motion.div>
+                    <div style={{ position: "absolute", right: 16, bottom: 24, opacity: 0.45 }}>
+                      <AvatarSprite
+                        avatarId={match.winnerPlayerId === state.playerId ? state.oppAvatarId : state.myAvatarId}
+                        state="defeat"
+                        scale={3}
+                        facing={match.winnerPlayerId === state.playerId ? "left" : "right"}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: "flex", gap: 20, alignItems: "center", justifyContent: "center" }}>
+                    <AvatarSprite avatarId={state.myAvatarId} state="idle" scale={4} facing="right" />
+                    <AvatarSprite avatarId={state.oppAvatarId} state="idle" scale={4} facing="left" />
+                  </div>
+                )}
+              </div>
               <div className="card" style={{ display: "grid", gap: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                   <div className="text-dim">Match Mode</div>

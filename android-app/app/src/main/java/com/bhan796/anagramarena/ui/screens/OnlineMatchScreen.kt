@@ -3,6 +3,7 @@ package com.bhan796.anagramarena.ui.screens
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.RepeatMode
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,18 +42,24 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bhan796.anagramarena.audio.SoundManager
+import com.bhan796.anagramarena.online.AvatarState
 import com.bhan796.anagramarena.network.SocketConnectionState
 import com.bhan796.anagramarena.online.MatchPhase
 import com.bhan796.anagramarena.online.OnlineUiState
 import com.bhan796.anagramarena.online.RoundType
 import com.bhan796.anagramarena.ui.components.ArcadeButton
+import com.bhan796.anagramarena.ui.components.AvatarSprite
 import com.bhan796.anagramarena.ui.components.CosmeticName
+import com.bhan796.anagramarena.ui.components.Facing
 import com.bhan796.anagramarena.ui.components.LetterTile
 import com.bhan796.anagramarena.ui.components.NeonTitle
 import com.bhan796.anagramarena.ui.components.RankBadge
@@ -67,6 +75,7 @@ import com.bhan796.anagramarena.ui.theme.ColorRed
 import com.bhan796.anagramarena.ui.theme.ColorSurface
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.ui.theme.sdp
+import kotlin.math.roundToInt
 
 private fun phaseTotalSeconds(phase: MatchPhase): Int = when (phase) {
     MatchPhase.AWAITING_LETTERS_PICK -> 20
@@ -119,6 +128,23 @@ private fun multiplierBreakdown(
 }
 
 @Composable
+private fun BobAvatar(avatarId: String, state: AvatarState, facing: Facing, scale: Float, durationMs: Int) {
+    val infiniteTransition = rememberInfiniteTransition(label = "avatarBob")
+    val bobOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMs, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bobOffset"
+    )
+    Box(modifier = Modifier.offset { IntOffset(0, bobOffset.roundToInt()) }) {
+        AvatarSprite(avatarId = avatarId, state = state, scale = scale, facing = facing)
+    }
+}
+
+@Composable
 fun OnlineMatchScreen(
     contentPadding: PaddingValues,
     state: OnlineUiState,
@@ -146,6 +172,18 @@ fun OnlineMatchScreen(
         match?.letters?.mapNotNull { it.firstOrNull() } ?: emptyList()
     }
     val selectedIndices = remember(match?.roundNumber, match?.phase) { mutableStateListOf<Int>() }
+    val config = LocalConfiguration.current
+    val inMatchScale = when {
+        config.screenWidthDp < 400 -> 3f
+        config.screenWidthDp <= 600 -> 3f
+        else -> 4f
+    }
+    val showInMatchAvatars = config.screenWidthDp >= 400
+    val isAvatarPhase = match?.phase == MatchPhase.AWAITING_LETTERS_PICK ||
+        match?.phase == MatchPhase.LETTERS_SOLVING ||
+        match?.phase == MatchPhase.ROUND_RESULT ||
+        match?.phase == MatchPhase.CONUNDRUM_SOLVING
+    val bobDuration = if (match?.phase == MatchPhase.LETTERS_SOLVING && state.secondsRemaining <= 0) 400 else 750
 
     LaunchedEffect(match?.phase) {
         val phase = match?.phase ?: return@LaunchedEffect
@@ -227,6 +265,30 @@ fun OnlineMatchScreen(
                     NeonTitle(match.phase.name.replace('_', ' '))
                     TimerBar(secondsRemaining = state.secondsRemaining, totalSeconds = phaseTotalSeconds(match.phase))
                     Text(state.statusMessage, style = MaterialTheme.typography.labelMedium, color = ColorDimText)
+
+                    if (showInMatchAvatars && isAvatarPhase) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                                BobAvatar(
+                                    avatarId = state.myAvatarId,
+                                    state = state.myAvatarState,
+                                    facing = Facing.RIGHT,
+                                    scale = inMatchScale,
+                                    durationMs = bobDuration
+                                )
+                            }
+                            Box(modifier = Modifier.weight(2.5f))
+                            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                                BobAvatar(
+                                    avatarId = state.oppAvatarId,
+                                    state = state.oppAvatarState,
+                                    facing = Facing.LEFT,
+                                    scale = inMatchScale,
+                                    durationMs = bobDuration
+                                )
+                            }
+                        }
+                    }
 
                     if (me != null && opponent != null) {
                         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
@@ -416,6 +478,41 @@ fun OnlineMatchScreen(
                                 },
                                 style = MaterialTheme.typography.headlineSmall
                             )
+                            val bounceOffset by rememberInfiniteTransition(label = "winnerBounce").animateFloat(
+                                initialValue = 0f,
+                                targetValue = -30f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(700, easing = { t -> if (t < 0.5f) 2 * t * t else -1 + (4 - 2 * t) * t }),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "bounceOffset"
+                            )
+                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                if (match.winnerPlayerId == null) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(sdp(16.dp))) {
+                                        AvatarSprite(avatarId = state.myAvatarId, state = AvatarState.IDLE, scale = 4f, facing = Facing.RIGHT)
+                                        AvatarSprite(avatarId = state.oppAvatarId, state = AvatarState.IDLE, scale = 4f, facing = Facing.LEFT)
+                                    }
+                                } else {
+                                    val iWon = match.winnerPlayerId == state.playerId
+                                    Box(modifier = Modifier.offset { IntOffset(0, bounceOffset.roundToInt()) }) {
+                                        AvatarSprite(
+                                            avatarId = if (iWon) state.myAvatarId else state.oppAvatarId,
+                                            state = AvatarState.VICTORY,
+                                            scale = 5f,
+                                            facing = if (iWon) Facing.RIGHT else Facing.LEFT
+                                        )
+                                    }
+                                    Box(modifier = Modifier.align(Alignment.CenterEnd).alpha(0.4f)) {
+                                        AvatarSprite(
+                                            avatarId = if (iWon) state.oppAvatarId else state.myAvatarId,
+                                            state = AvatarState.DEFEAT,
+                                            scale = 3f,
+                                            facing = if (iWon) Facing.LEFT else Facing.RIGHT
+                                        )
+                                    }
+                                }
+                            }
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()

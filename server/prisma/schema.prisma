@@ -21,6 +21,7 @@ model Player {
   rankedDraws Int           @default(0)
   runes       Int           @default(0)
   equippedCosmetic String?
+  equippedAvatar String?
   currentWinStreak Int      @default(0)
   conundrumSolves Int       @default(0)
   pendingChests Int         @default(0)
