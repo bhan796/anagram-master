@@ -16,10 +16,6 @@ data class OnlineUiState(
     val matchState: MatchStatePayload? = null,
     val myPlayer: PlayerSnapshot? = null,
     val opponentPlayer: PlayerSnapshot? = null,
-    val myAvatarId: String = "default_rookie",
-    val oppAvatarId: String = "default_rookie",
-    val myAvatarState: AvatarState = AvatarState.IDLE,
-    val oppAvatarState: AvatarState = AvatarState.IDLE,
     val isMyTurnToPick: Boolean = false,
     val secondsRemaining: Int = 0,
     val wordInput: String = "",
@@ -49,8 +45,6 @@ object OnlineMatchReducer {
         val resolvedPlayerId = session?.playerId ?: previous.playerId
         val me = updatedMatch?.players?.firstOrNull { it.playerId == resolvedPlayerId }
         val opponent = updatedMatch?.players?.firstOrNull { it.playerId != resolvedPlayerId }
-        val myAvatarId = me?.equippedAvatar?.ifBlank { "default_rookie" } ?: "default_rookie"
-        val oppAvatarId = opponent?.equippedAvatar?.ifBlank { "default_rookie" } ?: "default_rookie"
 
         val remaining = computeRemainingSeconds(updatedMatch, nowMs, serverClockOffsetMs)
         val inQueue = (matchmaking?.state ?: previous.queueState) == "searching"
@@ -93,8 +87,6 @@ object OnlineMatchReducer {
             matchState = updatedMatch,
             myPlayer = me,
             opponentPlayer = opponent,
-            myAvatarId = myAvatarId,
-            oppAvatarId = oppAvatarId,
             isMyTurnToPick = isMyTurnToPick,
             secondsRemaining = remaining,
             hasSubmittedConundrumGuess = hasSubmittedConundrumGuess,

@@ -43,7 +43,6 @@ data class PlayerSnapshot(
     val playerId: String,
     val displayName: String,
     val equippedCosmetic: String? = null,
-    val equippedAvatar: String = "default_rookie",
     val connected: Boolean,
     val score: Int,
     val rating: Int = 1000,

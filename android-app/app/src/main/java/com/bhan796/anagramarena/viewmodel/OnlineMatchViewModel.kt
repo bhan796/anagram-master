@@ -3,7 +3,6 @@ package com.bhan796.anagramarena.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.bhan796.anagramarena.online.AvatarState
 import com.bhan796.anagramarena.online.MatchPhase
 import com.bhan796.anagramarena.online.OnlineMatchReducer
 import com.bhan796.anagramarena.online.OnlineUiState
@@ -29,7 +28,6 @@ class OnlineMatchViewModel(
     private val clockOffsetSamples = ArrayDeque<Long>()
     private var clockOffsetMs: Long = 0
     private var tickerJob: Job? = null
-    private var myAttackResetJob: Job? = null
 
     init {
         repository.connect()
@@ -65,7 +63,7 @@ class OnlineMatchViewModel(
                     previous.matchState?.roundNumber != reduced.matchState?.roundNumber ||
                         previous.matchState?.phase != reduced.matchState?.phase
 
-                var next = reduced.copy(
+                _state.value = reduced.copy(
                     wordInput = if (resetWord) "" else previous.wordInput,
                     conundrumGuessInput = if (resetWord) "" else previous.conundrumGuessInput,
                     hasSubmittedWord = if (resetWord) false else previous.hasSubmittedWord,
@@ -74,34 +72,6 @@ class OnlineMatchViewModel(
                     localValidationMessage = if (resetWord) null else previous.localValidationMessage,
                     pendingRewards = rewards ?: previous.pendingRewards
                 )
-
-                if (next.matchState?.phase == MatchPhase.ROUND_RESULT) {
-                    val result = next.matchState.roundResults.lastOrNull()
-                    if (result != null) {
-                        val meId = next.playerId
-                        val oppId = next.matchState.players.firstOrNull { it.playerId != meId }?.playerId
-                        val meScore = meId?.let { result.awardedScores[it] ?: 0 } ?: 0
-                        val oppScore = oppId?.let { result.awardedScores[it] ?: 0 } ?: 0
-                        next = when {
-                            meScore > oppScore -> next.copy(myAvatarState = AvatarState.VICTORY, oppAvatarState = AvatarState.DEFEAT)
-                            meScore < oppScore -> next.copy(myAvatarState = AvatarState.DEFEAT, oppAvatarState = AvatarState.VICTORY)
-                            else -> next.copy(myAvatarState = AvatarState.IDLE, oppAvatarState = AvatarState.IDLE)
-                        }
-                    }
-                } else if (next.matchState?.phase == MatchPhase.LETTERS_SOLVING && next.secondsRemaining <= 0) {
-                    next = next.copy(myAvatarState = AvatarState.BATTLE, oppAvatarState = AvatarState.BATTLE)
-                } else if (
-                    next.matchState?.phase == MatchPhase.AWAITING_LETTERS_PICK ||
-                    next.matchState?.phase == MatchPhase.LETTERS_SOLVING ||
-                    next.matchState?.phase == MatchPhase.CONUNDRUM_SOLVING
-                ) {
-                    next = next.copy(
-                        myAvatarState = if (next.myAvatarState == AvatarState.ATTACK) AvatarState.ATTACK else AvatarState.IDLE,
-                        oppAvatarState = if (next.oppAvatarState == AvatarState.ATTACK) AvatarState.ATTACK else AvatarState.IDLE
-                    )
-                }
-
-                _state.value = next
             }.collect {}
         }
 
@@ -153,12 +123,7 @@ class OnlineMatchViewModel(
         }
         _state.value = _state.value.copy(localValidationMessage = null)
         repository.submitWord(_state.value.wordInput)
-        _state.value = _state.value.copy(hasSubmittedWord = true, myAvatarState = AvatarState.ATTACK)
-        myAttackResetJob?.cancel()
-        myAttackResetJob = viewModelScope.launch {
-            delay(350)
-            _state.value = _state.value.copy(myAvatarState = AvatarState.IDLE)
-        }
+        _state.value = _state.value.copy(hasSubmittedWord = true)
     }
 
     fun updateConundrumGuessInput(value: String) {
@@ -240,14 +205,8 @@ class OnlineMatchViewModel(
                         repository.submitWord(current.wordInput)
                         nextState = nextState.copy(
                             hasSubmittedWord = true,
-                            localValidationMessage = null,
-                            myAvatarState = AvatarState.ATTACK
+                            localValidationMessage = null
                         )
-                        myAttackResetJob?.cancel()
-                        myAttackResetJob = viewModelScope.launch {
-                            delay(350)
-                            _state.value = _state.value.copy(myAvatarState = AvatarState.IDLE)
-                        }
                     }
                     _state.value = nextState
                 }

@@ -89,7 +89,6 @@ object SocketPayloadParser {
                         playerId = obj.optString("playerId"),
                         displayName = obj.optString("displayName"),
                         equippedCosmetic = obj.optString("equippedCosmetic", "").takeIf { it.isNotEmpty() },
-                        equippedAvatar = obj.optString("equippedAvatar", "default_rookie").ifEmpty { "default_rookie" },
                         connected = obj.optBoolean("connected"),
                         score = obj.optInt("score"),
                         rating = obj.optInt("rating", 1000),

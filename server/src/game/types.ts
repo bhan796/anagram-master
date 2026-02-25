@@ -13,7 +13,6 @@ export interface PlayerRuntime {
   playerId: string;
   displayName: string;
   equippedCosmetic: string | null;
-  equippedAvatar: string;
   userId: string | null;
   socketId: string | null;
   connected: boolean;
@@ -117,7 +116,6 @@ export interface SerializedPlayer {
   playerId: string;
   displayName: string;
   equippedCosmetic: string | null;
-  equippedAvatar: string;
   connected: boolean;
   score: number;
   rating: number;

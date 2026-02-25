@@ -227,7 +227,6 @@ export const createSocketServer = (
         service.hydratePlayerProfile(player.playerId, {
           displayName: persistedProfile.displayName ?? undefined,
           equippedCosmetic: persistedProfile.equippedCosmetic ?? null,
-          equippedAvatar: persistedProfile.equippedAvatar ?? "default_rookie",
           rating: persistedProfile.rating,
           peakRating: persistedProfile.peakRating,
           rankedGames: persistedProfile.rankedGames,
@@ -242,7 +241,6 @@ export const createSocketServer = (
         service.hydratePlayerProfile(player.playerId, {
           displayName: persistedStats.displayName,
           equippedCosmetic: persistedProfile?.equippedCosmetic ?? null,
-          equippedAvatar: persistedProfile?.equippedAvatar ?? "default_rookie",
           rating: persistedStats.rating,
           peakRating: persistedStats.peakRating,
           rankedGames: persistedStats.rankedGames,
@@ -273,8 +271,7 @@ export const createSocketServer = (
         rankTier: ratingToTier(player.rating),
         isAuthenticated: Boolean(player.userId),
         serverNowMs: Date.now(),
-        equippedCosmetic: player.equippedCosmetic ?? null,
-        equippedAvatar: player.equippedAvatar ?? "default_rookie"
+        equippedCosmetic: player.equippedCosmetic ?? null
       });
 
       const activeMatch = service.getMatchByPlayer(player.playerId);

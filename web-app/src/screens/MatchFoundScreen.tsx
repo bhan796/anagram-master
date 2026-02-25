@@ -1,19 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, useAnimation } from "framer-motion";
-import type { AvatarState } from "../avatars/avatarTypes";
 import type { OnlineUiState } from "../types/online";
 import { RankBadge } from "../components/ArcadeComponents";
-import { AvatarSprite } from "../components/AvatarSprite";
 import * as SoundManager from "../sound/SoundManager";
 import { getCosmeticClass } from "../lib/cosmetics";
 
 interface MatchFoundScreenProps {
   state: OnlineUiState;
   onDone: () => void;
-  myAvatarId: string;
-  oppAvatarId: string;
 }
 
+// -- Canvas particle system ----------------------------------------------------
 type Particle = {
   x: number;
   y: number;
@@ -98,6 +94,7 @@ const ArcadeParticles = () => {
   );
 };
 
+// -- Animated rating counter ---------------------------------------------------
 const AnimatedRating = ({ target, color }: { target: number; color: string }) => {
   const [displayed, setDisplayed] = useState(0);
 
@@ -122,18 +119,13 @@ const AnimatedRating = ({ target, color }: { target: number; color: string }) =>
   );
 };
 
-export const MatchFoundScreen = ({ state, onDone, myAvatarId, oppAvatarId }: MatchFoundScreenProps) => {
+// -- Main screen ---------------------------------------------------------------
+export const MatchFoundScreen = ({ state, onDone }: MatchFoundScreenProps) => {
   const onDoneRef = useRef(onDone);
   const didCompleteRef = useRef(false);
-  const attackTriggeredRef = useRef(false);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [secondsLeft, setSecondsLeft] = useState(10);
   const [countdownKey, setCountdownKey] = useState(10);
   const [showFight, setShowFight] = useState(false);
-  const [avatarState, setAvatarState] = useState<AvatarState>("battle");
-  const [windowWidth, setWindowWidth] = useState<number>(window.innerWidth);
-  const leftControls = useAnimation();
-  const rightControls = useAnimation();
 
   useEffect(() => {
     onDoneRef.current = onDone;
@@ -141,43 +133,18 @@ export const MatchFoundScreen = ({ state, onDone, myAvatarId, oppAvatarId }: Mat
 
   useEffect(() => {
     void SoundManager.playMatchFound();
-    void leftControls.start({
-      x: 0,
-      transition: { type: "spring", stiffness: 400, damping: 28, delay: 0.2 }
-    });
-    void rightControls.start({
-      x: 0,
-      transition: { type: "spring", stiffness: 400, damping: 28, delay: 0.25 }
-    });
-
-    const shakeTimer = window.setTimeout(() => {
-      containerRef.current?.classList.add("avatar-slam-shake");
-      window.setTimeout(() => containerRef.current?.classList.remove("avatar-slam-shake"), 400);
-    }, 800);
-
-    return () => window.clearTimeout(shakeTimer);
-  }, [leftControls, rightControls]);
-
-  useEffect(() => {
-    const onResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   useEffect(() => {
     if (secondsLeft > 0) {
       void SoundManager.playCountdownBeep();
-    } else if (!didCompleteRef.current) {
-      didCompleteRef.current = true;
-      void SoundManager.playCountdownGo();
-      window.setTimeout(() => onDoneRef.current(), 700);
+      return;
     }
 
-    if (secondsLeft <= 5 && !attackTriggeredRef.current && secondsLeft > 0) {
-      attackTriggeredRef.current = true;
-      setAvatarState("attack");
-      window.setTimeout(() => setAvatarState("battle"), 400);
-    }
+    if (didCompleteRef.current) return;
+    didCompleteRef.current = true;
+    void SoundManager.playCountdownGo();
+    window.setTimeout(() => onDoneRef.current(), 700);
   }, [secondsLeft]);
 
   useEffect(() => {
@@ -186,7 +153,9 @@ export const MatchFoundScreen = ({ state, onDone, myAvatarId, oppAvatarId }: Mat
       const remainingMs = Math.max(0, endAt - Date.now());
       const remainingSecs = Math.ceil(remainingMs / 1000);
       setSecondsLeft((prev) => {
-        if (remainingSecs !== prev) setCountdownKey(remainingSecs);
+        if (remainingSecs !== prev) {
+          setCountdownKey(remainingSecs);
+        }
         return remainingSecs;
       });
       if (remainingMs <= 0) {
@@ -199,11 +168,9 @@ export const MatchFoundScreen = ({ state, onDone, myAvatarId, oppAvatarId }: Mat
 
   const me = state.myPlayer;
   const opp = state.opponentPlayer;
-  const showAvatars = windowWidth >= 768;
-  const avatarScale = windowWidth < 1024 ? 5 : 6;
 
   return (
-    <div className="mf-root" ref={containerRef}>
+    <div className="mf-root">
       <div className="mf-flash" />
       <ArcadeParticles />
 
@@ -212,75 +179,78 @@ export const MatchFoundScreen = ({ state, onDone, myAvatarId, oppAvatarId }: Mat
           position: "relative",
           zIndex: 1,
           display: "grid",
-          gridTemplateColumns: "1fr auto 1fr",
-          alignItems: "center",
+          gap: 16,
           width: "100%",
-          height: "100%",
-          overflow: "hidden"
+          alignItems: "center",
+          justifyItems: "center"
         }}
       >
-        <div style={{ display: showAvatars ? "flex" : "none", justifyContent: "center", alignItems: "center", height: "100%", overflow: "hidden" }}>
-          <motion.div initial={{ x: "-120%" }} animate={leftControls} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <AvatarSprite avatarId={myAvatarId} state={avatarState} scale={avatarScale} facing="right" />
-          </motion.div>
+        <div>
+          <div className="mf-title-line mf-title-match">MATCH</div>
+          <div className="mf-title-line mf-title-found">FOUND!</div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 360 }}>
-          <div>
-            <div className="mf-title-line mf-title-match">MATCH</div>
-            <div className="mf-title-line mf-title-found">FOUND!</div>
-          </div>
+        <div className="mf-vs-row">
+          <div className="mf-line" />
+          <div className="mf-vs-text">VS</div>
+          <div className="mf-line right" />
+        </div>
 
-          <div className="mf-vs-row">
-            <div className="mf-line" />
-            <div className="mf-vs-text">VS</div>
-            <div className="mf-line right" />
-          </div>
-
-          <div className="mf-players-row">
-            <div className="mf-player-card you">
-              <div className="text-dim">YOU</div>
-              <div
-                className={`arena-nameplate arena-nameplate-xl ${getCosmeticClass(me?.equippedCosmetic)}`.trim()}
-                style={{ color: "var(--white)", fontSize: "clamp(10px,1.2vw,12px)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-              >
-                {me?.displayName ?? "You"}
-              </div>
-              <AnimatedRating target={me?.rating ?? 1000} color="var(--cyan)" />
-              <RankBadge tier={me?.rankTier} />
+        <div className="mf-players-row">
+          <div className="mf-player-card you">
+            <div className="text-dim">YOU</div>
+            <div
+              className={`arena-nameplate arena-nameplate-xl ${getCosmeticClass(me?.equippedCosmetic)}`.trim()}
+              style={{
+                color: "var(--white)",
+                fontSize: "clamp(10px,1.2vw,12px)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+              }}
+            >
+              {me?.displayName ?? "You"}
             </div>
-
-            <div className="mf-player-card opp">
-              <div className="text-dim">OPP</div>
-              <div
-                className={`arena-nameplate arena-nameplate-xl ${getCosmeticClass(opp?.equippedCosmetic)}`.trim()}
-                style={{ color: "var(--white)", fontSize: "clamp(10px,1.2vw,12px)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-              >
-                {opp?.displayName ?? "Opponent"}
-              </div>
-              <AnimatedRating target={opp?.rating ?? 1000} color="var(--gold)" />
-              <RankBadge tier={opp?.rankTier} />
-            </div>
+            <AnimatedRating target={me?.rating ?? 1000} color="var(--cyan)" />
+            <RankBadge tier={me?.rankTier} />
           </div>
 
-          <div className="mf-countdown-wrap">
-            {showFight ? (
-              <div className="mf-fight">FIGHT!</div>
-            ) : (
-              <>
-                <div className="text-dim" style={{ fontSize: "var(--text-label)" }}>ENTERING ARENA IN</div>
-                <div className="mf-countdown-num" key={countdownKey} style={{ color: secondsLeft <= 3 ? "var(--red)" : "var(--cyan)" }}>
-                  {secondsLeft}
-                </div>
-              </>
-            )}
+          <div className="mf-player-card opp">
+            <div className="text-dim">OPP</div>
+            <div
+              className={`arena-nameplate arena-nameplate-xl ${getCosmeticClass(opp?.equippedCosmetic)}`.trim()}
+              style={{
+                color: "var(--white)",
+                fontSize: "clamp(10px,1.2vw,12px)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+              }}
+            >
+              {opp?.displayName ?? "Opponent"}
+            </div>
+            <AnimatedRating target={opp?.rating ?? 1000} color="var(--gold)" />
+            <RankBadge tier={opp?.rankTier} />
           </div>
         </div>
 
-        <div style={{ display: showAvatars ? "flex" : "none", justifyContent: "center", alignItems: "center", height: "100%", overflow: "hidden" }}>
-          <motion.div initial={{ x: "120%" }} animate={rightControls} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <AvatarSprite avatarId={oppAvatarId} state={avatarState} scale={avatarScale} facing="left" />
-          </motion.div>
+        <div className="mf-countdown-wrap">
+          {showFight ? (
+            <div className="mf-fight">FIGHT!</div>
+          ) : (
+            <>
+              <div className="text-dim" style={{ fontSize: "var(--text-label)" }}>
+                ENTERING ARENA IN
+              </div>
+              <div
+                className="mf-countdown-num"
+                key={countdownKey}
+                style={{ color: secondsLeft <= 3 ? "var(--red)" : "var(--cyan)" }}
+              >
+                {secondsLeft}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

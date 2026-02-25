@@ -123,8 +123,6 @@ const reduceOnlineState = (
   const resolvedPlayerId = session?.playerId ?? previous.playerId;
   const me = updatedMatch?.players.find((player) => player.playerId === resolvedPlayerId) ?? null;
   const opponent = updatedMatch?.players.find((player) => player.playerId !== resolvedPlayerId) ?? null;
-  const myAvatarId = me?.equippedAvatar || "default_rookie";
-  const oppAvatarId = opponent?.equippedAvatar || "default_rookie";
   const queueState = updatedMatch ? "idle" : (matchmaking?.state ?? previous.queueState);
   const isInMatchmaking = queueState === "searching";
   const conundrumSubmittedPlayerIds = updatedMatch?.conundrumGuessSubmittedPlayerIds ?? [];
@@ -177,10 +175,6 @@ const reduceOnlineState = (
     matchId: updatedMatch?.matchId ?? previous.matchId,
     myPlayer: me,
     opponentPlayer: opponent,
-    myAvatarId,
-    oppAvatarId,
-    myAvatarState: previous.myAvatarState,
-    oppAvatarState: previous.oppAvatarState,
     isMyTurnToPick: updatedMatch?.phase === "awaiting_letters_pick" && updatedMatch.pickerPlayerId === resolvedPlayerId,
     secondsRemaining: computeRemainingSeconds(updatedMatch, clockOffsetMs),
     hasSubmittedConundrumGuess,
@@ -391,10 +385,6 @@ export const useOnlineMatch = () => {
       matchState: null,
       myPlayer: null,
       opponentPlayer: null,
-      myAvatarId: "default_rookie",
-      oppAvatarId: "default_rookie",
-      myAvatarState: "idle",
-      oppAvatarState: "idle",
       isMyTurnToPick: false,
       secondsRemaining: 0,
       hasSubmittedWord: false,
@@ -417,10 +407,6 @@ export const useOnlineMatch = () => {
         matchState: null,
         myPlayer: null,
         opponentPlayer: null,
-        myAvatarId: "default_rookie",
-        oppAvatarId: "default_rookie",
-        myAvatarState: "idle",
-        oppAvatarState: "idle",
         isMyTurnToPick: false,
         secondsRemaining: 0,
         hasSubmittedWord: false,
@@ -455,10 +441,6 @@ export const useOnlineMatch = () => {
       matchState: null,
       myPlayer: null,
       opponentPlayer: null,
-      myAvatarId: "default_rookie",
-      oppAvatarId: "default_rookie",
-      myAvatarState: "idle",
-      oppAvatarState: "idle",
       isMyTurnToPick: false,
       secondsRemaining: 0,
       hasSubmittedWord: false,
