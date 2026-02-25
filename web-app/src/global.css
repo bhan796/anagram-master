@@ -191,6 +191,12 @@ input {
 .score-badge .name {
   font-size: clamp(7px, 0.95vw, 9px);
   color: var(--dim);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
 }
 
 .score-badge .value {
