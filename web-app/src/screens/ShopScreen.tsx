@@ -44,7 +44,7 @@ export const ShopScreen = ({ accessToken, onBack }: ShopScreenProps) => {
     runes: 0
   });
   const [showChestModal, setShowChestModal] = useState(false);
-  const [showOdds, setShowOdds] = useState(false);
+  const [showOddsModal, setShowOddsModal] = useState(false);
   const [odds, setOdds] = useState<ChestOddsResponse["items"]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -152,37 +152,51 @@ export const ShopScreen = ({ accessToken, onBack }: ShopScreenProps) => {
         <ArcadeButton text="Purchase" onClick={() => void handlePurchase()} disabled={purchaseDisabled} />
         <ArcadeButton text={`Open Chest (${inventory.pendingChests})`} onClick={() => setShowChestModal(true)} disabled={inventory.pendingChests < 1} accent="gold" />
         <ArcadeButton
-          text={showOdds ? "Hide Chest Odds" : "Inspect Chest Odds"}
+          text="Chest Odds"
           onClick={() => {
-            const next = !showOdds;
-            setShowOdds(next);
-            if (next && odds.length === 0) void loadOdds();
+            setShowOddsModal(true);
+            if (odds.length === 0) void loadOdds();
           }}
           accent="magenta"
         />
-        {showOdds ? (
-          <div className="card" style={{ display: "grid", gap: 6 }}>
-            <div className="label">Chest Contents & Odds</div>
+      </div>
+
+      <div className="headline">MY COSMETICS</div>
+      <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>{inventoryCards}</div>
+
+      {showOddsModal ? (
+        <div className="modal-backdrop" style={{ zIndex: 50 }} onClick={() => setShowOddsModal(false)}>
+          <div
+            className="card"
+            style={{ width: "min(520px, 100%)", maxHeight: "80vh", overflowY: "auto", border: "1px solid var(--magenta)", display: "grid", gap: 8 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <div className="label">Chest Contents & Odds</div>
+              <button
+                onClick={() => setShowOddsModal(false)}
+                style={{ background: "none", border: "1px solid var(--magenta)", color: "var(--magenta)", borderRadius: 4, padding: "4px 10px", cursor: "pointer", fontFamily: "var(--font-pixel)", fontSize: "var(--text-label)" }}
+              >
+                CLOSE
+              </button>
+            </div>
             {odds.length === 0 ? (
               <div className="text-dim">Loading odds...</div>
             ) : (
               odds.map((item) => (
-                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                  <span className={`text-dim ${getCosmeticClass(item.id)}`.trim()}>
+                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                  <span className={getCosmeticClass(item.id)} style={{ fontSize: "var(--text-label)" }}>
                     {item.name} ({getRarityLabel(item.rarity)})
                   </span>
-                  <span className="label" style={{ color: "var(--gold)" }}>
+                  <span className="label" style={{ color: "var(--gold)", whiteSpace: "nowrap" }}>
                     {item.chancePct.toFixed(2)}%
                   </span>
                 </div>
               ))
             )}
           </div>
-        ) : null}
-      </div>
-
-      <div className="headline">MY COSMETICS</div>
-      <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>{inventoryCards}</div>
+        </div>
+      ) : null}
 
       {showChestModal ? (
         <ChestOpenModal
