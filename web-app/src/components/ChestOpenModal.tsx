@@ -25,8 +25,8 @@ interface ChestOpenModalProps {
 }
 
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
-const CARD_WIDTH = 80;
-const CARD_GAP = 3;
+const CARD_WIDTH = 92;
+const CARD_GAP = 8;
 const CARD_STRIDE = CARD_WIDTH + CARD_GAP;
 const TOTAL_ITEMS = 140;
 const LANDING_MIN_INDEX = 85;
@@ -147,7 +147,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   }, [carouselItems, wonItem]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(10,10,24,0.95)", zIndex: 100, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(10,10,24,0.95)", zIndex: 100, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20, padding: "18px 12px" }}>
       {loading ? <div className="headline">Opening chest...</div> : null}
       {!loading && errorMessage ? (
         <div style={{ width: 360, maxWidth: "92vw", display: "grid", gap: 10, textAlign: "center" }}>
@@ -162,7 +162,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
             style={{
               color: "var(--gold)",
               fontFamily: "\"Segoe UI Symbol\", \"Arial Unicode MS\", Arial, sans-serif",
-              fontSize: "22px",
+              fontSize: "24px",
               lineHeight: 1
             }}
           >
@@ -171,11 +171,11 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
           <div
             ref={viewportRef}
             style={{
-              width: "min(640px, 92vw)",
+              width: "min(760px, 96vw)",
               overflow: "hidden",
               border: "1px solid rgba(0,245,255,.3)",
-              borderRadius: 8,
-              padding: "10px 0",
+              borderRadius: 10,
+              padding: "14px 0",
               background: "var(--surface)",
               position: "relative"
             }}
@@ -206,7 +206,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
                   "linear-gradient(90deg, rgba(10,10,24,.95) 0%, rgba(10,10,24,0) 8%, rgba(10,10,24,0) 92%, rgba(10,10,24,.95) 100%)"
               }}
             />
-            <div style={{ display: "flex", gap: 3, transform: `translateX(${x}px)` }}>
+            <div style={{ display: "flex", gap: CARD_GAP, transform: `translateX(${x}px)` }}>
               {carouselItems.map((entry) => {
                 const item = entry.item;
                 const won = entry.isWinner;
@@ -216,7 +216,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
                     ref={won ? winnerCardRef : undefined}
                     style={{
                       width: CARD_WIDTH,
-                      height: 120,
+                      height: 132,
                       borderLeft: `3px solid ${getRarityColor(item.rarity)}`,
                       border: `1px solid ${won && revealed ? getRarityColor(item.rarity) : "rgba(255,255,255,.12)"}`,
                       boxSizing: "border-box",
@@ -224,13 +224,13 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
                       display: "grid",
                       alignContent: "center",
                       justifyItems: "center",
-                      padding: 6,
+                      padding: 8,
                       transform: won && revealed ? "scale(1.2)" : "scale(1)",
                       boxShadow: won && revealed ? `0 0 22px ${getRarityColor(item.rarity)}` : "none",
                       transition: "all 300ms ease"
                     }}
                   >
-                    <div className={`${getCosmeticClass(item.id)} label`} style={{ fontSize: 9, textAlign: "center" }}>
+                    <div className={`${getCosmeticClass(item.id)} label`} style={{ fontSize: 11, lineHeight: 1.15, textAlign: "center" }}>
                       {item.name}
                     </div>
                   </div>
@@ -243,8 +243,8 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
               <div className={getCosmeticClass(wonItem.id)} style={{ color: getRarityColor(wonItem.rarity), fontFamily: "var(--font-pixel)" }}>
                 {wonItem.name} ({getRarityLabel(wonItem.rarity)})
               </div>
-              <div className="text-dim">{alreadyOwned ? "Already owned (rerolled)." : "NEW ITEM!"}</div>
-              <div style={{ display: "grid", gap: 8, width: 320, maxWidth: "90vw" }}>
+              <div className="text-dim" style={{ marginTop: 2 }}>{alreadyOwned ? "Already owned (rerolled)." : "NEW ITEM!"}</div>
+              <div style={{ display: "grid", gap: 10, width: 360, maxWidth: "92vw", marginTop: 6 }}>
                 <ArcadeButton text="Equip Now" onClick={() => { onEquip(wonItem.id); onClose(); }} accent="gold" />
                 <ArcadeButton text="Close" onClick={onClose} />
               </div>
