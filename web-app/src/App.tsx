@@ -210,7 +210,6 @@ export const App = () => {
       draws: number;
     }>
   >([]);
-  const [playersOnline, setPlayersOnline] = useState(0);
   const [googleReady, setGoogleReady] = useState(false);
   const [facebookReady, setFacebookReady] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -624,27 +623,6 @@ export const App = () => {
   }, [auth.status]);
 
   useEffect(() => {
-    let cancelled = false;
-    const pullPresence = async () => {
-      try {
-        const response = await fetch(`${apiBaseUrl}/api/presence`);
-        if (!response.ok) return;
-        const payload = (await response.json()) as { playersOnline?: number };
-        if (!cancelled) setPlayersOnline(payload.playersOnline ?? 0);
-      } catch {
-        // ignore presence polling failures
-      }
-    };
-
-    void pullPresence();
-    const timer = window.setInterval(() => void pullPresence(), 10000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, []);
-
-  useEffect(() => {
     if (auth.status !== "authenticated") {
       setLeaderboard([]);
       return;
@@ -705,7 +683,6 @@ export const App = () => {
           }
           setRoute("auth");
         }}
-        playersOnline={playersOnline}
         playIntro={!homeIntroSeen}
         onIntroComplete={() => setHomeIntroSeen(true)}
       />

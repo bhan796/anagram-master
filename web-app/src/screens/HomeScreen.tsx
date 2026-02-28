@@ -15,7 +15,6 @@ interface HomeScreenProps {
   authEmail: string | null;
   runes: number;
   onAuthAction: () => void;
-  playersOnline: number;
   playIntro: boolean;
   onIntroComplete: () => void;
 }
@@ -32,7 +31,6 @@ export const HomeScreen = ({
   authEmail,
   runes,
   onAuthAction,
-  playersOnline,
   playIntro,
   onIntroComplete
 }: HomeScreenProps) => {
@@ -154,19 +152,6 @@ export const HomeScreen = ({
         />
       </div>
 
-      <div
-        style={{
-          color: "var(--white)",
-          textAlign: "center",
-          marginTop: 4,
-          fontFamily: "var(--font-pixel)",
-          fontSize: "var(--text-label)",
-          letterSpacing: "0.08em",
-          textTransform: "uppercase"
-        }}
-      >
-        Players Online: <span style={{ color: "var(--green)" }}>{playersOnline}</span>
-      </div>
       <div
         style={{
           color: "var(--white)",
