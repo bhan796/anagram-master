@@ -28,9 +28,14 @@ const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 const CARD_WIDTH = 80;
 const CARD_GAP = 3;
 const CARD_STRIDE = CARD_WIDTH + CARD_GAP;
-const WIN_INDEX = 90;
-const PRE_ITEMS = WIN_INDEX;
+const PRE_ITEMS = 90;
 const POST_ITEMS = 30;
+
+type CarouselEntry = {
+  item: CosmeticItem;
+  isWinner: boolean;
+  key: string;
+};
 
 export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModalProps) => {
   const [loading, setLoading] = useState(true);
@@ -75,27 +80,31 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   }, [accessToken]);
 
   const carouselItems = useMemo(() => {
-    if (!wonItem) return [] as CosmeticItem[];
-    const items: CosmeticItem[] = [];
+    if (!wonItem) return [] as CarouselEntry[];
+    const items: CarouselEntry[] = [];
     for (let i = 0; i < PRE_ITEMS; i += 1) {
-      items.push(COSMETIC_CATALOG[i % COSMETIC_CATALOG.length]!);
+      const item = COSMETIC_CATALOG[i % COSMETIC_CATALOG.length]!;
+      items.push({ item, isWinner: false, key: `pre-${item.id}-${i}` });
     }
-    items.push(wonItem);
+    items.push({ item: wonItem, isWinner: true, key: `win-${wonItem.id}` });
     for (let i = 0; i < POST_ITEMS; i += 1) {
-      items.push(COSMETIC_CATALOG[(i + 9) % COSMETIC_CATALOG.length]!);
+      const item = COSMETIC_CATALOG[(i + 9) % COSMETIC_CATALOG.length]!;
+      items.push({ item, isWinner: false, key: `post-${item.id}-${i}` });
     }
     return items;
   }, [wonItem]);
 
   useEffect(() => {
     if (!wonItem || carouselItems.length === 0) return;
+    const winIndex = carouselItems.findIndex((entry) => entry.isWinner);
+    if (winIndex < 0) return;
 
     // Read actual rendered width from the DOM — avoids stale-closure issues
     // from storing viewportWidth in state (which creates a circular reference
     // because the div's own width: state drives the measurement).
     const vw = viewportRef.current?.getBoundingClientRect().width ?? 640;
     const duration = 3500;
-    const target = -(WIN_INDEX * CARD_STRIDE - (vw / 2 - CARD_WIDTH / 2));
+    const target = -(winIndex * CARD_STRIDE - (vw / 2 - CARD_WIDTH / 2));
     const started = performance.now();
     let raf = 0;
     let lastTickTime = 0;
@@ -187,11 +196,12 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
               }}
             />
             <div style={{ display: "flex", gap: 3, transform: `translateX(${x}px)` }}>
-              {carouselItems.map((item, index) => {
-                const won = index === WIN_INDEX;
+              {carouselItems.map((entry) => {
+                const item = entry.item;
+                const won = entry.isWinner;
                 return (
                   <div
-                    key={`${item.id}-${index}`}
+                    key={entry.key}
                     style={{
                       width: CARD_WIDTH,
                       height: 120,

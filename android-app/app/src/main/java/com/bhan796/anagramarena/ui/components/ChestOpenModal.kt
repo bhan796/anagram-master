@@ -26,6 +26,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -36,6 +38,11 @@ import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.ui.theme.ColorWhite
 import com.bhan796.anagramarena.viewmodel.ShopViewModel
 
+private data class CarouselEntry(
+    val item: CosmeticItem,
+    val isWinner: Boolean
+)
+
 @Composable
 fun ChestOpenModal(
     viewModel: ShopViewModel,
@@ -43,19 +50,24 @@ fun ChestOpenModal(
     onEquip: (String) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    var carouselItems by remember { mutableStateOf<List<CosmeticItem>>(emptyList()) }
+    var carouselItems by remember { mutableStateOf<List<CarouselEntry>>(emptyList()) }
+    var viewportWidthDp by remember { mutableStateOf(360f) }
+    val density = LocalDensity.current
     val offset = remember { Animatable(0f) }
 
     val won = state.chestResult
-    LaunchedEffect(won?.id) {
+    LaunchedEffect(won?.id, viewportWidthDp) {
         if (won == null) return@LaunchedEffect
         val fillers = CosmeticCatalog.items
-        carouselItems = buildList {
-            repeat(35) { add(fillers[it % fillers.size]) }
-            add(won)
-            repeat(6) { add(fillers[(it + 8) % fillers.size]) }
+        val entries = buildList {
+            repeat(35) { add(CarouselEntry(fillers[it % fillers.size], isWinner = false)) }
+            add(CarouselEntry(won, isWinner = true))
+            repeat(6) { add(CarouselEntry(fillers[(it + 8) % fillers.size], isWinner = false)) }
         }
-        val targetOffset = 35 * 88f - (360f / 2f - 44f)
+        carouselItems = entries
+        val winIndex = entries.indexOfFirst { it.isWinner }.coerceAtLeast(0)
+        val targetOffset = winIndex * 88f - (viewportWidthDp / 2f - 44f)
+        offset.snapTo(0f)
         offset.animateTo(targetOffset, animationSpec = tween(3500, easing = FastOutSlowInEasing))
     }
 
@@ -75,19 +87,23 @@ fun ChestOpenModal(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(140.dp)
+                            .onSizeChanged { size ->
+                                viewportWidthDp = with(density) { size.width.toDp().value }
+                            }
                             .clipToBounds()
                             .background(ColorSurfaceVariant, RoundedCornerShape(8.dp))
                             .padding(vertical = 8.dp)
                     ) {
                         Row(modifier = Modifier.padding(start = (-offset.value).dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            carouselItems.forEach { item ->
+                            carouselItems.forEach { entry ->
+                                val item = entry.item
                                 val rarityColor = CosmeticCatalog.getRarityColor(item.rarity)
                                 Box(
                                     modifier = Modifier
                                         .width(84.dp)
                                         .height(120.dp)
                                         .background(ColorSurfaceVariant, RoundedCornerShape(6.dp))
-                                        .border(3.dp, rarityColor, RoundedCornerShape(6.dp)),
+                                        .border(if (entry.isWinner) 4.dp else 3.dp, rarityColor, RoundedCornerShape(6.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(item.name, style = MaterialTheme.typography.labelSmall, color = ColorWhite)
