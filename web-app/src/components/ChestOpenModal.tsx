@@ -28,8 +28,9 @@ const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 const CARD_WIDTH = 80;
 const CARD_GAP = 3;
 const CARD_STRIDE = CARD_WIDTH + CARD_GAP;
-const PRE_ITEMS = 90;
-const POST_ITEMS = 30;
+const TOTAL_ITEMS = 140;
+const LANDING_MIN_INDEX = 85;
+const LANDING_MAX_INDEX = 105;
 
 type CarouselEntry = {
   item: CosmeticItem;
@@ -45,6 +46,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   const [revealed, setRevealed] = useState(false);
   const [x, setX] = useState(0);
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const winnerCardRef = useRef<HTMLDivElement | null>(null);
   const hasOpenedRef = useRef(false);
 
   useEffect(() => {
@@ -82,15 +84,13 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   const carouselItems = useMemo(() => {
     if (!wonItem) return [] as CarouselEntry[];
     const items: CarouselEntry[] = [];
-    for (let i = 0; i < PRE_ITEMS; i += 1) {
-      const item = COSMETIC_CATALOG[i % COSMETIC_CATALOG.length]!;
-      items.push({ item, isWinner: false, key: `pre-${item.id}-${i}` });
+    const landingIndex =
+      LANDING_MIN_INDEX + Math.floor(Math.random() * (LANDING_MAX_INDEX - LANDING_MIN_INDEX + 1));
+    for (let i = 0; i < TOTAL_ITEMS; i += 1) {
+      const filler = COSMETIC_CATALOG[Math.floor(Math.random() * COSMETIC_CATALOG.length)]!;
+      items.push({ item: filler, isWinner: false, key: `filler-${filler.id}-${i}` });
     }
-    items.push({ item: wonItem, isWinner: true, key: `win-${wonItem.id}` });
-    for (let i = 0; i < POST_ITEMS; i += 1) {
-      const item = COSMETIC_CATALOG[(i + 9) % COSMETIC_CATALOG.length]!;
-      items.push({ item, isWinner: false, key: `post-${item.id}-${i}` });
-    }
+    items[landingIndex] = { item: wonItem, isWinner: true, key: `win-${wonItem.id}-${landingIndex}` };
     return items;
   }, [wonItem]);
 
@@ -102,9 +102,20 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
     // Read actual rendered width from the DOM — avoids stale-closure issues
     // from storing viewportWidth in state (which creates a circular reference
     // because the div's own width: state drives the measurement).
-    const vw = viewportRef.current?.getBoundingClientRect().width ?? 640;
+    setX(0);
     const duration = 3500;
-    const target = -(winIndex * CARD_STRIDE - (vw / 2 - CARD_WIDTH / 2));
+    const viewport = viewportRef.current;
+    const winnerCard = winnerCardRef.current;
+    const vw = viewport?.getBoundingClientRect().width ?? 640;
+    const fallbackTarget = -(winIndex * CARD_STRIDE - (vw / 2 - CARD_WIDTH / 2));
+    let target = fallbackTarget;
+    if (viewport && winnerCard) {
+      const viewportRect = viewport.getBoundingClientRect();
+      const winnerRect = winnerCard.getBoundingClientRect();
+      const viewportCenter = viewportRect.left + viewportRect.width / 2;
+      const winnerCenter = winnerRect.left + winnerRect.width / 2;
+      target = viewportCenter - winnerCenter;
+    }
     const started = performance.now();
     let raf = 0;
     let lastTickTime = 0;
@@ -202,6 +213,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
                 return (
                   <div
                     key={entry.key}
+                    ref={won ? winnerCardRef : undefined}
                     style={{
                       width: CARD_WIDTH,
                       height: 120,

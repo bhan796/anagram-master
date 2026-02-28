@@ -37,11 +37,16 @@ import com.bhan796.anagramarena.ui.theme.ColorBackground
 import com.bhan796.anagramarena.ui.theme.ColorSurfaceVariant
 import com.bhan796.anagramarena.ui.theme.ColorWhite
 import com.bhan796.anagramarena.viewmodel.ShopViewModel
+import kotlin.random.Random
 
 private data class CarouselEntry(
     val item: CosmeticItem,
     val isWinner: Boolean
 )
+
+private const val TOTAL_ITEMS = 120
+private const val LANDING_MIN_INDEX = 70
+private const val LANDING_MAX_INDEX = 90
 
 @Composable
 fun ChestOpenModal(
@@ -59,11 +64,12 @@ fun ChestOpenModal(
     LaunchedEffect(won?.id, viewportWidthDp) {
         if (won == null) return@LaunchedEffect
         val fillers = CosmeticCatalog.items
-        val entries = buildList {
-            repeat(35) { add(CarouselEntry(fillers[it % fillers.size], isWinner = false)) }
-            add(CarouselEntry(won, isWinner = true))
-            repeat(6) { add(CarouselEntry(fillers[(it + 8) % fillers.size], isWinner = false)) }
+        val landingIndex = Random.nextInt(LANDING_MIN_INDEX, LANDING_MAX_INDEX + 1)
+        val entries = MutableList(TOTAL_ITEMS) {
+            val filler = fillers[Random.nextInt(fillers.size)]
+            CarouselEntry(filler, isWinner = false)
         }
+        entries[landingIndex] = CarouselEntry(won, isWinner = true)
         carouselItems = entries
         val winIndex = entries.indexOfFirst { it.isWinner }.coerceAtLeast(0)
         val targetOffset = winIndex * 88f - (viewportWidthDp / 2f - 44f)
