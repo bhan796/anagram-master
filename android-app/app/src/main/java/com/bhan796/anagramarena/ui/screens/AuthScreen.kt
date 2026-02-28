@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.bhan796.anagramarena.BuildConfig
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -123,6 +124,7 @@ fun AuthScreen(
                 onValueChange = { password = it },
                 label = { Text("Password") },
                 singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = ColorCyan,

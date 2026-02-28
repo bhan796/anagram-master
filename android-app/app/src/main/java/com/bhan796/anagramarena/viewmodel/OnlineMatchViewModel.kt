@@ -157,7 +157,7 @@ class OnlineMatchViewModel(
     }
 
     fun queuePlayAgain() {
-        val requestedMode = _state.value.matchState?.mode ?: "casual"
+        val requestedMode = _state.value.matchState?.mode ?: _state.value.queueMode.ifBlank { "casual" }
         val mode = if (requestedMode == "ranked" && !_state.value.isAuthenticated) "casual" else requestedMode
         if (_state.value.matchState?.phase == MatchPhase.FINISHED) {
             _state.value = _state.value.copy(

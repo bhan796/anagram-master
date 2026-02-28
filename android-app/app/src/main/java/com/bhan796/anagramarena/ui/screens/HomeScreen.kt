@@ -114,13 +114,6 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Players Online: ", style = MaterialTheme.typography.labelLarge, color = ColorWhite)
-            Text(playersOnline.toString(), style = MaterialTheme.typography.labelLarge, color = ColorGreen)
-        }
-        androidx.compose.foundation.layout.Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
-        ) {
             Text("Account: ", style = MaterialTheme.typography.labelLarge, color = ColorWhite)
             Text(
                 authLabel,
