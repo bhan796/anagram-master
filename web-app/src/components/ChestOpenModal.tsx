@@ -32,6 +32,25 @@ const TOTAL_ITEMS = 140;
 const LANDING_MIN_INDEX = 85;
 const LANDING_MAX_INDEX = 105;
 
+const getRarityBadge = (rarity: string): string => {
+  switch (rarity) {
+    case "common":
+      return "C";
+    case "uncommon":
+      return "U";
+    case "rare":
+      return "R";
+    case "epic":
+      return "E";
+    case "legendary":
+      return "L";
+    case "mythic":
+      return "M";
+    default:
+      return "?";
+  }
+};
+
 type CarouselEntry = {
   item: CosmeticItem;
   isWinner: boolean;
@@ -231,21 +250,21 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
                     }}
                   >
                     <div
-                      className={getCosmeticClass(item.id)}
                       style={{
-                        width: "100%",
-                        maxWidth: "100%",
-                        padding: "0 2px",
-                        fontSize: 10,
-                        lineHeight: 1.2,
-                        letterSpacing: "0.02em",
-                        textAlign: "center",
-                        whiteSpace: "normal",
-                        overflowWrap: "anywhere",
-                        wordBreak: "break-word"
+                        minWidth: 30,
+                        padding: "5px 8px",
+                        borderRadius: 999,
+                        border: `1px solid ${getRarityColor(item.rarity)}`,
+                        color: getRarityColor(item.rarity),
+                        background: "rgba(10, 10, 24, 0.5)",
+                        fontFamily: "var(--font-pixel)",
+                        fontSize: 11,
+                        letterSpacing: "0.04em",
+                        lineHeight: 1,
+                        textAlign: "center"
                       }}
                     >
-                      {item.name}
+                      {getRarityBadge(item.rarity)}
                     </div>
                   </div>
                 );
