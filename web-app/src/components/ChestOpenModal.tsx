@@ -305,12 +305,12 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
                   <div
                     key={entry.key}
                     ref={won ? winnerCardRef : undefined}
-                    className={`reel-card reel-card--${item.rarity}${won && revealed ? " reel-card--winner-revealed" : ""}${won && revealed && item.rarity === "legendary" ? " reel-card--winner-legendary" : ""}${won && revealed && item.rarity === "mythic" ? " reel-card--winner-mythic" : ""}`}
+                    className={`reel-card${won && revealed ? ` reel-card--${item.rarity}` : ""}${won && revealed && item.rarity === "legendary" ? " reel-card--winner-legendary" : ""}${won && revealed && item.rarity === "mythic" ? " reel-card--winner-mythic" : ""}`}
                     style={{
                       width: CARD_WIDTH,
                       height: 132,
-                      borderLeft: `3px solid ${getRarityColor(item.rarity)}`,
                       border: `1px solid ${won && revealed ? getRarityColor(item.rarity) : "rgba(255,255,255,.12)"}`,
+                      borderLeft: `3px solid ${getRarityColor(item.rarity)}`,
                       boxSizing: "border-box",
                       background: "var(--surface-variant)",
                       display: "grid",
