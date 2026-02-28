@@ -779,6 +779,7 @@
 .reel-card {
   position: relative;
   overflow: hidden;
+  flex: 0 0 auto;
 }
 .reel-card--rare {
   animation: reelCardGlow 1.5s ease-in-out infinite;
