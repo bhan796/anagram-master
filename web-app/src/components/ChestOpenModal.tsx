@@ -230,7 +230,21 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
                       transition: "all 300ms ease"
                     }}
                   >
-                    <div className={`${getCosmeticClass(item.id)} label`} style={{ fontSize: 11, lineHeight: 1.15, textAlign: "center" }}>
+                    <div
+                      className={getCosmeticClass(item.id)}
+                      style={{
+                        width: "100%",
+                        maxWidth: "100%",
+                        padding: "0 2px",
+                        fontSize: 10,
+                        lineHeight: 1.2,
+                        letterSpacing: "0.02em",
+                        textAlign: "center",
+                        whiteSpace: "normal",
+                        overflowWrap: "anywhere",
+                        wordBreak: "break-word"
+                      }}
+                    >
                       {item.name}
                     </div>
                   </div>
