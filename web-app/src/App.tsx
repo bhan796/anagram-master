@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { HomeScreen } from "./screens/HomeScreen";
 import { PracticeMenuScreen } from "./screens/PracticeMenuScreen";
 import { LettersPracticeScreen } from "./screens/LettersPracticeScreen";
@@ -349,6 +350,7 @@ export const App = () => {
   const renderWithMute = (screen: ReactElement) => (
     <>
       {screen}
+      <SpeedInsights />
       <button
         type="button"
         className={`arcade-mute-button ${settings.masterMuted ? "muted" : ""}`.trim()}
@@ -924,4 +926,3 @@ export const App = () => {
     />
   );
 };
-
