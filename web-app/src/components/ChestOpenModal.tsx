@@ -345,7 +345,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
             </div>
           </div>
           {revealed ? (
-            <>
+            <div style={{ display: "grid", justifyItems: "center", gap: 10, marginTop: 14 }}>
               {wonItem.rarity === "mythic" ? (
                 <div className="mythic-particles" aria-hidden>
                   <div className="mythic-particle mythic-particle--1" />
@@ -364,12 +364,12 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
               <div className={`rarity-reveal rarity-reveal--${wonItem.rarity}${wonItem.rarity === "mythic" ? " mythic-glitch-once" : ""}`}>
                 {getRarityLabel(wonItem.rarity).toUpperCase()}
               </div>
-              <div className="text-dim" style={{ marginTop: 2 }}>{alreadyOwned ? "Already owned (rerolled)." : "NEW ITEM!"}</div>
-              <div style={{ display: "grid", gap: 10, width: 360, maxWidth: "92vw", marginTop: 6 }}>
+              <div className="text-dim" style={{ marginTop: 6 }}>{alreadyOwned ? "Already owned (rerolled)." : "NEW ITEM!"}</div>
+              <div style={{ display: "grid", gap: 12, width: 360, maxWidth: "92vw", marginTop: 8 }}>
                 <ArcadeButton text="Equip Now" onClick={() => { onEquip(wonItem.id); onClose(); }} accent="gold" />
                 <ArcadeButton text="Close" onClick={onClose} />
               </div>
-            </>
+            </div>
           ) : null}
         </>
       ) : null}
