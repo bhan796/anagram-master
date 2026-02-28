@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { ArcadeButton } from "./ArcadeComponents";
 import { COSMETIC_CATALOG, type CosmeticItem } from "../lib/cosmeticCatalog";
 import { getCosmeticClass, getRarityColor, getRarityLabel } from "../lib/cosmetics";
@@ -31,6 +31,14 @@ const CARD_STRIDE = CARD_WIDTH + CARD_GAP;
 const TOTAL_ITEMS = 140;
 const LANDING_MIN_INDEX = 85;
 const LANDING_MAX_INDEX = 105;
+const RARITY_INTENSITY: Record<string, number> = {
+  common: 1,
+  uncommon: 2,
+  rare: 3,
+  epic: 4,
+  legendary: 5,
+  mythic: 6
+};
 
 const getRarityBadge = (rarity: string): string => {
   switch (rarity) {
@@ -63,6 +71,10 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   const [alreadyOwned, setAlreadyOwned] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [flashActive, setFlashActive] = useState(false);
+  const [shakeActive, setShakeActive] = useState(false);
+  const [ringActive, setRingActive] = useState(false);
+  const [blackoutActive, setBlackoutActive] = useState(false);
   const [x, setX] = useState(0);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const winnerCardRef = useRef<HTMLDivElement | null>(null);
@@ -113,6 +125,27 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
     return items;
   }, [wonItem]);
 
+  const revealIntensity = wonItem ? RARITY_INTENSITY[wonItem.rarity] ?? 1 : 1;
+  const rarityColor = wonItem ? getRarityColor(wonItem.rarity) : "#aaaaaa";
+
+  const getWinnerRevealShadow = (rarity: string): string => {
+    switch (rarity) {
+      case "common":
+        return "0 0 8px #aaaaaa44";
+      case "uncommon":
+        return "0 0 14px #39ff14, 0 0 28px #39ff1444";
+      case "rare":
+        return "0 0 20px #00f5ff, 0 0 40px #00f5ff66";
+      case "epic":
+        return "0 0 28px #cc44ff, 0 0 60px #cc44ff88, 0 0 100px #cc44ff22";
+      case "legendary":
+      case "mythic":
+        return "0 0 40px #ffd700, 0 0 80px #ffd70066, 0 0 120px #ffd70033";
+      default:
+        return "0 0 8px #aaaaaa44";
+    }
+  };
+
   useEffect(() => {
     if (!wonItem || carouselItems.length === 0) return;
     const winIndex = carouselItems.findIndex((entry) => entry.isWinner);
@@ -156,8 +189,41 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
         return;
       }
       window.setTimeout(() => {
-        setRevealed(true);
-        void SoundManager.playChestReveal(wonItem.rarity);
+        const rarity = wonItem.rarity;
+        const doReveal = () => {
+          setRevealed(true);
+          if ((RARITY_INTENSITY[rarity] ?? 1) >= 3) {
+            setFlashActive(true);
+            window.setTimeout(() => setFlashActive(false), 400);
+          }
+          if ((RARITY_INTENSITY[rarity] ?? 1) >= 4) {
+            setShakeActive(true);
+            window.setTimeout(() => setShakeActive(false), 300);
+          }
+          if ((RARITY_INTENSITY[rarity] ?? 1) >= 5) {
+            if (rarity === "mythic") {
+              setRingActive(true);
+              window.setTimeout(() => setRingActive(false), 800);
+            } else {
+              window.setTimeout(() => {
+                setRingActive(true);
+                window.setTimeout(() => setRingActive(false), 800);
+              }, 400);
+            }
+          }
+          void SoundManager.playChestReveal(rarity);
+        };
+
+        if (rarity === "mythic") {
+          setBlackoutActive(true);
+          window.setTimeout(() => {
+            setBlackoutActive(false);
+            doReveal();
+          }, 600);
+          return;
+        }
+
+        doReveal();
       }, 300);
     };
 
@@ -166,7 +232,13 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   }, [carouselItems, wonItem]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(10,10,24,0.95)", zIndex: 100, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20, padding: "18px 12px" }}>
+    <div
+      className={`chest-open-modal-root${shakeActive ? " chest-open-modal-root--shake" : ""}${blackoutActive ? " chest-open-modal-root--blackout" : ""}`}
+      style={{ position: "fixed", inset: 0, background: "rgba(10,10,24,0.95)", zIndex: 100, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20, padding: "18px 12px", "--reveal-intensity": revealIntensity } as CSSProperties}
+    >
+      {flashActive ? <div className="reveal-flash" style={{ "--reveal-color": rarityColor } as CSSProperties} /> : null}
+      {ringActive ? <div className="reveal-ring" style={{ "--reveal-color": rarityColor } as CSSProperties} /> : null}
+      {blackoutActive && wonItem?.rarity === "mythic" ? <div className="mythic-scanline" /> : null}
       {loading ? <div className="headline">Opening chest...</div> : null}
       {!loading && errorMessage ? (
         <div style={{ width: 360, maxWidth: "92vw", display: "grid", gap: 10, textAlign: "center" }}>
@@ -233,6 +305,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
                   <div
                     key={entry.key}
                     ref={won ? winnerCardRef : undefined}
+                    className={`reel-card reel-card--${item.rarity}${won && revealed ? " reel-card--winner-revealed" : ""}${won && revealed && item.rarity === "legendary" ? " reel-card--winner-legendary" : ""}${won && revealed && item.rarity === "mythic" ? " reel-card--winner-mythic" : ""}`}
                     style={{
                       width: CARD_WIDTH,
                       height: 132,
@@ -244,8 +317,8 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
                       alignContent: "center",
                       justifyItems: "center",
                       padding: 8,
-                      transform: won && revealed ? "scale(1.2)" : "scale(1)",
-                      boxShadow: won && revealed ? `0 0 22px ${getRarityColor(item.rarity)}` : "none",
+                      transform: won && revealed ? "scale(1.25)" : "scale(1)",
+                      boxShadow: won && revealed ? getWinnerRevealShadow(item.rarity) : "none",
                       transition: "all 300ms ease"
                     }}
                   >
@@ -273,8 +346,23 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
           </div>
           {revealed ? (
             <>
+              {wonItem.rarity === "mythic" ? (
+                <div className="mythic-particles" aria-hidden>
+                  <div className="mythic-particle mythic-particle--1" />
+                  <div className="mythic-particle mythic-particle--2" />
+                  <div className="mythic-particle mythic-particle--3" />
+                  <div className="mythic-particle mythic-particle--4" />
+                  <div className="mythic-particle mythic-particle--5" />
+                  <div className="mythic-particle mythic-particle--6" />
+                  <div className="mythic-particle mythic-particle--7" />
+                  <div className="mythic-particle mythic-particle--8" />
+                </div>
+              ) : null}
               <div className={getCosmeticClass(wonItem.id)} style={{ color: getRarityColor(wonItem.rarity), fontFamily: "var(--font-pixel)" }}>
-                {wonItem.name} ({getRarityLabel(wonItem.rarity)})
+                {wonItem.name}
+              </div>
+              <div className={`rarity-reveal rarity-reveal--${wonItem.rarity}${wonItem.rarity === "mythic" ? " mythic-glitch-once" : ""}`}>
+                {getRarityLabel(wonItem.rarity).toUpperCase()}
               </div>
               <div className="text-dim" style={{ marginTop: 2 }}>{alreadyOwned ? "Already owned (rerolled)." : "NEW ITEM!"}</div>
               <div style={{ display: "grid", gap: 10, width: 360, maxWidth: "92vw", marginTop: 6 }}>
