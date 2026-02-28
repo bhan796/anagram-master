@@ -522,12 +522,10 @@ export const OnlineMatchScreen = ({
               </div>
               {state.playerRewards ? (
                 <div style={{ marginTop: 16, padding: 12, background: "var(--surface-variant)", borderRadius: 4, border: "1px solid rgba(0,245,255,0.3)" }}>
-                  <div style={{ color: "var(--gold)", fontFamily: "var(--font-pixel)", fontSize: "var(--text-label)" }}>
-                                    +{state.playerRewards.runesEarned} RUNES EARNED
-                  </div>
+                  <div style={{ color: "var(--gold)", fontFamily: "var(--font-pixel)", fontSize: "var(--text-label)" }}>NEW ACHIEVEMENTS</div>
                   {state.playerRewards.newAchievements.map((a) => (
                     <div key={a.id} style={{ marginTop: 8, color: "var(--white)", fontFamily: "var(--font-pixel)", fontSize: "var(--text-label)" }}>
-                                        {a.name} +{a.runesReward}
+                      {a.name}
                     </div>
                   ))}
                 </div>

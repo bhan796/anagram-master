@@ -89,7 +89,7 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
         factory = AuthViewModel.factory(dependencies.authRepository, dependencies.sessionStore)
     )
     val homeStatusViewModel: HomeStatusViewModel = viewModel(
-        factory = HomeStatusViewModel.factory(dependencies.profileRepository, dependencies.shopRepository, dependencies.sessionStore)
+        factory = HomeStatusViewModel.factory(dependencies.profileRepository, dependencies.sessionStore)
     )
     val achievementsViewModel: AchievementsViewModel = viewModel(
         factory = AchievementsViewModel.factory(dependencies.achievementsRepository)
@@ -136,7 +136,6 @@ fun AnagramArenaApp(dependencies: AppDependencies) {
                 composable(Routes.HOME) {
                     HomeScreen(
                         contentPadding = innerPadding,
-                        runes = homeStatus.runes,
                         onPlayOnline = { navController.navigate(Routes.ONLINE_MATCHMAKING) },
                         onPracticeMode = { navController.navigate(Routes.PRACTICE) },
                         onHowToPlay = { navController.navigate(Routes.HOW_TO_PLAY) },

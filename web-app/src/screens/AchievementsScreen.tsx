@@ -6,7 +6,6 @@ type Achievement = {
   name: string;
   description: string;
   tier: "easy" | "medium" | "hard" | "legendary";
-  runesReward: number;
   unlocked: boolean;
   unlockedAt: string | null;
 };
@@ -80,7 +79,6 @@ export const AchievementsScreen = ({ accessToken, onBack }: AchievementsScreenPr
             >
               <div className="label">{a.name}</div>
               <div className="text-dim">{a.description}</div>
-              <div className="text-dim" style={{ color: "var(--gold)" }}>Reward: {a.runesReward} RUNES</div>
               <div className="text-dim">
                 {a.unlocked ? `Unlocked ${a.unlockedAt ? new Date(a.unlockedAt).toLocaleDateString("en-GB") : ""}`.trim() : "Locked"}
               </div>

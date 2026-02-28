@@ -106,7 +106,7 @@ fun AchievementsScreen(navController: NavController, viewModel: AchievementsView
                         lineHeight = 19.sp
                     )
                     Text(
-                        "REWARD: ${a.runesReward} RUNES",
+                        "REWARD: ACHIEVEMENT UNLOCK",
                         style = MaterialTheme.typography.labelLarge,
                         color = rewardColor,
                         fontWeight = FontWeight.Bold

@@ -21,7 +21,6 @@ import com.bhan796.anagramarena.ui.theme.ColorGreen
 @Composable
 fun HomeScreen(
     contentPadding: PaddingValues,
-    runes: Int,
     onPlayOnline: () -> Unit,
     onPracticeMode: () -> Unit,
     onHowToPlay: () -> Unit,
@@ -111,15 +110,6 @@ fun HomeScreen(
                 authLabel,
                 style = MaterialTheme.typography.labelLarge,
                 color = if (isAuthenticated) ColorCyan else ColorGold
-            )
-        }
-        if (isAuthenticated) {
-            Text(
-                "♦ ${runes} RUNES",
-                style = MaterialTheme.typography.labelLarge,
-                color = ColorGold,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
 

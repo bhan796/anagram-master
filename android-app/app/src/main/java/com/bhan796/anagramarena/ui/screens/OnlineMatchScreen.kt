@@ -455,9 +455,9 @@ fun OnlineMatchScreen(
                                         .padding(sdp(12.dp))
                                 ) {
                                     Column(verticalArrangement = Arrangement.spacedBy(sdp(6.dp))) {
-                                        Text("♦ +${rewards.runesEarned} RUNES", color = ColorGold, style = MaterialTheme.typography.labelLarge)
+                                        Text("NEW ACHIEVEMENTS", color = ColorGold, style = MaterialTheme.typography.labelLarge)
                                         rewards.newAchievements.forEach { achievement ->
-                                            Text("🏆 ${achievement.name} +♦${achievement.runesReward}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                                            Text("🏆 ${achievement.name}", color = Color.White, style = MaterialTheme.typography.labelSmall)
                                         }
                                     }
                                 }
