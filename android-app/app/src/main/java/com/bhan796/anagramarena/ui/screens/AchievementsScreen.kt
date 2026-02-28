@@ -55,11 +55,19 @@ fun AchievementsScreen(navController: NavController, viewModel: AchievementsView
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(state.achievements) { a ->
                 val color = tierColor[a.tier] ?: Color.White
+                val locked = !a.unlocked
+                val borderColor = if (locked) Color(0xFF6F738A) else color.copy(alpha = 0.5f)
+                val titleColor = if (locked) Color(0xFFB7BCCF) else Color.White
+                val descColor = if (locked) Color(0xFF7E849D) else ColorDimText
+                val rewardColor = if (locked) Color(0xFFA8962A) else Color(0xFFFFD700)
+                val tierChipBg = if (locked) Color(0xFF2F3245) else color.copy(alpha = 0.14f)
+                val tierChipBorder = if (locked) Color(0xFF6F738A) else color.copy(alpha = 0.7f)
+                val tierChipText = if (locked) Color(0xFFA7ADBF) else color
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(ColorSurfaceVariant)
-                        .border(1.dp, color.copy(alpha = 0.5f))
+                        .border(1.dp, borderColor)
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
@@ -71,20 +79,20 @@ fun AchievementsScreen(navController: NavController, viewModel: AchievementsView
                         Text(
                             a.name,
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color.White,
+                            color = titleColor,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Box(
                             modifier = Modifier
-                                .background(color.copy(alpha = 0.14f))
-                                .border(1.dp, color.copy(alpha = 0.7f))
+                                .background(tierChipBg)
+                                .border(1.dp, tierChipBorder)
                                 .padding(horizontal = 8.dp, vertical = 3.dp)
                         ) {
                             Text(
                                 a.tier.uppercase(),
-                                color = color,
+                                color = tierChipText,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.8.sp
@@ -94,19 +102,20 @@ fun AchievementsScreen(navController: NavController, viewModel: AchievementsView
                     Text(
                         a.description,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = ColorDimText,
+                        color = descColor,
                         lineHeight = 19.sp
                     )
                     Text(
                         "REWARD: ${a.runesReward} RUNES",
                         style = MaterialTheme.typography.labelLarge,
-                        color = Color(0xFFFFD700),
+                        color = rewardColor,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         if (a.unlocked) "Unlocked ${formatUnlockedAt(a.unlockedAt)}" else "Locked",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = color,
+                        color = if (a.unlocked) color else Color(0xFF9BA2B9),
+                        fontWeight = if (a.unlocked) FontWeight.Normal else FontWeight.Bold,
                         lineHeight = 18.sp
                     )
                 }
