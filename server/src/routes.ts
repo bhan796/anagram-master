@@ -380,18 +380,16 @@ export const createApiRouter = (
     }
 
     await prisma.player.update({ where: { id: playerId }, data: { pendingChests: { decrement: 1 } } });
-    let item = rollChest();
+    const item = rollChest();
     const existing = await prisma.playerInventory.findUnique({ where: { playerId_itemId: { playerId, itemId: item.id } } });
     const alreadyOwned = Boolean(existing);
-    if (existing) {
-      item = rollChest();
+    if (!existing) {
+      await prisma.playerInventory.upsert({
+        where: { playerId_itemId: { playerId, itemId: item.id } },
+        update: {},
+        create: { playerId, itemId: item.id }
+      });
     }
-
-    await prisma.playerInventory.upsert({
-      where: { playerId_itemId: { playerId, itemId: item.id } },
-      update: {},
-      create: { playerId, itemId: item.id }
-    });
 
     res.json({ item, alreadyOwned });
   });
