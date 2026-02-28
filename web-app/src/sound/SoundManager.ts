@@ -317,6 +317,158 @@ export async function playWin() {
   window.setTimeout(() => synth.dispose(), 3500);
 }
 
+export async function playChestTick() {
+  if (!canPlay()) return;
+  await ensureStarted();
+  const now = Tone.now();
+  const synth = new Tone.Synth({
+    oscillator: { type: "square" },
+    envelope: { attack: 0.001, decay: 0.022, sustain: 0, release: 0.004 },
+    volume: -20 + volumeToDb(_sfxVolume)
+  }).toDestination();
+  synth.triggerAttackRelease("G5", "64n", now);
+  window.setTimeout(() => synth.dispose(), 150);
+}
+
+export async function playChestReveal(rarity: string) {
+  if (!canPlay()) return;
+  await ensureStarted();
+  const now = Tone.now();
+
+  switch (rarity) {
+    case "common": {
+      const synth = new Tone.Synth({
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.01, decay: 0.25, sustain: 0, release: 0.1 },
+        volume: -8 + volumeToDb(_sfxVolume)
+      }).toDestination();
+      synth.triggerAttackRelease("C6", "8n", now);
+      window.setTimeout(() => synth.dispose(), 600);
+      break;
+    }
+    case "uncommon": {
+      const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+      synth.set({
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.01, decay: 0.2, sustain: 0.05, release: 0.25 },
+        volume: -6 + volumeToDb(_sfxVolume)
+      });
+      synth.triggerAttackRelease("C6", "8n", now);
+      synth.triggerAttackRelease("G6", "8n", now + 0.14);
+      window.setTimeout(() => synth.dispose(), 1000);
+      break;
+    }
+    case "rare": {
+      const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+      synth.set({
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.005, decay: 0.15, sustain: 0.1, release: 0.35 },
+        volume: -5 + volumeToDb(_sfxVolume)
+      });
+      ["C5", "G5", "C6", "E6"].forEach((note, i) => synth.triggerAttackRelease(note, "8n", now + i * 0.1));
+      window.setTimeout(() => synth.dispose(), 1500);
+      break;
+    }
+    case "epic": {
+      const sweep = new Tone.Synth({
+        oscillator: { type: "sawtooth" },
+        envelope: { attack: 0.01, decay: 0.0, sustain: 1.0, release: 0.3 },
+        volume: -10 + volumeToDb(_sfxVolume)
+      }).toDestination();
+      sweep.frequency.setValueAtTime(200, now);
+      sweep.frequency.exponentialRampToValueAtTime(900, now + 0.45);
+      sweep.triggerAttack(now);
+      sweep.triggerRelease(now + 0.45);
+
+      const chord = new Tone.PolySynth(Tone.Synth).toDestination();
+      chord.set({
+        oscillator: { type: "square" },
+        envelope: { attack: 0.005, decay: 0.22, sustain: 0.3, release: 0.65 },
+        volume: -4 + volumeToDb(_sfxVolume)
+      });
+      chord.triggerAttackRelease(["C5", "E5", "G5", "B5"], "4n", now + 0.48);
+      window.setTimeout(() => { sweep.dispose(); chord.dispose(); }, 2500);
+      break;
+    }
+    case "legendary": {
+      const sweep = new Tone.Synth({
+        oscillator: { type: "sawtooth" },
+        envelope: { attack: 0.01, decay: 0.0, sustain: 1.0, release: 0.45 },
+        volume: -8 + volumeToDb(_sfxVolume)
+      }).toDestination();
+      sweep.frequency.setValueAtTime(130, now);
+      sweep.frequency.exponentialRampToValueAtTime(1400, now + 0.65);
+      sweep.triggerAttack(now);
+      sweep.triggerRelease(now + 0.65);
+
+      const run = new Tone.PolySynth(Tone.Synth).toDestination();
+      run.set({
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.005, decay: 0.12, sustain: 0.1, release: 0.4 },
+        volume: -5 + volumeToDb(_sfxVolume)
+      });
+      ["C5", "E5", "G5", "C6", "E6"].forEach((note, i) => run.triggerAttackRelease(note, "16n", now + 0.06 + i * 0.08));
+
+      const bigChord = new Tone.PolySynth(Tone.Synth).toDestination();
+      bigChord.set({
+        oscillator: { type: "square" },
+        envelope: { attack: 0.01, decay: 0.35, sustain: 0.45, release: 1.1 },
+        volume: -3 + volumeToDb(_sfxVolume)
+      });
+      bigChord.triggerAttackRelease(["C5", "E5", "G5", "C6", "G6"], "2n", now + 0.7);
+      window.setTimeout(() => { sweep.dispose(); run.dispose(); bigChord.dispose(); }, 3500);
+      break;
+    }
+    case "mythic": {
+      const sweep = new Tone.Synth({
+        oscillator: { type: "sawtooth" },
+        envelope: { attack: 0.01, decay: 0.0, sustain: 1.0, release: 0.5 },
+        volume: -7 + volumeToDb(_sfxVolume)
+      }).toDestination();
+      sweep.frequency.setValueAtTime(70, now);
+      sweep.frequency.exponentialRampToValueAtTime(2800, now + 0.9);
+      sweep.triggerAttack(now);
+      sweep.triggerRelease(now + 0.9);
+
+      const run = new Tone.PolySynth(Tone.Synth).toDestination();
+      run.set({
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.005, decay: 0.1, sustain: 0.15, release: 0.5 },
+        volume: -4 + volumeToDb(_sfxVolume)
+      });
+      ["C4", "G4", "C5", "E5", "G5", "C6", "E6", "G6"].forEach((note, i) =>
+        run.triggerAttackRelease(note, "16n", now + 0.05 + i * 0.08));
+
+      const bigChord = new Tone.PolySynth(Tone.Synth).toDestination();
+      bigChord.set({
+        oscillator: { type: "square" },
+        envelope: { attack: 0.01, decay: 0.45, sustain: 0.55, release: 1.6 },
+        volume: -2 + volumeToDb(_sfxVolume)
+      });
+      bigChord.triggerAttackRelease(["C4", "G4", "C5", "E5", "G5", "C6"], "1n", now + 0.95);
+
+      const shimmer = new Tone.PolySynth(Tone.Synth).toDestination();
+      shimmer.set({
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.06, decay: 0.3, sustain: 0.2, release: 1.2 },
+        volume: -8 + volumeToDb(_sfxVolume)
+      });
+      shimmer.triggerAttackRelease(["C7", "G7", "C8"], "2n", now + 1.0);
+      window.setTimeout(() => { sweep.dispose(); run.dispose(); bigChord.dispose(); shimmer.dispose(); }, 5500);
+      break;
+    }
+    default: {
+      const synth = new Tone.Synth({
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.01, decay: 0.25, sustain: 0, release: 0.1 },
+        volume: -8 + volumeToDb(_sfxVolume)
+      }).toDestination();
+      synth.triggerAttackRelease("C6", "8n", now);
+      window.setTimeout(() => synth.dispose(), 600);
+    }
+  }
+}
+
 export async function playLose() {
   if (!canPlay()) return;
   await ensureStarted();

@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArcadeButton } from "./ArcadeComponents";
 import { COSMETIC_CATALOG, type CosmeticItem } from "../lib/cosmeticCatalog";
 import { getCosmeticClass, getRarityColor, getRarityLabel } from "../lib/cosmetics";
+import * as SoundManager from "../sound/SoundManager";
 
 type OpenChestResponse = {
   item: CosmeticItem;
@@ -38,23 +39,8 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [x, setX] = useState(0);
-  const [viewportWidth, setViewportWidth] = useState(640);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const hasOpenedRef = useRef(false);
-
-  useLayoutEffect(() => {
-    const node = viewportRef.current;
-    if (!node) return;
-    const update = () => {
-      const next = Math.max(320, Math.round(node.getBoundingClientRect().width));
-      setViewportWidth(next);
-    };
-    update();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(update);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     if (hasOpenedRef.current) return;
@@ -103,19 +89,37 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
 
   useEffect(() => {
     if (!wonItem || carouselItems.length === 0) return;
+
+    // Read actual rendered width from the DOM — avoids stale-closure issues
+    // from storing viewportWidth in state (which creates a circular reference
+    // because the div's own width: state drives the measurement).
+    const vw = viewportRef.current?.getBoundingClientRect().width ?? 640;
     const duration = 3500;
-    const target = -(WIN_INDEX * CARD_STRIDE - (viewportWidth / 2 - CARD_WIDTH / 2));
+    const target = -(WIN_INDEX * CARD_STRIDE - (vw / 2 - CARD_WIDTH / 2));
     const started = performance.now();
     let raf = 0;
+    let lastTickTime = 0;
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - started) / duration);
       setX(target * easeOut(t));
+
+      // Play a tick sound that slows down as the carousel decelerates.
+      // tickInterval ramps from ~60 ms at t=0 up to ~300 ms at t=1.
+      const tickInterval = 60 + t * 240;
+      if (lastTickTime === 0 || now - lastTickTime >= tickInterval) {
+        lastTickTime = now;
+        void SoundManager.playChestTick();
+      }
+
       if (t < 1) {
         raf = requestAnimationFrame(tick);
         return;
       }
-      window.setTimeout(() => setRevealed(true), 300);
+      window.setTimeout(() => {
+        setRevealed(true);
+        void SoundManager.playChestReveal(wonItem.rarity);
+      }, 300);
     };
 
     raf = requestAnimationFrame(tick);
@@ -147,8 +151,7 @@ export const ChestOpenModal = ({ accessToken, onClose, onEquip }: ChestOpenModal
           <div
             ref={viewportRef}
             style={{
-              width: viewportWidth,
-              maxWidth: "92vw",
+              width: "min(640px, 92vw)",
               overflow: "hidden",
               border: "1px solid rgba(0,245,255,.3)",
               borderRadius: 8,
