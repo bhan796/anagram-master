@@ -1,0 +1,45 @@
+# Vercel Speed Insights Implementation
+
+Successfully implemented Vercel Speed Insights for the Anagram Arena web application.
+
+## Changes Made
+
+### 1. Package Installation
+- Installed `@vercel/speed-insights` package (v1.0.14) via npm
+- Updated package.json to include the new dependency
+- Updated package-lock.json with the new package and its dependencies
+
+### 2. Component Integration
+- Modified `src/App.tsx` to import the SpeedInsights component from `@vercel/speed-insights/react`
+- Added the `<SpeedInsights />` component to the `renderWithMute` function
+- The component is now included on every screen/route in the application
+
+## Implementation Details
+
+This is a React + Vite application using TypeScript. Following the official Vercel Speed Insights documentation for React applications, I:
+
+1. Installed the package using npm
+2. Imported the SpeedInsights component from '@vercel/speed-insights/react'
+3. Added the component to the main app wrapper function (`renderWithMute`) which ensures it's present on all routes
+
+The `renderWithMute` function is used throughout the App component to render all screens, making this the ideal location to add Speed Insights so it tracks performance across the entire application.
+
+## Testing
+
+- Build verification: ✅ Successfully built with `npm run build`
+- TypeScript compilation: ✅ No type errors
+- No breaking changes to existing functionality
+
+## Next Steps
+
+Once deployed to Vercel:
+1. Enable Speed Insights in the Vercel dashboard for this project
+2. The `/_vercel/speed-insights/script.js` script will be available after deployment
+3. Performance metrics will begin to be collected automatically
+4. View the data in the Vercel dashboard under the Speed Insights tab
+
+## Files Modified
+
+- `web-app/package.json` - Added @vercel/speed-insights dependency
+- `web-app/package-lock.json` - Updated with new package dependencies
+- `web-app/src/App.tsx` - Added SpeedInsights import and component
